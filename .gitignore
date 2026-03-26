@@ -1,0 +1,48 @@
+# ==================== SYSTEM ====================
+.DS_Store
+*.log
+*.swp
+*.pyc
+
+# ==================== IDE ====================
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# ==================== FLUTTER ====================
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+coverage/
+
+# ==================== ANDROID ====================
+/android/.gradle/
+/android/app/build/
+/android/app/debug
+/android/app/profile
+/android/app/release
+
+# ==================== IOS ====================
+/ios/Pods/
+/ios/.symlinks/
+/ios/Flutter/.last_build_id
+
+# ==================== ENV ====================
+.env
+.env.*
+*.env
+
+# ==================== FIREBASE ====================
+google-services.json
+GoogleService-Info.plist
+firebase_options.dart
+firebase.json
+# ==================== MISC ====================
+*.class
+*.lock
