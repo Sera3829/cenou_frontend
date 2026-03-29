@@ -1240,7 +1240,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                             return ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.network(
-                                '${AppConfig.staticBaseUrl}$photoUrl',
+                                photoUrl.startsWith('http') ? photoUrl : '${AppConfig.staticBaseUrl}$photoUrl',
                                 width: 100,
                                 height: 100,
                                 fit: BoxFit.cover,
@@ -1460,7 +1460,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                     return ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: Image.network(
-                        '${AppConfig.staticBaseUrl}$photoUrl',
+                        photoUrl.startsWith('http') ? photoUrl : '${AppConfig.staticBaseUrl}$photoUrl',
                         fit: BoxFit.cover,
                         loadingBuilder: (context, child, loadingProgress) {
                           if (loadingProgress == null) return child;

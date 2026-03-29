@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+import '../../app_config.dart';
 import '../../config/theme.dart';
 import '../../models/signalement.dart';
 import '../../providers/signalement_provider.dart';
@@ -432,11 +433,10 @@ class _SignalementDetailScreenState extends State<SignalementDetailScreen> {
           itemCount: _signalement!.photos.length,
           itemBuilder: (context, index) {
             final signalementService = SignalementService();
-            final photoUrl = signalementService.getPhotoUrl(
-              _signalement!.id,
-              index,
-              _signalement!.photos,
-            );
+            final rawUrl = _signalement!.photos[index];
+            final photoUrl = rawUrl.startsWith('http')
+                ? rawUrl
+                : 'https://cenou-backend.onrender.com$rawUrl';
 
             print('Photo $index: $photoUrl');
 

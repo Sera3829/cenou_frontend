@@ -100,6 +100,7 @@ class SignalementService {
   /// [signalementId] : identifiant du signalement (non utilisé, conservé pour compatibilité).
   /// [photoIndex] : index de la photo dans la liste.
   /// [photos] : liste des chemins de photos.
+  /// Construit l'URL complète d'une photo associée à un signalement.
   String getPhotoUrl(int signalementId, int photoIndex, List<String> photos) {
     try {
       if (photoIndex < 0 || photoIndex >= photos.length) {
@@ -109,35 +110,26 @@ class SignalementService {
       final path = photos[photoIndex];
       print('Photo path original: $path');
 
-      // Méthode robuste pour extraire le nom de fichier
+      // Si c'est déjà une URL complète (Cloudinary), on la retourne directement
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        print('URL complète détectée: $path');
+        return path;
+      }
+
+      // Ancien comportement pour les chemins locaux (rétrocompatibilité)
       String filename = '';
-
-      // Si c'est un chemin Windows avec backslashes
       if (path.contains('\\')) {
-        final parts = path.split('\\');
-        filename = parts.last;
-        print('Chemin Windows detecte');
-      }
-      // Si c'est un chemin Unix avec forward slashes
-      else if (path.contains('/')) {
-        final parts = path.split('/');
-        filename = parts.last;
-        print('Chemin Unix detecte');
-      }
-      // Si c'est juste un nom de fichier
-      else {
+        filename = path.split('\\').last;
+      } else if (path.contains('/')) {
+        filename = path.split('/').last;
+      } else {
         filename = path;
-        print('Nom de fichier simple');
       }
 
-      print('Nom de fichier extrait: $filename');
-
-      // Construire l'URL correcte
       final fullUrl = '${AppConfig.staticBaseUrl}/uploads/signalements/$filename';
-
-      print('URL complete: $fullUrl');
-
+      print('URL construite: $fullUrl');
       return fullUrl;
+
     } catch (e) {
       print('Erreur dans getPhotoUrl: $e');
       return '';

@@ -218,16 +218,16 @@ class SignalementProvider with ChangeNotifier {
   /// Construit l'URL absolue d'une ressource multimédia associée à un signalement.
   String getPhotoUrl(int signalementId, int photoIndex, List<String> photos) {
     try {
-      if (photoIndex < 0 || photoIndex >= photos.length) {
-        return '';
-      }
-
+      if (photoIndex < 0 || photoIndex >= photos.length) return '';
       final path = photos[photoIndex];
+      // URL Cloudinary complète → retourner directement
+      if (path.startsWith('http://') || path.startsWith('https://')) {
+        return path;
+      }
+      // Ancien chemin local → construire l'URL
       String filename = path.split('/').last;
-
       return '${AppConfig.staticBaseUrl}/uploads/signalements/$filename';
     } catch (e) {
-      print('Erreur lors de la résolution de l\'URL photo: $e');
       return '';
     }
   }
