@@ -19,6 +19,17 @@ class PaiementService {
     }
   }
 
+  /// Récupère le loyer mensuel de l'étudiant connecté.
+  Future<Map<String, dynamic>> getLoyerInfo() async {
+    try {
+      final response = await _apiService.get('/api/paiements/loyer');
+      return response['data'] as Map<String, dynamic>;
+    } catch (e) {
+      print('Erreur getLoyerInfo: $e');
+      rethrow;
+    }
+  }
+
   /// Récupère la liste des paiements en attente de validation.
   ///
   /// Retourne une liste d'objets [Paiement] dont le statut est 'EN_ATTENTE'.
@@ -55,12 +66,14 @@ class PaiementService {
     required double montant,
     required String modePaiement,
     required String numeroTelephone,
+    required int nombreMois,
   }) async {
     try {
       final response = await _apiService.post('/api/paiements/initier', body: {
         'montant': montant,
         'mode_paiement': modePaiement,
         'numero_telephone': numeroTelephone,
+        'nombre_mois': nombreMois,
       });
       return response;
     } catch (e) {

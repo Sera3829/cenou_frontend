@@ -64,13 +64,31 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erreur: $e'),
-          backgroundColor: AppTheme.errorColor,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      String message = 'Erreur lors de l\'accès à la caméra';
+
+      if (e.toString().contains('camera_access_denied') ||
+          e.toString().contains('photo_access_denied')) {
+        message = 'Accès à la caméra refusé. Veuillez l\'autoriser dans les paramètres de votre téléphone.';
+      } else if (e.toString().contains('camera_access_restricted')) {
+        message = 'L\'accès à la caméra est restreint sur cet appareil.';
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.orange,
+            behavior: SnackBarBehavior.floating,
+            action: e.toString().contains('denied') ? SnackBarAction(
+              label: 'Paramètres',
+              textColor: Colors.white,
+              onPressed: () {
+                // Ouvrir les paramètres de l'app
+              },
+            ) : null,
+          ),
+        );
+      }
     }
   }
 

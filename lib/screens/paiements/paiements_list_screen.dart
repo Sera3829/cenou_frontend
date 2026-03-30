@@ -102,22 +102,6 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
                 SliverToBoxAdapter(
                   child: _buildStatsCard(paiementProvider),
                 ),
-
-                // Section des paiements attendus (à payer)
-                SliverToBoxAdapter(
-                  child: _buildPaiementsAttendusSection(context, paiementProvider, isDark),
-                ),
-
-                // Section des paiements en cours (initiés)
-                if (paiementProvider.pendingPaiementsList.isNotEmpty)
-                  SliverToBoxAdapter(
-                    child: _buildPaiementsEnAttenteSection(
-                      context,
-                      paiementProvider.pendingPaiementsList,
-                      isDark,
-                    ),
-                  ),
-
                 // Liste des paiements historiques
                 SliverPadding(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),

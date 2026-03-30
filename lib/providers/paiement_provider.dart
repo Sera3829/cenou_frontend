@@ -25,6 +25,8 @@ class PaiementProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isFromCache => _isFromCache;
+  Map<String, dynamic>? _loyerInfo;
+  Map<String, dynamic>? get loyerInfo => _loyerInfo;
 
   PaiementProvider(this._connectivityService);
 
@@ -104,6 +106,16 @@ class PaiementProvider with ChangeNotifier {
     }
   }
 
+  Future<Map<String, dynamic>> getLoyerInfo() async {
+    try {
+      _loyerInfo = await _paiementService.getLoyerInfo();
+      notifyListeners();
+      return _loyerInfo!;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   /// Charge les transactions dont le statut est "en attente".
   /// Cette action nécessite impérativement une connexion active.
   Future<void> loadPendingPaiements() async {
@@ -166,19 +178,18 @@ class PaiementProvider with ChangeNotifier {
     required double montant,
     required String modePaiement,
     required String numeroTelephone,
+    required int nombreMois,
   }) async {
     if (!canPerformOnlineAction()) {
       throw Exception('Connexion internet requise pour effectuer un paiement');
     }
-
     try {
       final result = await _paiementService.initierPaiement(
         montant: montant,
         modePaiement: modePaiement,
         numeroTelephone: numeroTelephone,
+        nombreMois: nombreMois,
       );
-
-      // Rafraîchissement des données après initialisation réussie.
       await refresh();
       return result;
     } catch (e) {
