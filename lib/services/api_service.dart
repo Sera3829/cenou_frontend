@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import '../config/app_config.dart';
@@ -322,6 +323,7 @@ class ApiService {
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
+          'x-platform': kIsWeb ? 'web' : 'mobile',
         },
         body: json.encode({
           'identifiant': identifiant,

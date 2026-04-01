@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:universal_platform/universal_platform.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'widgets/admin_guard.dart';
 
 // Import communs
 import 'config/theme.dart';
@@ -189,25 +190,27 @@ class _CenouAppState extends State<CenouApp> {
       '/annonce-details': (context) => const AnnonceDetailsScreen(annonceId: 0),
     };
 
-    // Routes spécifiques au web
+    // Routes spécifiques au web (avec protection AdminGuard)
     if (isWeb) {
       routes.addAll({
         '/admin/login': (context) => const AdminLoginScreen(),
-        '/admin/dashboard': (context) => const DashboardScreen(),
-        '/admin/paiements': (context) => const PaiementAdminScreen(),
-        '/admin/signalements': (context) => const SignalementAdminScreen(),
-        '/admin/utilisateurs': (context) => const UserAdminScreen(),
-        '/admin/rapports': (context) => const RapportsScreen(),
-        '/admin/annonces': (context) => const AnnonceAdminScreen(),
-        '/admin/settings': (context) => SettingsAdminScreen(
-          onThemeChanged: (theme) => _updateTheme(theme),
+        '/admin/dashboard': (context) => const AdminGuard(child: DashboardScreen()),
+        '/admin/paiements': (context) => const AdminGuard(child: PaiementAdminScreen()),
+        '/admin/signalements': (context) => const AdminGuard(child: SignalementAdminScreen()),
+        '/admin/utilisateurs': (context) => const AdminGuard(child: UserAdminScreen()),
+        '/admin/rapports': (context) => const AdminGuard(child: RapportsScreen()),
+        '/admin/annonces': (context) => const AdminGuard(child: AnnonceAdminScreen()),
+        '/admin/settings': (context) => AdminGuard(
+          child: SettingsAdminScreen(onThemeChanged: (theme) => _updateTheme(theme)),
         ),
         '/admin/export-preview': (context) {
           final args = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>?;
-          return ExportPreviewScreen(
-            format: args?['format'] ?? 'pdf',
-            paiements: args?['paiements'] ?? [],
-            filters: args?['filters'] ?? {},
+          return AdminGuard(
+            child: ExportPreviewScreen(
+              format: args?['format'] ?? 'pdf',
+              paiements: args?['paiements'] ?? [],
+              filters: args?['filters'] ?? {},
+            ),
           );
         },
       });
