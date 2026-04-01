@@ -35,35 +35,37 @@
   <!-- Bloquer l'accès au web depuis un navigateur mobile -->
   <script>
     (function() {
-      var userAgent = navigator.userAgent || navigator.vendor || window.opera;
-      var isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase());
+      var ua = navigator.userAgent || navigator.vendor || window.opera;
+      var isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua.toLowerCase());
 
       if (isMobile) {
         document.addEventListener('DOMContentLoaded', function() {
+          document.body.style.margin = '0';
+          document.body.style.padding = '0';
           document.body.innerHTML = `
             <div style="
-              display: flex;
-              flex-direction: column;
-              align-items: center;
-              justify-content: center;
-              height: 100vh;
-              background: #1E3A8A;
-              color: white;
-              font-family: Arial, sans-serif;
-              text-align: center;
-              padding: 24px;
+              display:flex; flex-direction:column; align-items:center;
+              justify-content:center; height:100vh; background:#1E3A8A;
+              color:white; font-family:Arial,sans-serif; text-align:center; padding:24px;
+              box-sizing:border-box;
             ">
-              <div style="font-size: 64px; margin-bottom: 24px;">🖥️</div>
-              <h1 style="font-size: 24px; margin-bottom: 16px;">Application réservée aux ordinateurs</h1>
-              <p style="font-size: 16px; opacity: 0.8; max-width: 400px;">
+              <div style="font-size:64px; margin-bottom:24px;">🖥️</div>
+              <h1 style="font-size:24px; margin-bottom:16px;">Application réservée aux ordinateurs</h1>
+              <p style="font-size:16px; opacity:0.8; max-width:400px; line-height:1.5;">
                 Ce tableau de bord CENOU est uniquement accessible depuis un ordinateur.
-                Veuillez utiliser l'application mobile CENOU disponible sur votre téléphone.
+                Veuillez utiliser l'application mobile CENOU.
               </p>
-            </div>
-          `;
+            </div>`;
         });
-        // Arrêter le chargement de Flutter
-        throw new Error('Mobile access blocked');
+        // Bloquer le chargement de Flutter
+        window._flutter_web_auto_start = false;
+        document.addEventListener('DOMContentLoaded', function() {
+          // Supprimer tous les scripts Flutter qui pourraient charger
+          var scripts = document.querySelectorAll('script[src*="flutter"]');
+          scripts.forEach(function(s) { s.remove(); });
+        });
+        // Lancer l'affichage immédiatement sans attendre DOMContentLoaded
+        window.stop(); // ✅ Arrête le chargement de la page immédiatement
       }
     })();
   </script>

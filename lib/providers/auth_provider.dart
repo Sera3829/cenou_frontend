@@ -431,7 +431,9 @@ class AuthProvider with ChangeNotifier {
   String _getErrorMessage(dynamic error) {
     final errorStr = error.toString();
 
-    if (errorStr.contains('désactivé') || errorStr.contains('suspendu')) {
+    if (errorStr.contains('409') || errorStr.contains('session est déjà active')) {
+      return 'Une session est déjà active pour ce compte. Déconnectez-vous d\'abord sur l\'autre appareil.';
+    } else if (errorStr.contains('désactivé') || errorStr.contains('suspendu')) {
       return 'Votre compte a été suspendu. Veuillez contacter l\'administration.';
     } else if (errorStr.contains('403')) {
       return 'Accès refusé. Vérifiez vos autorisations.';
