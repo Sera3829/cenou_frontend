@@ -32,9 +32,8 @@ class ApiService {
 
   /// Génère les en-têtes d'authentification incluant le jeton Bearer.
   Future<Map<String, String>> _getAuthHeaders() async {
-    if (_token == null) {
-      _token = await _storageService.getToken();
-    }
+    // Toujours relire depuis le storage pour avoir le token le plus récent
+    _token = await _storageService.getToken();
 
     final headers = {
       'Content-Type': 'application/json',
@@ -43,9 +42,6 @@ class ApiService {
 
     if (_token != null && _token!.isNotEmpty) {
       headers['Authorization'] = 'Bearer $_token';
-      print('Token ajoute aux headers: ${_token!.substring(0, 20)}...');
-    } else {
-      print('Pas de token disponible pour les headers');
     }
 
     return headers;

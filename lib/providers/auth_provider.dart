@@ -103,17 +103,20 @@ class AuthProvider with ChangeNotifier {
         final response = await _apiService.get('/api/auth/me');
         _currentUser = response['user'];
         _isAuthenticated = true;
-
-        // Mise à jour de la persistance locale
         await _storageService.saveUser(User.fromJson(_currentUser!));
       } catch (e) {
-        // En cas d'échec réseau, récupération des données locales
-        final cachedUser = await _storageService.getUser();
-        if (cachedUser != null) {
-          _currentUser = cachedUser.toJson();
-          _isAuthenticated = true;
+        // Si 401 → token expiré → déconnexion forcée
+        if (e.toString().contains('401') || e.toString().contains('expiré')) {
+          await _storageService.clearAll();
+          _isAuthenticated = false;
+          _currentUser = null;
         } else {
-          throw Exception('Données locales indisponibles');
+          // Fallback cache pour les erreurs réseau
+          final cachedUser = await _storageService.getUser();
+          if (cachedUser != null) {
+            _currentUser = cachedUser.toJson();
+            _isAuthenticated = true;
+          }
         }
       }
 
