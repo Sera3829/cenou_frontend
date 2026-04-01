@@ -158,6 +158,9 @@ class AuthProvider with ChangeNotifier {
     bool success = false;
 
     try {
+      // Vider l'ancien utilisateur immédiatement
+      _currentUser = null;
+      _isAuthenticated = false;
       _isLoading = true;
       _errorMessage = null;
       _safeNotify();
@@ -292,25 +295,26 @@ class AuthProvider with ChangeNotifier {
   /// Déconnecte l'utilisateur et réinitialise les données persistantes.
   Future<void> logout() async {
     try {
-      _isLoading = true;
-      _errorMessage = null;
-      _safeNotify();
-
-      try {
-        await _apiService.post('/api/auth/logout', body: {});
-      } catch (e) {
-        // Ignoré si le service de déconnexion distant est indisponible
-      }
-
-      await _storageService.clearAll();
-
-      _isAuthenticated = false;
+      // Vider IMMÉDIATEMENT la mémoire avant tout appel réseau
       _currentUser = null;
+      _isAuthenticated = false;
+      _isLoading = true;
       _errorMessage = null;
       _notificationsEnabled = true;
       _preferredLanguage = 'fr';
       _preferredTheme = 'system';
       _sessionId = null;
+      _safeNotify(); // L'UI se vide immédiatement
+
+      // Appels réseau et storage ensuite (en arrière-plan)
+      try {
+        await _apiService.post('/api/auth/logout', body: {});
+      } catch (e) {
+        // Ignoré si indisponible
+      }
+
+      await _storageService.clearAll();
+
     } catch (e) {
       _errorMessage = 'Erreur lors de la déconnexion';
     } finally {
