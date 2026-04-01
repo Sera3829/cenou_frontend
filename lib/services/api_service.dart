@@ -1,9 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
-import 'package:http/http.dart';
 import '../config/app_config.dart';
 import 'storage_service.dart';
 
@@ -191,10 +189,14 @@ class ApiService {
     } on TimeoutException catch (e) {
       print('Timeout: $e');
       throw Exception('Timeout: Le serveur ne repond pas');
-    } on SocketException catch (e) {
-      print('Socket Exception: $e');
-      throw Exception('Pas de connexion internet ou serveur inaccessible');
     } catch (e) {
+      // Détection des erreurs réseau (SocketException, ClientException, XMLHttpRequest)
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('ClientException') ||
+          e.toString().contains('XMLHttpRequest')) {
+        print('Network error: $e');
+        throw Exception('Pas de connexion internet ou serveur inaccessible');
+      }
       print('POST Error: $e');
       rethrow;
     }
