@@ -105,8 +105,10 @@ class AuthProvider with ChangeNotifier {
         _isAuthenticated = true;
         await _storageService.saveUser(User.fromJson(_currentUser!));
       } catch (e) {
-        // Si 401 → token expiré → déconnexion forcée
-        if (e.toString().contains('401') || e.toString().contains('expiré')) {
+        // Si 401, token expiré ou session invalide → déconnexion forcée
+        if (e.toString().contains('401') ||
+            e.toString().contains('expiré') ||
+            e.toString().contains('Session invalide')) {
           await _storageService.clearAll();
           _isAuthenticated = false;
           _currentUser = null;
