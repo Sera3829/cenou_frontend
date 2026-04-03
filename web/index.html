@@ -61,30 +61,54 @@
   <div class="badge">📱 Téléchargez l'application CENOU Mobile</div>
 </div>
 
+<!-- Détection et blocage mobile -->
 <script>
   (function() {
     var ua = navigator.userAgent || navigator.vendor || window.opera;
-    var isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua.toLowerCase());
+    var uaLower = ua.toLowerCase();
 
-    if (isMobile) {
-      // ✅ Afficher immédiatement l'écran de blocage
+    // Détecter les téléphones (pas les tablettes)
+    var isPhone = /iphone|ipod|(android.*mobile)|windows phone|blackberry|iemobile|opera mini/i.test(uaLower);
+
+    // Détecter iPad explicitement (tablette = autorisée)
+    var isIpad = /ipad/i.test(uaLower) ||
+                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    // Vérification supplémentaire par taille d'écran
+    // Téléphone = largeur < 768px ET hauteur < 1024px ET pas une tablette connue
+    var isSmallScreen = window.screen.width < 768 && window.screen.height < 1024;
+
+    // Bloquer uniquement si c'est un téléphone ET pas une tablette
+    var shouldBlock = (isPhone && !isIpad) || (isSmallScreen && !isIpad);
+
+    if (shouldBlock) {
+      // Afficher immédiatement l'écran de blocage
       var block = document.getElementById('mobile-block');
       if (block) {
         block.style.display = 'flex';
       }
-      // ✅ Empêcher Flutter de démarrer
+      // Empêcher Flutter de démarrer
       window._flutter_web_auto_start = false;
     }
   })();
 </script>
 
-<!-- Flutter ne démarre que si pas mobile -->
+<!-- Chargement Flutter uniquement si pas un téléphone -->
 <script>
   (function() {
     var ua = navigator.userAgent || navigator.vendor || window.opera;
-    var isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua.toLowerCase());
+    var uaLower = ua.toLowerCase();
 
-    if (!isMobile) {
+    var isPhone = /iphone|ipod|(android.*mobile)|windows phone|blackberry|iemobile|opera mini/i.test(uaLower);
+
+    var isIpad = /ipad/i.test(uaLower) ||
+                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+    var isSmallScreen = window.screen.width < 768 && window.screen.height < 1024;
+
+    var shouldBlock = (isPhone && !isIpad) || (isSmallScreen && !isIpad);
+
+    if (!shouldBlock) {
       var script = document.createElement('script');
       script.src = 'flutter_bootstrap.js';
       script.async = true;
