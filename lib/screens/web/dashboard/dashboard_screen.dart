@@ -790,7 +790,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return DashboardLayout(
       selectedIndex: 0,
       child: SingleChildScrollView(
-        padding: const EdgeInsets.all(32),
+        padding: EdgeInsets.symmetric(
+          horizontal: MediaQuery.of(context).size.width > 900 ? 32 : 16,
+          vertical: 32,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -977,18 +980,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // ✅ Breakpoints adaptatifs
         final width = constraints.maxWidth;
         int crossAxisCount;
         double childAspectRatio;
 
-        if (width >= 1200) {
+        // Seuils corrigés (sidebar de 280px déjà soustraite)
+        if (width >= 900) {        // ~1180px écran total
           crossAxisCount = 4;
-          childAspectRatio = 1.5;
-        } else if (width >= 800) {
+          childAspectRatio = 1.6;
+        } else if (width >= 600) { // ~880px écran total
           crossAxisCount = 2;
           childAspectRatio = 1.8;
-        } else if (width >= 500) {
+        } else if (width >= 400) { // ~680px écran total
           crossAxisCount = 2;
           childAspectRatio = 1.5;
         } else {
