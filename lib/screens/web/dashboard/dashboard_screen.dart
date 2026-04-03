@@ -26,16 +26,18 @@ class _DashboardLayoutState extends State<DashboardLayout> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final bool isDesktop = MediaQuery.of(context).size.width > 768;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final bool isDesktop = screenWidth > 900; // Seuil augmenté
 
     return Scaffold(
       backgroundColor: AppTheme.getDashboardBackground(context),
+      //  Drawer pour petit écran
+      drawer: !isDesktop ? Drawer(
+        child: _buildDesktopSidebar(authProvider),
+      ) : null,
       body: Row(
         children: [
-          // Barre latérale toujours visible sur desktop
           if (isDesktop) _buildDesktopSidebar(authProvider),
-
-          // Contenu principal
           Expanded(
             child: Column(
               children: [
@@ -573,7 +575,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
   Widget _buildTopBar(bool isDesktop) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isDesktop ? 32 : 20,
+        horizontal: isDesktop ? 32 : 16,
         vertical: 16,
       ),
       decoration: BoxDecoration(
@@ -587,31 +589,49 @@ class _DashboardLayoutState extends State<DashboardLayout> {
       ),
       child: Row(
         children: [
+          // Bouton hamburger sur petit écran
+          if (!isDesktop)
+            Builder(
+              builder: (context) => IconButton(
+                icon: Icon(
+                  Icons.menu_rounded,
+                  color: AppTheme.getTextPrimary(context),
+                ),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
+            ),
+          if (!isDesktop) const SizedBox(width: 8),
+
           Expanded(
             child: Text(
               _getPageTitle(widget.selectedIndex),
               style: TextStyle(
-                fontSize: 20,
+                fontSize: isDesktop ? 20 : 16, // Taille adaptée
                 fontWeight: FontWeight.bold,
                 color: AppTheme.getTextPrimary(context),
               ),
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: AppTheme.getBorderColor(context),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              _getFormattedDate(),
-              style: TextStyle(
-                fontSize: 13,
-                color: AppTheme.getTextSecondary(context),
+
+          // Date cachée sur très petit écran
+          if (isDesktop) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppTheme.getBorderColor(context),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text(
+                _getFormattedDate(),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppTheme.getTextSecondary(context),
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
+            const SizedBox(width: 16),
+          ],
+
           IconButton(
             icon: Badge(
               label: const Text('3'),
@@ -626,7 +646,6 @@ class _DashboardLayoutState extends State<DashboardLayout> {
       ),
     );
   }
-
   /// Retourne le titre de la page en fonction de l'index sélectionné.
   String _getPageTitle(int index) {
     const titles = [
@@ -791,31 +810,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
               },
             ),
             const SizedBox(height: 32),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 2,
-                  child: FutureBuilder<Map<String, dynamic>>(
-                    future: _dashboardChartsFuture,
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (snapshot.hasData) {
-                        _processChartData(snapshot.data!);
-                        return _buildRevenueChart();
-                      }
-                      return Container();
-                    },
-                  ),
-                ),
-                const SizedBox(width: 24),
-                Expanded(
-                  flex: 1,
-                  child: _buildSignalementsChart(),
-                ),
-              ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final width = constraints.maxWidth;
+
+                if (width >= 900) {
+                  // Grand écran : côte à côte
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 2,
+                        child: FutureBuilder<Map<String, dynamic>>(
+                          future: _dashboardChartsFuture,
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+                            if (snapshot.hasData) {
+                              _processChartData(snapshot.data!);
+                              return _buildRevenueChart();
+                            }
+                            return Container();
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        flex: 1,
+                        child: _buildSignalementsChart(),
+                      ),
+                    ],
+                  );
+                } else {
+                  // Petit écran : empilés verticalement
+                  return Column(
+                    children: [
+                      FutureBuilder<Map<String, dynamic>>(
+                        future: _dashboardChartsFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          if (snapshot.hasData) {
+                            _processChartData(snapshot.data!);
+                            return _buildRevenueChart();
+                          }
+                          return Container();
+                        },
+                      ),
+                      const SizedBox(height: 24),
+                      _buildSignalementsChart(),
+                    ],
+                  );
+                }
+              },
             ),
             const SizedBox(height: 32),
             _buildRecentActivity(),
@@ -895,43 +944,68 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final paiements = stats['paiements'] as Map<String, dynamic>? ?? {};
     final signalements = stats['signalements'] as Map<String, dynamic>? ?? {};
 
-    return GridView.count(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 4,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      childAspectRatio: 1.5,
-      children: [
-        _buildStatCard(
-          title: 'Total Étudiants',
-          value: '${general['total_etudiants'] ?? '0'}',
-          icon: Icons.people_rounded,
-          color: const Color(0xFF3B82F6),
-          change: '${((int.tryParse(general['logements_occupes'] ?? '0') ?? 0) / (int.tryParse(general['total_logements'] ?? '1') ?? 1) * 100).toStringAsFixed(1)}% occ.',
-        ),
-        _buildStatCard(
-          title: 'Paiements Confirmés',
-          value: '${paiements['paiements_confirme'] ?? '0'}',
-          icon: Icons.payment_rounded,
-          color: const Color(0xFF10B981),
-          change: '${((int.tryParse(paiements['paiements_confirme'] ?? '0') ?? 0) * 100 / (int.tryParse(paiements['total_paiements'] ?? '1') ?? 1)).toStringAsFixed(1)}%',
-        ),
-        _buildStatCard(
-          title: 'Signalements Actifs',
-          value: '${signalements['signalements_en_attente'] ?? '0'}',
-          icon: Icons.warning_rounded,
-          color: const Color(0xFFF59E0B),
-          change: '${signalements['signalements_resolus'] ?? '0'} résolus',
-        ),
-        _buildStatCard(
-          title: 'Revenus 30j',
-          value: '${_formatMontant(double.tryParse(paiements['montant_30jours']?.toString() ?? '0') ?? 0)} F',
-          icon: Icons.attach_money_rounded,
-          color: const Color(0xFF8B5CF6),
-          change: 'Moy: ${_formatMontant(double.tryParse(paiements['montant_moyen']?.toString() ?? '0') ?? 0)}',
-        ),
-      ],
+    final cards = [
+      _buildStatCard(
+        title: 'Total Étudiants',
+        value: '${general['total_etudiants'] ?? '0'}',
+        icon: Icons.people_rounded,
+        color: const Color(0xFF3B82F6),
+        change: '${((int.tryParse(general['logements_occupes'] ?? '0') ?? 0) / (int.tryParse(general['total_logements'] ?? '1') ?? 1) * 100).toStringAsFixed(1)}% occ.',
+      ),
+      _buildStatCard(
+        title: 'Paiements Confirmés',
+        value: '${paiements['paiements_confirme'] ?? '0'}',
+        icon: Icons.payment_rounded,
+        color: const Color(0xFF10B981),
+        change: '${((int.tryParse(paiements['paiements_confirme'] ?? '0') ?? 0) * 100 / (int.tryParse(paiements['total_paiements'] ?? '1') ?? 1)).toStringAsFixed(1)}%',
+      ),
+      _buildStatCard(
+        title: 'Signalements Actifs',
+        value: '${signalements['signalements_en_attente'] ?? '0'}',
+        icon: Icons.warning_rounded,
+        color: const Color(0xFFF59E0B),
+        change: '${signalements['signalements_resolus'] ?? '0'} résolus',
+      ),
+      _buildStatCard(
+        title: 'Revenus 30j',
+        value: '${_formatMontant(double.tryParse(paiements['montant_30jours']?.toString() ?? '0') ?? 0)} F',
+        icon: Icons.attach_money_rounded,
+        color: const Color(0xFF8B5CF6),
+        change: 'Moy: ${_formatMontant(double.tryParse(paiements['montant_moyen']?.toString() ?? '0') ?? 0)}',
+      ),
+    ];
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // ✅ Breakpoints adaptatifs
+        final width = constraints.maxWidth;
+        int crossAxisCount;
+        double childAspectRatio;
+
+        if (width >= 1200) {
+          crossAxisCount = 4;
+          childAspectRatio = 1.5;
+        } else if (width >= 800) {
+          crossAxisCount = 2;
+          childAspectRatio = 1.8;
+        } else if (width >= 500) {
+          crossAxisCount = 2;
+          childAspectRatio = 1.5;
+        } else {
+          crossAxisCount = 1;
+          childAspectRatio = 2.5;
+        }
+
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: crossAxisCount,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+          childAspectRatio: childAspectRatio,
+          children: cards,
+        );
+      },
     );
   }
 
