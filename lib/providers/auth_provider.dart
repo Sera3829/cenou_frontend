@@ -23,6 +23,32 @@ class AuthProvider with ChangeNotifier {
   String _preferredTheme = 'system';
   String? _sessionId;
 
+  AuthProvider() {
+    _apiService.onUnauthorized = () {
+      _forceLogout();
+    };
+  }
+
+  /// Déconnexion forcée silencieuse (token expiré)
+  Future<void> _forceLogout() async {
+    // Éviter de déclencher plusieurs fois simultanément
+    if (!_isAuthenticated && _currentUser == null) return;
+
+    print('Déconnexion automatique - token expiré');
+
+    _currentUser = null;
+    _isAuthenticated = false;
+    _errorMessage = null;
+    _notificationsEnabled = true;
+    _preferredLanguage = 'fr';
+    _preferredTheme = 'system';
+    _sessionId = null;
+
+    await _storageService.clearAll();
+
+    _safeNotify();
+  }
+
   // ==================== ACCESSEURS (GETTERS) ====================
 
   bool get isLoading => _isLoading;
@@ -160,7 +186,6 @@ class AuthProvider with ChangeNotifier {
     bool success = false;
 
     try {
-      // Vider l'ancien utilisateur immédiatement
       _currentUser = null;
       _isAuthenticated = false;
       _isLoading = true;
@@ -172,6 +197,18 @@ class AuthProvider with ChangeNotifier {
         motDePasse: motDePasse,
         requireAdmin: false,
       );
+
+      final role = response['user']['role'];
+
+      // Bloquer Admin/Gestionnaire sur mobile (double sécurité côté Flutter)
+      if (!kIsWeb && (role == 'ADMIN' || role == 'GESTIONNAIRE')) {
+        await _storageService.clearAll();
+        _currentUser = null;
+        _isAuthenticated = false;
+        _errorMessage = 'Accès non autorisé sur mobile. Utilisez le dashboard web.';
+        success = false;
+        return success;
+      }
 
       _currentUser = response['user'];
       _isAuthenticated = true;

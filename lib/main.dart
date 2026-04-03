@@ -348,20 +348,30 @@ class _PlatformWrapperState extends State<PlatformWrapper> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     if (!_initialized) {
       return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    if (PlatformDetector.isWeb || PlatformDetector.isDesktop) {
+    // 🔒 Sur le web, bloquer les navigateurs mobiles
+    if (PlatformDetector.isWeb) {
+      final screenWidth = MediaQuery.of(context).size.width;
+      final screenHeight = MediaQuery.of(context).size.height;
+
+      // Détection mobile : écran étroit ET hauteur > largeur (portrait)
+      // Un PC avec fenêtre réduite aura rarement hauteur > largeur
+      final isMobileBrowser = screenWidth < 768 && screenHeight > screenWidth;
+
+      if (isMobileBrowser) {
+        return const MobileBlockScreen();
+      }
       return const WebAuthWrapper();
-    } else {
-      return const MobileAuthWrapper();
     }
+
+    return const MobileAuthWrapper();
   }
 }
 
@@ -384,14 +394,16 @@ class WebAuthWrapper extends StatelessWidget {
           );
         }
 
-        final authProvider = context.read<AuthProvider>();
-
-        if (authProvider.isAuthenticated &&
-            (authProvider.isAdmin || authProvider.isGestionnaire)) {
-          return const DashboardScreen();
-        }
-
-        return const AdminLoginScreen();
+        // Consumer pour réagir aux changements d'état en temps réel
+        return Consumer<AuthProvider>(
+          builder: (context, auth, _) {
+            if (auth.isAuthenticated &&
+                (auth.isAdmin || auth.isGestionnaire)) {
+              return const DashboardScreen();
+            }
+            return const AdminLoginScreen();
+          },
+        );
       },
     );
   }
@@ -440,10 +452,73 @@ class _MobileAuthWrapperState extends State<MobileAuthWrapper> {
       );
     }
 
-    if (_isAuthenticated) {
-      return const HomeScreen();
-    }
+    // Consumer pour réagir aux changements d'état en temps réel
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        if (auth.isAuthenticated) {
+          return const HomeScreen();
+        }
+        return const LoginScreen();
+      },
+    );
+  }
+}
 
-    return const LoginScreen();
+class MobileBlockScreen extends StatelessWidget {
+  const MobileBlockScreen({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF1a237e),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.desktop_windows_rounded,
+                color: Colors.white,
+                size: 80,
+              ),
+              const SizedBox(height: 24),
+              const Text(
+                'Application réservée aux ordinateurs',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Ce tableau de bord CENOU est uniquement accessible depuis un ordinateur. Veuillez utiliser l\'application mobile CENOU.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.8),
+                  fontSize: 15,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 40),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                ),
+                child: const Text(
+                  '📱 Téléchargez l\'application CENOU Mobile',
+                  style: TextStyle(color: Colors.white, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -11,6 +11,9 @@ class ApiService {
   String? _token;
   String? _refreshToken;
 
+  /// Callback appelé automatiquement quand le token expire (401)
+  Function()? onUnauthorized;
+
   /// Initialise le service en chargeant le jeton d'authentification depuis le stockage.
   Future<void> init() async {
     try {
@@ -530,10 +533,17 @@ class ApiService {
       print('Backend error message: "$errorMessage"');
 
       final uri = response.request?.url.toString() ?? '';
-      if (uri.contains('/api/auth/login') && response.statusCode == 401) {
-        throw ApiException(errorMessage, 401);
-      } else if (response.statusCode == 401) {
-        throw ApiException('Session expirée. Veuillez vous reconnecter.', 401);
+
+      if (response.statusCode == 401) {
+        //Déclencher la déconnexion automatique
+        print('Token expiré détecté → déconnexion automatique');
+        onUnauthorized?.call();
+
+        if (uri.contains('/api/auth/login')) {
+          throw ApiException(errorMessage, 401);
+        } else {
+          throw ApiException('Session expirée. Veuillez vous reconnecter.', 401);
+        }
       } else if (response.statusCode == 403) {
         throw ApiException(errorMessage.isNotEmpty ? errorMessage : 'Accès refusé', 403);
       } else if (response.statusCode == 404) {
