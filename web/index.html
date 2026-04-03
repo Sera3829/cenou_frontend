@@ -1,19 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <!--
-    If you are serving your web app in a path other than the root, change the
-    href value below to reflect the base path you are serving from.
-
-    The path provided below has to start and end with a slash "/" in order for
-    it to work correctly.
-
-    For more details:
-    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
-
-    This is a placeholder for base href that will be replaced by the value of
-    the `--base-href` argument provided to `flutter build`.
-  -->
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
@@ -29,48 +16,82 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
-  <title>cenou_mobile</title>
+  <title>Dashboard CENOU Admin</title>
   <link rel="manifest" href="manifest.json">
 
-  <!-- Bloquer l'accès au web depuis un navigateur mobile -->
-  <script>
-    (function() {
-      var ua = navigator.userAgent || navigator.vendor || window.opera;
-      var isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua.toLowerCase());
-
-      if (isMobile) {
-        document.addEventListener('DOMContentLoaded', function() {
-          document.body.style.margin = '0';
-          document.body.style.padding = '0';
-          document.body.innerHTML = `
-            <div style="
-              display:flex; flex-direction:column; align-items:center;
-              justify-content:center; height:100vh; background:#1E3A8A;
-              color:white; font-family:Arial,sans-serif; text-align:center; padding:24px;
-              box-sizing:border-box;
-            ">
-              <div style="font-size:64px; margin-bottom:24px;">🖥️</div>
-              <h1 style="font-size:24px; margin-bottom:16px;">Application réservée aux ordinateurs</h1>
-              <p style="font-size:16px; opacity:0.8; max-width:400px; line-height:1.5;">
-                Ce tableau de bord CENOU est uniquement accessible depuis un ordinateur.
-                Veuillez utiliser l'application mobile CENOU.
-              </p>
-            </div>`;
-        });
-        // Bloquer le chargement de Flutter
-        window._flutter_web_auto_start = false;
-        document.addEventListener('DOMContentLoaded', function() {
-          // Supprimer tous les scripts Flutter qui pourraient charger
-          var scripts = document.querySelectorAll('script[src*="flutter"]');
-          scripts.forEach(function(s) { s.remove(); });
-        });
-        // Lancer l'affichage immédiatement sans attendre DOMContentLoaded
-        window.stop(); // ✅ Arrête le chargement de la page immédiatement
-      }
-    })();
-  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #1E3A8A; }
+    #mobile-block {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      background: #1E3A8A;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 24px;
+    }
+    #mobile-block .icon { font-size: 64px; margin-bottom: 24px; }
+    #mobile-block h1 { font-size: 24px; margin-bottom: 16px; font-weight: bold; }
+    #mobile-block p { font-size: 16px; opacity: 0.8; max-width: 400px; line-height: 1.5; }
+    #mobile-block .badge {
+      margin-top: 32px;
+      padding: 12px 20px;
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.3);
+      border-radius: 12px;
+      font-size: 14px;
+    }
+  </style>
 </head>
+
 <body>
-<script src="flutter_bootstrap.js" async></script>
+
+<!-- Écran de blocage mobile (caché par défaut) -->
+<div id="mobile-block">
+  <div class="icon">🖥️</div>
+  <h1>Application réservée aux ordinateurs</h1>
+  <p>
+    Ce tableau de bord CENOU est uniquement accessible depuis un ordinateur.
+    Veuillez utiliser l'application mobile CENOU.
+  </p>
+  <div class="badge">📱 Téléchargez l'application CENOU Mobile</div>
+</div>
+
+<script>
+  (function() {
+    var ua = navigator.userAgent || navigator.vendor || window.opera;
+    var isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua.toLowerCase());
+
+    if (isMobile) {
+      // ✅ Afficher immédiatement l'écran de blocage
+      var block = document.getElementById('mobile-block');
+      if (block) {
+        block.style.display = 'flex';
+      }
+      // ✅ Empêcher Flutter de démarrer
+      window._flutter_web_auto_start = false;
+    }
+  })();
+</script>
+
+<!-- Flutter ne démarre que si pas mobile -->
+<script>
+  (function() {
+    var ua = navigator.userAgent || navigator.vendor || window.opera;
+    var isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(ua.toLowerCase());
+
+    if (!isMobile) {
+      var script = document.createElement('script');
+      script.src = 'flutter_bootstrap.js';
+      script.async = true;
+      document.body.appendChild(script);
+    }
+  })();
+</script>
+
 </body>
 </html>
