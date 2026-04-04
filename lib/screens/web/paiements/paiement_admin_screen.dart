@@ -307,36 +307,44 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
               child: isWide
                   ? Row(
                 children: [
-                  _buildStatCard(
-                    label: 'Total Paiements',
-                    value: '$totalPaiements',
-                    color: const Color(0xFF3B82F6),
-                    icon: Icons.payments,
-                    isDark: isDark,
+                  Expanded(
+                    child: _buildStatCard(
+                      label: 'Total Paiements',
+                      value: '$totalPaiements',
+                      color: const Color(0xFF3B82F6),
+                      icon: Icons.payments,
+                      isDark: isDark,
+                    ),
                   ),
                   const SizedBox(width: 16),
-                  _buildStatCard(
-                    label: 'Montant Total',
-                    value: '${_formatMontant(montantTotal)} F',
-                    color: const Color(0xFF10B981),
-                    icon: Icons.account_balance_wallet,
-                    isDark: isDark,
+                  Expanded(
+                    child: _buildStatCard(
+                      label: 'Montant Total',
+                      value: '${_formatMontant(montantTotal)} F',
+                      color: const Color(0xFF10B981),
+                      icon: Icons.account_balance_wallet,
+                      isDark: isDark,
+                    ),
                   ),
                   const SizedBox(width: 16),
-                  _buildStatCard(
-                    label: 'En Attente',
-                    value: '$enAttente',
-                    color: const Color(0xFFF59E0B),
-                    icon: Icons.hourglass_empty,
-                    isDark: isDark,
+                  Expanded(
+                    child: _buildStatCard(
+                      label: 'En Attente',
+                      value: '$enAttente',
+                      color: const Color(0xFFF59E0B),
+                      icon: Icons.hourglass_empty,
+                      isDark: isDark,
+                    ),
                   ),
                   const SizedBox(width: 16),
-                  _buildStatCard(
-                    label: 'Taux Réussite',
-                    value: '${tauxReussite.toStringAsFixed(1)}%',
-                    color: const Color(0xFF8B5CF6),
-                    icon: Icons.trending_up,
-                    isDark: isDark,
+                  Expanded(
+                    child: _buildStatCard(
+                      label: 'Taux Réussite',
+                      value: '${tauxReussite.toStringAsFixed(1)}%',
+                      color: const Color(0xFF8B5CF6),
+                      icon: Icons.trending_up,
+                      isDark: isDark,
+                    ),
                   ),
                 ],
               )
@@ -681,85 +689,31 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
           ),
           child: Column(
             children: [
-              // Tableau avec scroll horizontal
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    minWidth: MediaQuery.of(context).size.width - 48,
-                  ),
+                child: SizedBox(
+                  width: 900,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // En-tête avec largeurs fixes
                       Container(
-                        padding: const EdgeInsets.all(20),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                         decoration: BoxDecoration(
                           color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF8FAFC),
                           borderRadius: const BorderRadius.only(
                             topLeft: Radius.circular(12),
                             topRight: Radius.circular(12),
                           ),
-                          border: Border(
-                            bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1),
-                          ),
+                          border: Border(bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1)),
                         ),
                         child: Row(
                           children: [
-                            Expanded(
-                              flex: 3,
-                              child: Text(
-                                'Étudiant',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.getTextPrimary(context),
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                'Montant',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.getTextPrimary(context),
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                'Statut',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.getTextPrimary(context),
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                'Mode',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.getTextPrimary(context),
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 2,
-                              child: Text(
-                                'Date',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.getTextPrimary(context),
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ),
+                            SizedBox(width: 220, child: Text('Etudiant', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.getTextPrimary(context), fontSize: 13))),
+                            SizedBox(width: 130, child: Text('Montant', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.getTextPrimary(context), fontSize: 13))),
+                            SizedBox(width: 120, child: Text('Statut', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.getTextPrimary(context), fontSize: 13))),
+                            SizedBox(width: 140, child: Text('Mode', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.getTextPrimary(context), fontSize: 13))),
+                            SizedBox(width: 140, child: Text('Date', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.getTextPrimary(context), fontSize: 13))),
                             const SizedBox(width: 100),
                           ],
                         ),
