@@ -947,6 +947,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final paiements = stats['paiements'] as Map<String, dynamic>? ?? {};
     final signalements = stats['signalements'] as Map<String, dynamic>? ?? {};
 
+    // Utiliser MediaQuery directement - plus fiable sur Flutter Web
+    final screenWidth = MediaQuery.of(context).size.width;
+    final sidebarWidth = screenWidth > 900 ? 280.0 : 0.0;
+    final contentWidth = screenWidth - sidebarWidth;
+
+    print('🔍 screenWidth: $screenWidth | contentWidth: $contentWidth'); // debug temporaire
+
+    int crossAxisCount;
+    double childAspectRatio;
+
+    if (contentWidth >= 1000) {
+      crossAxisCount = 4;
+      childAspectRatio = 1.6;
+    } else if (contentWidth >= 700) {
+      crossAxisCount = 2;
+      childAspectRatio = 1.8;
+    } else if (contentWidth >= 400) {
+      crossAxisCount = 2;
+      childAspectRatio = 1.5;
+    } else {
+      crossAxisCount = 1;
+      childAspectRatio = 2.5;
+    }
+
     final cards = [
       _buildStatCard(
         title: 'Total Étudiants',
@@ -978,37 +1002,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
     ];
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        int crossAxisCount;
-        double childAspectRatio;
-
-        // Seuils corrigés (sidebar de 280px déjà soustraite)
-        if (width >= 900) {        // ~1180px écran total
-          crossAxisCount = 4;
-          childAspectRatio = 1.6;
-        } else if (width >= 600) { // ~880px écran total
-          crossAxisCount = 2;
-          childAspectRatio = 1.8;
-        } else if (width >= 400) { // ~680px écran total
-          crossAxisCount = 2;
-          childAspectRatio = 1.5;
-        } else {
-          crossAxisCount = 1;
-          childAspectRatio = 2.5;
-        }
-
-        return GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: crossAxisCount,
-          crossAxisSpacing: 16,
-          mainAxisSpacing: 16,
-          childAspectRatio: childAspectRatio,
-          children: cards,
-        );
-      },
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount: crossAxisCount,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      childAspectRatio: childAspectRatio,
+      children: cards,
     );
   }
 
