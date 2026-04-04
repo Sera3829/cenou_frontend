@@ -13,9 +13,7 @@ import 'export_preview_screen.dart';
 import '../../../utils/html_utils.dart';
 import '../dashboard/dashboard_screen.dart';
 
-/// Écran d'administration des paiements.
-///
-/// Permet de consulter, filtrer, exporter et gérer les paiements étudiants.
+/// Ecran d'administration des paiements.
 class PaiementAdminScreen extends StatefulWidget {
   const PaiementAdminScreen({Key? key}) : super(key: key);
 
@@ -39,13 +37,11 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
     });
   }
 
-  /// Formate un montant avec séparateur de milliers.
   String _formatMontant(double montant) {
     final formatter = NumberFormat('#,##0', 'fr_FR');
     return formatter.format(montant);
   }
 
-  /// Charge les données initiales (paiements et statistiques).
   Future<void> _loadInitialData() async {
     final provider = Provider.of<PaiementAdminProvider>(context, listen: false);
     await provider.loadPaiements();
@@ -55,7 +51,6 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return DashboardLayout(
       selectedIndex: 1,
       child: Column(
@@ -254,7 +249,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
         IconButton(
           onPressed: _resetFilters,
           icon: Icon(Icons.refresh, color: AppTheme.getTextSecondary(context)),
-          tooltip: 'Réinitialiser',
+          tooltip: 'Reinitialiser',
         ),
         IconButton(
           onPressed: _exportPaiements,
@@ -291,122 +286,104 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
 
         final enAttente = int.tryParse(stats['en_attente'] ?? '0') ?? 0;
         final confirmes = int.tryParse(stats['confirmes'] ?? '0') ?? 0;
-        final echecs = int.tryParse(stats['echecs'] ?? '0') ?? 0;
 
         final tauxReussite = totalPaiements > 0
             ? ((confirmes / totalPaiements) * 100)
             : 0;
 
-        return LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth > 700;
+        // Utilisation de MediaQuery pour une largeur fiable
+        final screenWidth = MediaQuery.of(context).size.width;
+        final sidebarWidth = screenWidth > 900 ? 280.0 : 0.0;
+        final contentWidth = screenWidth - sidebarWidth;
+        final isWide = contentWidth > 700;
 
-            return Container(
-              padding: const EdgeInsets.all(24),
-              color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF1F5F9),
-              child: isWide
-                  ? Row(
+        return Container(
+          padding: const EdgeInsets.all(24),
+          color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF1F5F9),
+          child: isWide
+              ? Row(
+            children: [
+              Expanded(child: _buildStatCard(
+                label: 'Total Paiements',
+                value: '$totalPaiements',
+                color: const Color(0xFF3B82F6),
+                icon: Icons.payments,
+                isDark: isDark,
+              )),
+              const SizedBox(width: 16),
+              Expanded(child: _buildStatCard(
+                label: 'Montant Total',
+                value: '${_formatMontant(montantTotal)} F',
+                color: const Color(0xFF10B981),
+                icon: Icons.account_balance_wallet,
+                isDark: isDark,
+              )),
+              const SizedBox(width: 16),
+              Expanded(child: _buildStatCard(
+                label: 'En Attente',
+                value: '$enAttente',
+                color: const Color(0xFFF59E0B),
+                icon: Icons.hourglass_empty,
+                isDark: isDark,
+              )),
+              const SizedBox(width: 16),
+              Expanded(child: _buildStatCard(
+                label: 'Taux Reussite',
+                value: '${tauxReussite.toStringAsFixed(1)}%',
+                color: const Color(0xFF8B5CF6),
+                icon: Icons.trending_up,
+                isDark: isDark,
+              )),
+            ],
+          )
+              : Column(
+            children: [
+              Row(
                 children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      label: 'Total Paiements',
-                      value: '$totalPaiements',
-                      color: const Color(0xFF3B82F6),
-                      icon: Icons.payments,
-                      isDark: isDark,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildStatCard(
-                      label: 'Montant Total',
-                      value: '${_formatMontant(montantTotal)} F',
-                      color: const Color(0xFF10B981),
-                      icon: Icons.account_balance_wallet,
-                      isDark: isDark,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildStatCard(
-                      label: 'En Attente',
-                      value: '$enAttente',
-                      color: const Color(0xFFF59E0B),
-                      icon: Icons.hourglass_empty,
-                      isDark: isDark,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildStatCard(
-                      label: 'Taux Réussite',
-                      value: '${tauxReussite.toStringAsFixed(1)}%',
-                      color: const Color(0xFF8B5CF6),
-                      icon: Icons.trending_up,
-                      isDark: isDark,
-                    ),
-                  ),
-                ],
-              )
-                  : Column(
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          label: 'Total',
-                          value: '$totalPaiements',
-                          color: const Color(0xFF3B82F6),
-                          icon: Icons.payments,
-                          isDark: isDark,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          label: 'Montant',
-                          value: '${_formatMontant(montantTotal)} F',
-                          color: const Color(0xFF10B981),
-                          icon: Icons.account_balance_wallet,
-                          isDark: isDark,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          label: 'En Attente',
-                          value: '$enAttente',
-                          color: const Color(0xFFF59E0B),
-                          icon: Icons.hourglass_empty,
-                          isDark: isDark,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatCard(
-                          label: 'Taux',
-                          value: '${tauxReussite.toStringAsFixed(1)}%',
-                          color: const Color(0xFF8B5CF6),
-                          icon: Icons.trending_up,
-                          isDark: isDark,
-                        ),
-                      ),
-                    ],
-                  ),
+                  Expanded(child: _buildStatCard(
+                    label: 'Total',
+                    value: '$totalPaiements',
+                    color: const Color(0xFF3B82F6),
+                    icon: Icons.payments,
+                    isDark: isDark,
+                  )),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildStatCard(
+                    label: 'Montant',
+                    value: '${_formatMontant(montantTotal)} F',
+                    color: const Color(0xFF10B981),
+                    icon: Icons.account_balance_wallet,
+                    isDark: isDark,
+                  )),
                 ],
               ),
-            );
-          },
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: _buildStatCard(
+                    label: 'En Attente',
+                    value: '$enAttente',
+                    color: const Color(0xFFF59E0B),
+                    icon: Icons.hourglass_empty,
+                    isDark: isDark,
+                  )),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildStatCard(
+                    label: 'Taux',
+                    value: '${tauxReussite.toStringAsFixed(1)}%',
+                    color: const Color(0xFF8B5CF6),
+                    icon: Icons.trending_up,
+                    isDark: isDark,
+                  )),
+                ],
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
-  /// Carte d’un indicateur statistique.
   Widget _buildStatCard({
     required String label,
     required String value,
@@ -465,7 +442,6 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
     );
   }
 
-  /// Carte des filtres avancés (dates).
   Widget _buildFiltersCard(bool isDark) {
     return Container(
       margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
@@ -486,7 +462,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
           Row(
             children: [
               Text(
-                'Filtres avancés',
+                'Filtres avances',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -509,7 +485,6 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
             ],
           ),
           const SizedBox(height: 16),
-
           Row(
             children: [
               Expanded(
@@ -543,7 +518,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                   },
                   child: InputDecorator(
                     decoration: InputDecoration(
-                      labelText: 'Date début',
+                      labelText: 'Date debut',
                       labelStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -560,7 +535,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                     child: Text(
                       _selectedDateFrom != null
                           ? DateFormat('dd/MM/yyyy').format(_selectedDateFrom!)
-                          : 'Sélectionner',
+                          : 'Selectionner',
                       style: TextStyle(
                         color: _selectedDateFrom != null
                             ? AppTheme.getTextPrimary(context)
@@ -570,9 +545,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(width: 16),
-
               Expanded(
                 child: InkWell(
                   onTap: () async {
@@ -621,7 +594,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                     child: Text(
                       _selectedDateTo != null
                           ? DateFormat('dd/MM/yyyy').format(_selectedDateTo!)
-                          : 'Sélectionner',
+                          : 'Selectionner',
                       style: TextStyle(
                         color: _selectedDateTo != null
                             ? AppTheme.getTextPrimary(context)
@@ -631,9 +604,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                   ),
                 ),
               ),
-
               const SizedBox(width: 16),
-
               ElevatedButton.icon(
                 onPressed: _applyAllFilters,
                 icon: Icon(Icons.check, size: 18, color: Colors.white),
@@ -653,7 +624,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
     );
   }
 
-  // ==================== LISTE DES PAIEMENTS AVEC SCROLL HORIZONTAL ====================
+  // ==================== LISTE DES PAIEMENTS ====================
 
   Widget _buildPaiementsList(bool isDark) {
     return Consumer<PaiementAdminProvider>(
@@ -675,6 +646,16 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
           return _buildEmptyState(isDark);
         }
 
+        // Largeurs fixes cohérentes entre header et lignes
+        const double colEtudiant = 240.0;
+        const double colMontant  = 130.0;
+        const double colStatut   = 130.0;
+        const double colMode     = 150.0;
+        const double colDate     = 150.0;
+        const double colActions  = 100.0;
+        const double totalWidth  = colEtudiant + colMontant + colStatut +
+            colMode + colDate + colActions;
+
         return Container(
           margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           decoration: BoxDecoration(
@@ -692,11 +673,10 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: SizedBox(
-                  width: 900,
+                  width: totalWidth,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // En-tête avec largeurs fixes
+                      // En-tête
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                         decoration: BoxDecoration(
@@ -709,22 +689,31 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                         ),
                         child: Row(
                           children: [
-                            SizedBox(width: 220, child: Text('Etudiant', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.getTextPrimary(context), fontSize: 13))),
-                            SizedBox(width: 130, child: Text('Montant', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.getTextPrimary(context), fontSize: 13))),
-                            SizedBox(width: 120, child: Text('Statut', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.getTextPrimary(context), fontSize: 13))),
-                            SizedBox(width: 140, child: Text('Mode', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.getTextPrimary(context), fontSize: 13))),
-                            SizedBox(width: 140, child: Text('Date', style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.getTextPrimary(context), fontSize: 13))),
-                            const SizedBox(width: 100),
+                            SizedBox(width: colEtudiant - 40, child: _headerText('Etudiant')),
+                            SizedBox(width: colMontant, child: _headerText('Montant')),
+                            SizedBox(width: colStatut, child: _headerText('Statut')),
+                            SizedBox(width: colMode, child: _headerText('Mode')),
+                            SizedBox(width: colDate, child: _headerText('Date')),
+                            SizedBox(width: colActions, child: _headerText('Actions')),
                           ],
                         ),
                       ),
+                      // Lignes
                       ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: provider.paiements.length,
                         itemBuilder: (context, index) {
                           final paiement = provider.paiements[index];
-                          return _buildPaiementRow(paiement, provider, index, isDark);
+                          return _buildPaiementRow(
+                            paiement, provider, index, isDark,
+                            colEtudiant: colEtudiant,
+                            colMontant: colMontant,
+                            colStatut: colStatut,
+                            colMode: colMode,
+                            colDate: colDate,
+                            colActions: colActions,
+                          );
                         },
                       ),
                     ],
@@ -739,22 +728,42 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
     );
   }
 
-  /// Ligne d’un paiement dans la liste.
-  Widget _buildPaiementRow(Paiement paiement, PaiementAdminProvider provider,
-      int index, bool isDark) {
+  Widget _headerText(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        color: AppTheme.getTextPrimary(context),
+        fontSize: 13,
+      ),
+    );
+  }
+
+  Widget _buildPaiementRow(
+      Paiement paiement,
+      PaiementAdminProvider provider,
+      int index,
+      bool isDark, {
+        required double colEtudiant,
+        required double colMontant,
+        required double colStatut,
+        required double colMode,
+        required double colDate,
+        required double colActions,
+      }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
-        color: index.isEven ? AppTheme.getCardBackground(context)
+        color: index.isEven
+            ? AppTheme.getCardBackground(context)
             : (isDark ? Colors.grey.shade900.withOpacity(0.3) : const Color(0xFFFAFAFA)),
-        border: Border(
-          bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1),
-        ),
+        border: Border(bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1)),
       ),
       child: Row(
         children: [
-          Expanded(
-            flex: 3,
+          // Etudiant
+          SizedBox(
+            width: colEtudiant - 40,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -765,54 +774,45 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                     color: AppTheme.getTextPrimary(context),
                     fontSize: 14,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   paiement.matricule ?? 'N/A',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppTheme.getTextSecondary(context),
-                  ),
+                  style: TextStyle(fontSize: 12, color: AppTheme.getTextSecondary(context)),
                 ),
-                if (paiement.centreNom != null) ...[
-                  const SizedBox(height: 2),
+                if (paiement.centreNom != null)
                   Text(
                     '${paiement.centreNom} - Ch. ${paiement.numeroChambre ?? "N/A"}',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: AppTheme.getTextTertiary(context),
-                    ),
+                    style: TextStyle(fontSize: 11, color: AppTheme.getTextTertiary(context)),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
               ],
             ),
           ),
-
-          Expanded(
-            flex: 2,
+          // Montant
+          SizedBox(
+            width: colMontant,
             child: Text(
               '${_formatMontant(paiement.montant)} F',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 15,
-                color: paiement.montant > 0
-                    ? const Color(0xFF10B981)
-                    : const Color(0xFFEF4444),
+                fontSize: 14,
+                color: paiement.montant > 0 ? const Color(0xFF10B981) : const Color(0xFFEF4444),
               ),
             ),
           ),
-
-          Expanded(
-            flex: 2,
+          // Statut
+          SizedBox(
+            width: colStatut,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
               decoration: BoxDecoration(
                 color: _getStatutColor(paiement.statut).withOpacity(isDark ? 0.2 : 0.1),
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: _getStatutColor(paiement.statut).withOpacity(isDark ? 0.4 : 0.3),
-                  width: 1,
-                ),
+                border: Border.all(color: _getStatutColor(paiement.statut).withOpacity(isDark ? 0.4 : 0.3)),
               ),
               child: Text(
                 _getStatutLabel(paiement.statut),
@@ -825,46 +825,47 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
               ),
             ),
           ),
-
-          Expanded(
-            flex: 2,
+          // Mode
+          SizedBox(
+            width: colMode,
             child: Text(
               _getModeLabel(paiement.modePaiement),
-              style: TextStyle(
-                color: AppTheme.getTextSecondary(context),
-                fontSize: 13,
-              ),
+              style: TextStyle(color: AppTheme.getTextSecondary(context), fontSize: 13),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-
-          Expanded(
-            flex: 2,
-            child: Text(
-              DateFormat('dd/MM/yy HH:mm').format(paiement.datePaiement as DateTime),
-              style: TextStyle(
-                color: AppTheme.getTextSecondary(context),
-                fontSize: 13,
-              ),
-            ),
-          ),
-
+          // Date
           SizedBox(
-            width: 100,
+            width: colDate,
+            child: Text(
+              paiement.datePaiement != null
+                  ? DateFormat('dd/MM/yy HH:mm').format(paiement.datePaiement!)
+                  : 'N/A',
+              style: TextStyle(color: AppTheme.getTextSecondary(context), fontSize: 13),
+            ),
+          ),
+          // Actions
+          SizedBox(
+            width: colActions,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 IconButton(
                   onPressed: () => _showPaiementDetails(paiement, provider),
                   icon: Icon(Icons.visibility_outlined, size: 20, color: AppTheme.getTextSecondary(context)),
-                  tooltip: 'Voir détails',
+                  tooltip: 'Voir details',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
+                const SizedBox(width: 8),
                 PopupMenuButton<String>(
                   icon: Icon(Icons.more_vert, size: 20, color: AppTheme.getTextSecondary(context)),
                   color: AppTheme.getCardBackground(context),
                   surfaceTintColor: AppTheme.getCardBackground(context),
                   itemBuilder: (context) => _buildActionMenu(paiement),
-                  onSelected: (value) =>
-                      _handleAction(value, paiement, provider),
+                  onSelected: (value) => _handleAction(value, paiement, provider),
+                  padding: EdgeInsets.zero,
                 ),
               ],
             ),
@@ -874,10 +875,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
     );
   }
 
-  /// Menu contextuel pour un paiement.
   List<PopupMenuEntry<String>> _buildActionMenu(Paiement paiement) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return [
       PopupMenuItem<String>(
         value: 'details',
@@ -885,10 +883,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
           children: [
             Icon(Icons.info_outline, size: 18, color: AppTheme.getTextSecondary(context)),
             const SizedBox(width: 8),
-            Text(
-              'Détails complets',
-              style: TextStyle(color: AppTheme.getTextPrimary(context)),
-            ),
+            Text('Details complets', style: TextStyle(color: AppTheme.getTextPrimary(context))),
           ],
         ),
       ),
@@ -899,10 +894,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
             children: [
               Icon(Icons.check_circle, size: 18, color: const Color(0xFF10B981)),
               const SizedBox(width: 8),
-              Text(
-                'Confirmer le paiement',
-                style: TextStyle(color: AppTheme.getTextPrimary(context)),
-              ),
+              Text('Confirmer le paiement', style: TextStyle(color: AppTheme.getTextPrimary(context))),
             ],
           ),
         ),
@@ -912,10 +904,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
             children: [
               Icon(Icons.cancel, size: 18, color: const Color(0xFFEF4444)),
               const SizedBox(width: 8),
-              Text(
-                'Marquer comme échec',
-                style: TextStyle(color: AppTheme.getTextPrimary(context)),
-              ),
+              Text('Marquer comme echec', style: TextStyle(color: AppTheme.getTextPrimary(context))),
             ],
           ),
         ),
@@ -927,17 +916,13 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
           children: [
             Icon(Icons.download, size: 18, color: AppTheme.getTextSecondary(context)),
             const SizedBox(width: 8),
-            Text(
-              'Exporter reçu',
-              style: TextStyle(color: AppTheme.getTextPrimary(context)),
-            ),
+            Text('Exporter recu', style: TextStyle(color: AppTheme.getTextPrimary(context))),
           ],
         ),
       ),
     ];
   }
 
-  /// Barre de pagination.
   Widget _buildPagination(PaiementAdminProvider provider, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -953,17 +938,12 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
         children: [
           Text(
             'Total: ${provider.totalItems} paiements',
-            style: TextStyle(
-              color: AppTheme.getTextSecondary(context),
-              fontSize: 13,
-            ),
+            style: TextStyle(color: AppTheme.getTextSecondary(context), fontSize: 13),
           ),
           Row(
             children: [
               IconButton(
-                onPressed: provider.currentPage > 1
-                    ? provider.loadPreviousPage
-                    : null,
+                onPressed: provider.currentPage > 1 ? provider.loadPreviousPage : null,
                 icon: const Icon(Icons.chevron_left),
                 color: provider.currentPage > 1
                     ? Theme.of(context).colorScheme.primary
@@ -978,16 +958,11 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                 ),
                 child: Text(
                   'Page ${provider.currentPage} / ${provider.totalPages}',
-                  style: TextStyle(
-                    color: AppTheme.getTextPrimary(context),
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: TextStyle(color: AppTheme.getTextPrimary(context), fontWeight: FontWeight.w500),
                 ),
               ),
               IconButton(
-                onPressed: provider.currentPage < provider.totalPages
-                    ? provider.loadNextPage
-                    : null,
+                onPressed: provider.currentPage < provider.totalPages ? provider.loadNextPage : null,
                 icon: const Icon(Icons.chevron_right),
                 color: provider.currentPage < provider.totalPages
                     ? Theme.of(context).colorScheme.primary
@@ -1000,7 +975,6 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
     );
   }
 
-  /// Affiche un message lorsque la liste est vide.
   Widget _buildEmptyState(bool isDark) {
     return Container(
       margin: const EdgeInsets.all(24),
@@ -1018,26 +992,16 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
       child: Center(
         child: Column(
           children: [
-            Icon(
-              Icons.payments_outlined,
-              size: 80,
-              color: AppTheme.getTextTertiary(context),
-            ),
+            Icon(Icons.payments_outlined, size: 80, color: AppTheme.getTextTertiary(context)),
             const SizedBox(height: 24),
             Text(
-              'Aucun paiement trouvé',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppTheme.getTextSecondary(context),
-              ),
+              'Aucun paiement trouve',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppTheme.getTextSecondary(context)),
             ),
             const SizedBox(height: 8),
             Text(
               'Ajustez vos filtres ou attendez de nouveaux paiements',
-              style: TextStyle(
-                color: AppTheme.getTextTertiary(context),
-              ),
+              style: TextStyle(color: AppTheme.getTextTertiary(context)),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
@@ -1046,7 +1010,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Réinitialiser les filtres'),
+              child: const Text('Reinitialiser les filtres'),
             ),
           ],
         ),
@@ -1054,7 +1018,6 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
     );
   }
 
-  /// Affichage en cas d’erreur de chargement.
   Widget _buildErrorWidget(String error, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -1062,44 +1025,29 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
       decoration: BoxDecoration(
         color: isDark ? Colors.red.shade900.withOpacity(0.1) : const Color(0xFFFEF2F2),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isDark ? Colors.red.shade800 : const Color(0xFFFECACA),
-        ),
+        border: Border.all(color: isDark ? Colors.red.shade800 : const Color(0xFFFECACA)),
       ),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.error_outline,
-              size: 48,
-              color: Colors.red.shade400,
-            ),
+            Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
             const SizedBox(height: 16),
             Text(
               'Erreur de chargement',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.red.shade400,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.red.shade400),
             ),
             const SizedBox(height: 8),
             Text(
               error,
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: isDark ? Colors.red.shade300 : const Color(0xFF991B1B),
-              ),
+              style: TextStyle(color: isDark ? Colors.red.shade300 : const Color(0xFF991B1B)),
             ),
             const SizedBox(height: 24),
             ElevatedButton(
               onPressed: _refreshData,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red.shade400,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Réessayer'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade400, foregroundColor: Colors.white),
+              child: const Text('Reessayer'),
             ),
           ],
         ),
@@ -1107,50 +1055,35 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
     );
   }
 
-  // ==================== UTILITAIRES D’AFFICHAGE ====================
+  // ==================== UTILITAIRES D'AFFICHAGE ====================
 
   String _getStatutLabel(String statut) {
     switch (statut) {
-      case 'EN_ATTENTE':
-        return 'En attente';
-      case 'CONFIRME':
-        return 'Confirmé';
-      case 'ECHEC':
-        return 'Échec';
-      case 'TOUS':
-        return 'Tous';
-      default:
-        return statut;
+      case 'EN_ATTENTE': return 'En attente';
+      case 'CONFIRME': return 'Confirme';
+      case 'ECHEC': return 'Echec';
+      case 'TOUS': return 'Tous';
+      default: return statut;
     }
   }
 
   Color _getStatutColor(String statut) {
     switch (statut) {
-      case 'EN_ATTENTE':
-        return const Color(0xFFF59E0B);
-      case 'CONFIRME':
-        return const Color(0xFF10B981);
-      case 'ECHEC':
-        return const Color(0xFFEF4444);
-      default:
-        return const Color(0xFF64748B);
+      case 'EN_ATTENTE': return const Color(0xFFF59E0B);
+      case 'CONFIRME': return const Color(0xFF10B981);
+      case 'ECHEC': return const Color(0xFFEF4444);
+      default: return const Color(0xFF64748B);
     }
   }
 
   String _getModeLabel(String mode) {
     switch (mode) {
-      case 'ORANGE_MONEY':
-        return 'Orange Money';
-      case 'MOOV_MONEY':
-        return 'Moov Money';
-      case 'ESPECES':
-        return 'Espèces';
-      case 'VIREMENT':
-        return 'Virement';
-      case 'TOUS':
-        return 'Tous';
-      default:
-        return mode;
+      case 'ORANGE_MONEY': return 'Orange Money';
+      case 'MOOV_MONEY': return 'Moov Money';
+      case 'ESPECES': return 'Especes';
+      case 'VIREMENT': return 'Virement';
+      case 'TOUS': return 'Tous';
+      default: return mode;
     }
   }
 
@@ -1168,19 +1101,13 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
 
   Future<void> _applyAllFilters() async {
     final provider = Provider.of<PaiementAdminProvider>(context, listen: false);
-
     Map<String, dynamic> filterData = {
       'statut': _selectedStatut,
       'mode_paiement': _selectedMode,
       'search': _searchController.text,
-      'date_from': _selectedDateFrom != null
-          ? DateFormat('yyyy-MM-dd').format(_selectedDateFrom!)
-          : null,
-      'date_to': _selectedDateTo != null
-          ? DateFormat('yyyy-MM-dd').format(_selectedDateTo!)
-          : null,
+      'date_from': _selectedDateFrom != null ? DateFormat('yyyy-MM-dd').format(_selectedDateFrom!) : null,
+      'date_to': _selectedDateTo != null ? DateFormat('yyyy-MM-dd').format(_selectedDateTo!) : null,
     };
-
     await provider.applyMultipleFilters(filterData);
   }
 
@@ -1192,7 +1119,6 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
       _selectedDateFrom = null;
       _selectedDateTo = null;
     });
-
     final provider = Provider.of<PaiementAdminProvider>(context, listen: false);
     await provider.resetFilters();
   }
@@ -1205,59 +1131,38 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
   // ==================== ACTIONS SUR LES PAIEMENTS ====================
 
   void _showPaiementDetails(Paiement paiement, PaiementAdminProvider provider) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     showDialog(
       context: context,
       builder: (context) => Dialog(
         backgroundColor: AppTheme.getCardBackground(context),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Détails du paiement',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.getTextPrimary(context),
-                ),
-              ),
+              Text('Details du paiement', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.getTextPrimary(context))),
               const SizedBox(height: 16),
               SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _buildDetailItem('Référence', paiement.referenceTransaction ?? 'N/A'),
-                    _buildDetailItem('Étudiant', paiement.etudiantNomComplet),
-                    if (paiement.matricule != null)
-                      _buildDetailItem('Matricule', paiement.matricule!),
+                    _buildDetailItem('Reference', paiement.referenceTransaction ?? 'N/A'),
+                    _buildDetailItem('Etudiant', paiement.etudiantNomComplet),
+                    if (paiement.matricule != null) _buildDetailItem('Matricule', paiement.matricule!),
                     _buildDetailItem('Centre', paiement.centreNom ?? 'N/A'),
                     _buildDetailItem('Chambre', paiement.numeroChambre ?? 'N/A'),
-                    if (paiement.typeChambre != null)
-                      _buildDetailItem('Type chambre', paiement.typeChambre!),
+                    if (paiement.typeChambre != null) _buildDetailItem('Type chambre', paiement.typeChambre!),
                     _buildDetailItem('Type paiement', paiement.typePaiement ?? 'Loyer'),
                     _buildDetailItem('Montant', '${_formatMontant(paiement.montant)} FCFA'),
                     _buildDetailItem('Statut', _getStatutLabel(paiement.statut)),
                     _buildDetailItem('Mode', _getModeLabel(paiement.modePaiement)),
-                    _buildDetailItem('Date paiement',
-                        paiement.datePaiement != null
-                            ? DateFormat('dd/MM/yyyy HH:mm').format(paiement.datePaiement!)
-                            : 'Non définie'),
-                    if (paiement.dateEcheance != null)
-                      _buildDetailItem('Date échéance',
-                          DateFormat('dd/MM/yyyy').format(paiement.dateEcheance!)),
-                    if (paiement.prixMensuel != null)
-                      _buildDetailItem('Prix mensuel',
-                          '${_formatMontant(paiement.prixMensuel!)} FCFA'),
-                    if (paiement.centreVille != null)
-                      _buildDetailItem('Ville', paiement.centreVille!),
+                    _buildDetailItem('Date paiement', paiement.datePaiement != null ? DateFormat('dd/MM/yyyy HH:mm').format(paiement.datePaiement!) : 'Non definie'),
+                    if (paiement.dateEcheance != null) _buildDetailItem('Date echeance', DateFormat('dd/MM/yyyy').format(paiement.dateEcheance!)),
+                    if (paiement.prixMensuel != null) _buildDetailItem('Prix mensuel', '${_formatMontant(paiement.prixMensuel!)} FCFA'),
+                    if (paiement.centreVille != null) _buildDetailItem('Ville', paiement.centreVille!),
                   ],
                 ),
               ),
@@ -1265,24 +1170,12 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      'Fermer',
-                      style: TextStyle(color: AppTheme.getTextSecondary(context)),
-                    ),
-                  ),
+                  TextButton(onPressed: () => Navigator.pop(context), child: Text('Fermer', style: TextStyle(color: AppTheme.getTextSecondary(context)))),
                   if (paiement.statut == 'EN_ATTENTE') ...[
                     const SizedBox(width: 12),
                     ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                        _confirmPaiement(paiement.id.toString(), provider);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Colors.white,
-                      ),
+                      onPressed: () { Navigator.pop(context); _confirmPaiement(paiement.id.toString(), provider); },
+                      style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white),
                       child: const Text('Confirmer'),
                     ),
                   ],
@@ -1301,96 +1194,50 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppTheme.getTextSecondary(context),
-              fontWeight: FontWeight.w500,
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 12, color: AppTheme.getTextSecondary(context), fontWeight: FontWeight.w500)),
           const SizedBox(height: 4),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 16,
-              color: AppTheme.getTextPrimary(context),
-            ),
-          ),
+          Text(value, style: TextStyle(fontSize: 16, color: AppTheme.getTextPrimary(context))),
         ],
       ),
     );
   }
 
-  Future<void> _handleAction(String action, Paiement paiement,
-      PaiementAdminProvider provider) async {
+  Future<void> _handleAction(String action, Paiement paiement, PaiementAdminProvider provider) async {
     switch (action) {
-      case 'details':
-        _showPaiementDetails(paiement, provider);
-        break;
-      case 'confirmer':
-        await _confirmPaiement(paiement.id.toString(), provider);
-        break;
-      case 'rejeter':
-        await _rejectPaiement(paiement.id.toString(), provider);
-        break;
-      case 'export':
-        _exportReceipt(paiement);
-        break;
+      case 'details': _showPaiementDetails(paiement, provider); break;
+      case 'confirmer': await _confirmPaiement(paiement.id.toString(), provider); break;
+      case 'rejeter': await _rejectPaiement(paiement.id.toString(), provider); break;
+      case 'export': _exportReceipt(paiement); break;
     }
   }
 
-  /// Confirme un paiement après validation.
-  Future<void> _confirmPaiement(String paiementId,
-      PaiementAdminProvider provider) async {
+  Future<void> _confirmPaiement(String paiementId, PaiementAdminProvider provider) async {
     final commentaireController = TextEditingController();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     try {
       final commentaire = await showDialog<String>(
         context: context,
         builder: (context) => Dialog(
           backgroundColor: AppTheme.getCardBackground(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Container(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Confirmer le paiement',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.getTextPrimary(context),
-                  ),
-                ),
+                Text('Confirmer le paiement', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.getTextPrimary(context))),
                 const SizedBox(height: 16),
-                Text(
-                  'Êtes-vous sûr de vouloir confirmer ce paiement ?',
-                  style: TextStyle(color: AppTheme.getTextSecondary(context)),
-                ),
+                Text('Etes-vous sur de vouloir confirmer ce paiement ?', style: TextStyle(color: AppTheme.getTextSecondary(context))),
                 const SizedBox(height: 16),
                 TextField(
                   controller: commentaireController,
                   decoration: InputDecoration(
                     labelText: 'Commentaire (optionnel)',
                     labelStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
-                    ),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: AppTheme.getBorderColor(context))),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: AppTheme.getBorderColor(context))),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)),
                     filled: true,
                     fillColor: isDark ? Colors.grey.shade900.withOpacity(0.3) : Colors.grey.shade50,
                   ),
@@ -1401,22 +1248,11 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                        'Annuler',
-                        style: TextStyle(color: AppTheme.getTextSecondary(context)),
-                      ),
-                    ),
+                    TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: TextStyle(color: AppTheme.getTextSecondary(context)))),
                     const SizedBox(width: 12),
                     ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context, commentaireController.text);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Colors.white,
-                      ),
+                      onPressed: () => Navigator.pop(context, commentaireController.text),
+                      style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white),
                       child: const Text('Confirmer'),
                     ),
                   ],
@@ -1426,91 +1262,48 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
           ),
         ),
       );
-
       if (commentaire == null) return;
-
-      await provider.updateStatutPaiement(
-        paiementId: paiementId,
-        nouveauStatut: 'CONFIRME',
-        raison: commentaire.isNotEmpty ? commentaire : null,
-      );
-
+      await provider.updateStatutPaiement(paiementId: paiementId, nouveauStatut: 'CONFIRME', raison: commentaire.isNotEmpty ? commentaire : null);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Paiement confirmé avec succès'),
-            backgroundColor: const Color(0xFF10B981),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Paiement confirme avec succes'), backgroundColor: const Color(0xFF10B981), behavior: SnackBarBehavior.floating));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: const Color(0xFFEF4444),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: const Color(0xFFEF4444), behavior: SnackBarBehavior.floating));
       }
     } finally {
       commentaireController.dispose();
     }
   }
 
-  /// Marque un paiement comme échec avec une raison.
-  Future<void> _rejectPaiement(String paiementId,
-      PaiementAdminProvider provider) async {
+  Future<void> _rejectPaiement(String paiementId, PaiementAdminProvider provider) async {
     final raisonController = TextEditingController();
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     try {
       final raison = await showDialog<String>(
         context: context,
         builder: (context) => Dialog(
           backgroundColor: AppTheme.getCardBackground(context),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Container(
             padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Marquer comme échec',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.getTextPrimary(context),
-                  ),
-                ),
+                Text('Marquer comme echec', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.getTextPrimary(context))),
                 const SizedBox(height: 16),
-                Text(
-                  'Veuillez indiquer la raison de l\'échec :',
-                  style: TextStyle(color: AppTheme.getTextSecondary(context)),
-                ),
+                Text('Veuillez indiquer la raison de l\'echec :', style: TextStyle(color: AppTheme.getTextSecondary(context))),
                 const SizedBox(height: 16),
                 TextField(
                   controller: raisonController,
                   decoration: InputDecoration(
                     labelText: 'Raison',
                     labelStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                      borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
-                    ),
-                    hintText: 'Ex: Transaction expirée, montant incorrect...',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: AppTheme.getBorderColor(context))),
+                    enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: AppTheme.getBorderColor(context))),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2)),
+                    hintText: 'Ex: Transaction expiree, montant incorrect...',
                     hintStyle: TextStyle(color: AppTheme.getTextTertiary(context)),
                     filled: true,
                     fillColor: isDark ? Colors.grey.shade900.withOpacity(0.3) : Colors.grey.shade50,
@@ -1522,22 +1315,11 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text(
-                        'Annuler',
-                        style: TextStyle(color: AppTheme.getTextSecondary(context)),
-                      ),
-                    ),
+                    TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: TextStyle(color: AppTheme.getTextSecondary(context)))),
                     const SizedBox(width: 12),
                     ElevatedButton(
-                      onPressed: () {
-                        Navigator.pop(context, raisonController.text);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).colorScheme.primary,
-                        foregroundColor: Colors.white,
-                      ),
+                      onPressed: () => Navigator.pop(context, raisonController.text),
+                      style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white),
                       child: const Text('Valider'),
                     ),
                   ],
@@ -1547,33 +1329,14 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
           ),
         ),
       );
-
       if (raison == null) return;
-
-      await provider.updateStatutPaiement(
-        paiementId: paiementId,
-        nouveauStatut: 'ECHEC',
-        raison: raison.isNotEmpty ? raison : null,
-      );
-
+      await provider.updateStatutPaiement(paiementId: paiementId, nouveauStatut: 'ECHEC', raison: raison.isNotEmpty ? raison : null);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Paiement marqué comme échec'),
-            backgroundColor: const Color(0xFFEF4444),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: const Text('Paiement marque comme echec'), backgroundColor: const Color(0xFFEF4444), behavior: SnackBarBehavior.floating));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: $e'),
-            backgroundColor: const Color(0xFFEF4444),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur: $e'), backgroundColor: const Color(0xFFEF4444), behavior: SnackBarBehavior.floating));
       }
     } finally {
       raisonController.dispose();
@@ -1581,105 +1344,47 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
   }
 
   void _exportReceipt(Paiement paiement) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Export du reçu pour ${paiement.referenceTransaction}'),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Export du recu pour ${paiement.referenceTransaction}'), behavior: SnackBarBehavior.floating));
   }
 
   // ==================== EXPORT ====================
 
   Future<void> _exportPaiements() async {
     final provider = Provider.of<PaiementAdminProvider>(context, listen: false);
-
     if (provider.paiements.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Aucun paiement à exporter'),
-          backgroundColor: Color(0xFFF59E0B),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Aucun paiement a exporter'), backgroundColor: Color(0xFFF59E0B), behavior: SnackBarBehavior.floating));
       return;
     }
-
     final format = await showDialog<String>(
       context: context,
       builder: (context) => Dialog(
         backgroundColor: AppTheme.getCardBackground(context),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: Container(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Exporter les paiements',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.getTextPrimary(context),
-                ),
-              ),
+              Text('Exporter les paiements', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.getTextPrimary(context))),
               const SizedBox(height: 16),
-              Text(
-                'Choisissez le format d\'export :',
-                style: TextStyle(color: AppTheme.getTextSecondary(context)),
-              ),
+              Text('Choisissez le format d\'export :', style: TextStyle(color: AppTheme.getTextSecondary(context))),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, 'pdf'),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.picture_as_pdf, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('PDF'),
-                      ],
-                    ),
-                  ),
+                  TextButton(onPressed: () => Navigator.pop(context, 'pdf'), child: const Row(children: [Icon(Icons.picture_as_pdf, color: Colors.red), SizedBox(width: 8), Text('PDF')])),
                   const SizedBox(width: 16),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, 'excel'),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.table_chart, color: Colors.green),
-                        SizedBox(width: 8),
-                        Text('Excel'),
-                      ],
-                    ),
-                  ),
+                  TextButton(onPressed: () => Navigator.pop(context, 'excel'), child: const Row(children: [Icon(Icons.table_chart, color: Colors.green), SizedBox(width: 8), Text('Excel')])),
                   const SizedBox(width: 16),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context, 'word'),
-                    child: const Row(
-                      children: [
-                        Icon(Icons.description, color: Colors.blue),
-                        SizedBox(width: 8),
-                        Text('Word'),
-                      ],
-                    ),
-                  ),
+                  TextButton(onPressed: () => Navigator.pop(context, 'word'), child: const Row(children: [Icon(Icons.description, color: Colors.blue), SizedBox(width: 8), Text('Word')])),
                 ],
               ),
               const SizedBox(height: 24),
               Row(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      'Annuler',
-                      style: TextStyle(color: AppTheme.getTextSecondary(context)),
-                    ),
-                  ),
+                  TextButton(onPressed: () => Navigator.pop(context), child: Text('Annuler', style: TextStyle(color: AppTheme.getTextSecondary(context)))),
                 ],
               ),
             ],
@@ -1687,38 +1392,14 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
         ),
       ),
     );
-
     if (format != null) {
       try {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Génération $format en cours...'),
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) =>
-                ExportPreviewScreen(
-                  format: format,
-                  paiements: provider.paiements,
-                  filters: provider.filters,
-                ),
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Generation $format en cours...'), duration: const Duration(seconds: 2), behavior: SnackBarBehavior.floating));
+        await Navigator.push(context, MaterialPageRoute(builder: (context) => ExportPreviewScreen(format: format, paiements: provider.paiements, filters: provider.filters)));
       } catch (e) {
         print('Erreur export $format: $e');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erreur lors de l\'export: $e'),
-              backgroundColor: const Color(0xFFEF4444),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors de l\'export: $e'), backgroundColor: const Color(0xFFEF4444), behavior: SnackBarBehavior.floating));
         }
       }
     }
@@ -1726,107 +1407,48 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
 
   Future<void> _exportPdfBackend(PaiementAdminProvider provider) async {
     if (!kIsWeb) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Export PDF disponible uniquement sur web'),
-          backgroundColor: Color(0xFFF59E0B),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Export PDF disponible uniquement sur web'), backgroundColor: Color(0xFFF59E0B)));
       return;
     }
-
     try {
-      print('Demande génération PDF backend...');
-
-      final filters = <String, dynamic>{
-        'format': 'pdf',
-        'periode': 'personnalisee',
-      };
-
-      if (_selectedDateFrom != null) {
-        filters['date_debut'] = DateFormat('yyyy-MM-dd').format(_selectedDateFrom!);
-      }
-      if (_selectedDateTo != null) {
-        filters['date_fin'] = DateFormat('yyyy-MM-dd').format(_selectedDateTo!);
-      }
-
-      if (_selectedStatut != 'TOUS') {
-        filters['statut'] = _selectedStatut;
-      }
-      if (_selectedMode != 'TOUS') {
-        filters['mode_paiement'] = _selectedMode;
-      }
-
-      print('Payload PDF envoyé: $filters');
-
-      final response = await provider.apiService.post(
-        '/api/rapports/financier',
-        body: filters,
-      );
-
-      print('Réponse reçue du backend');
-
+      print('Demande generation PDF backend...');
+      final filters = <String, dynamic>{'format': 'pdf', 'periode': 'personnalisee'};
+      if (_selectedDateFrom != null) filters['date_debut'] = DateFormat('yyyy-MM-dd').format(_selectedDateFrom!);
+      if (_selectedDateTo != null) filters['date_fin'] = DateFormat('yyyy-MM-dd').format(_selectedDateTo!);
+      if (_selectedStatut != 'TOUS') filters['statut'] = _selectedStatut;
+      if (_selectedMode != 'TOUS') filters['mode_paiement'] = _selectedMode;
+      print('Payload PDF envoye: $filters');
+      final response = await provider.apiService.post('/api/rapports/financier', body: filters);
+      print('Reponse recue du backend');
       if (response is http.Response && response.statusCode == 200) {
         final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
         final filename = 'rapport_paiements_$timestamp.pdf';
-
-        HtmlUtils.downloadFile(
-          bytes: response.bodyBytes,
-          fileName: filename,
-          mimeType: 'application/pdf',
-        );
-
-        print('PDF téléchargé: $filename');
-
+        HtmlUtils.downloadFile(bytes: response.bodyBytes, fileName: filename, mimeType: 'application/pdf');
+        print('PDF telecharge: $filename');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('PDF téléchargé avec succès'),
-              backgroundColor: Color(0xFF10B981),
-              duration: Duration(seconds: 3),
-            ),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF telecharge avec succes'), backgroundColor: Color(0xFF10B981), duration: Duration(seconds: 3)));
         }
       } else if (response is Map<String, dynamic> && response['success'] == true) {
         if (response['file_url'] != null) {
           HtmlUtils.openInNewTab(response['file_url']);
-
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('PDF ouvert dans un nouvel onglet'),
-                backgroundColor: Color(0xFF10B981),
-                duration: Duration(seconds: 3),
-              ),
-            );
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('PDF ouvert dans un nouvel onglet'), backgroundColor: Color(0xFF10B981), duration: Duration(seconds: 3)));
           }
         }
       }
     } catch (e) {
       print('Erreur export PDF backend: $e');
-
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de l\'export PDF: $e'),
-            backgroundColor: const Color(0xFFEF4444),
-          ),
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors de l\'export PDF: $e'), backgroundColor: const Color(0xFFEF4444)));
       }
     }
   }
 
   String _generateCsvContent(List<Paiement> paiements) {
     final buffer = StringBuffer();
-
-    buffer.writeln(
-        'Référence,Étudiant,Matricule,Centre,Chambre,Montant,Statut,Mode,Date');
-
+    buffer.writeln('Reference,Etudiant,Matricule,Centre,Chambre,Montant,Statut,Mode,Date');
     for (final p in paiements) {
-      final dateStr = p.datePaiement != null
-          ? DateFormat('dd/MM/yyyy HH:mm').format(p.datePaiement!)
-          : 'N/A';
-
+      final dateStr = p.datePaiement != null ? DateFormat('dd/MM/yyyy HH:mm').format(p.datePaiement!) : 'N/A';
       buffer.writeln([
         '"${p.referenceTransaction ?? 'N/A'}"',
         '"${p.etudiantNomComplet}"',
@@ -1839,66 +1461,32 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
         '"$dateStr"',
       ].join(','));
     }
-
     return buffer.toString();
   }
 
   Future<void> _exportCsvLocal(PaiementAdminProvider provider) async {
     if (!kIsWeb) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Export CSV disponible uniquement sur web'),
-          backgroundColor: Color(0xFFF59E0B),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Export CSV disponible uniquement sur web'), backgroundColor: Color(0xFFF59E0B)));
       return;
     }
-
     try {
       if (mounted) {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => ExportPreviewScreen(
-              format: 'csv',
-              paiements: provider.paiements,
-              filters: provider.filters,
-            ),
-          ),
-        );
+        await Navigator.push(context, MaterialPageRoute(builder: (context) => ExportPreviewScreen(format: 'csv', paiements: provider.paiements, filters: provider.filters)));
       }
     } catch (e) {
       print('Erreur export CSV: $e');
-
       try {
         final csvContent = _generateCsvContent(provider.paiements);
         final bytes = utf8.encode(csvContent);
         final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-
-        HtmlUtils.downloadFile(
-          bytes: bytes,
-          fileName: 'paiements_$timestamp.csv',
-          mimeType: 'text/csv',
-        );
-
+        HtmlUtils.downloadFile(bytes: bytes, fileName: 'paiements_$timestamp.csv', mimeType: 'text/csv');
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('CSV exporté avec succès'),
-              backgroundColor: Color(0xFF10B981),
-            ),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('CSV exporte avec succes'), backgroundColor: Color(0xFF10B981)));
         }
       } catch (fallbackError) {
         print('Erreur fallback CSV: $fallbackError');
-
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erreur lors de l\'export CSV: $fallbackError'),
-              backgroundColor: const Color(0xFFEF4444),
-            ),
-          );
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erreur lors de l\'export CSV: $fallbackError'), backgroundColor: const Color(0xFFEF4444)));
         }
       }
     }
