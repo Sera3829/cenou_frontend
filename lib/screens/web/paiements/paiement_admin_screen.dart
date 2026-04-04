@@ -81,231 +81,201 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
     );
   }
 
-  /// Barre flottante des filtres principaux (recherche, statut, mode).
+  // ==================== BARRE DE FILTRES RESPONSIVE ====================
+
   Widget _buildFloatingFiltersBar(bool isDark) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 1100;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       decoration: BoxDecoration(
         color: AppTheme.getTopBarBackground(context),
-        border: Border(
-          bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
+        border: Border(bottom: BorderSide(color: AppTheme.getBorderColor(context))),
       ),
-      child: Row(
+      child: isWide
+          ? Row(
         children: [
-          Expanded(
-            flex: 3,
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Rechercher un étudiant, référence...',
-                prefixIcon: Icon(Icons.search, size: 20, color: AppTheme.getTextSecondary(context)),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                  icon: Icon(Icons.clear, size: 20, color: AppTheme.getTextSecondary(context)),
-                  onPressed: () {
-                    _searchController.clear();
-                    _applySearch('');
-                  },
-                )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
-                ),
-                filled: true,
-                fillColor: isDark ? Colors.grey.shade900.withOpacity(0.3) : Colors.grey.shade50,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                isDense: true,
-                hintStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
-              ),
-              onSubmitted: _applySearch,
-              style: TextStyle(color: AppTheme.getTextPrimary(context)),
-            ),
-          ),
-
+          Expanded(flex: 3, child: _buildSearchField(isDark)),
           const SizedBox(width: 12),
-
-          SizedBox(
-            width: 180,
-            child: DropdownButtonFormField<String>(
-              value: _selectedStatut,
-              decoration: InputDecoration(
-                labelText: 'Statut',
-                labelStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-                ),
-                filled: true,
-                fillColor: isDark ? Colors.grey.shade900.withOpacity(0.3) : Colors.grey.shade50,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                isDense: true,
-              ),
-              dropdownColor: AppTheme.getCardBackground(context),
-              items: [
-                'TOUS',
-                'EN_ATTENTE',
-                'CONFIRME',
-                'ECHEC',
-              ].map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(
-                    _getStatutLabel(value),
-                    style: TextStyle(fontSize: 14, color: AppTheme.getTextPrimary(context)),
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedStatut = value!;
-                });
-                _applyFilter('statut', value == 'TOUS' ? null : value);
-              },
-              style: TextStyle(color: AppTheme.getTextPrimary(context)),
-            ),
-          ),
-
+          SizedBox(width: 160, child: _buildStatutDropdown(isDark)),
           const SizedBox(width: 12),
-
-          SizedBox(
-            width: 180,
-            child: DropdownButtonFormField<String>(
-              value: _selectedMode,
-              decoration: InputDecoration(
-                labelText: 'Mode',
-                labelStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-                ),
-                filled: true,
-                fillColor: isDark ? Colors.grey.shade900.withOpacity(0.3) : Colors.grey.shade50,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                isDense: true,
-              ),
-              dropdownColor: AppTheme.getCardBackground(context),
-              items: [
-                'TOUS',
-                'ORANGE_MONEY',
-                'MOOV_MONEY',
-                'ESPECES',
-                'VIREMENT',
-              ].map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(
-                    _getModeLabel(value),
-                    style: TextStyle(fontSize: 14, color: AppTheme.getTextPrimary(context)),
-                  ),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedMode = value!;
-                });
-                _applyFilter('mode_paiement', value == 'TOUS' ? null : value);
-              },
-              style: TextStyle(color: AppTheme.getTextPrimary(context)),
-            ),
-          ),
-
+          SizedBox(width: 160, child: _buildModeDropdown(isDark)),
           const SizedBox(width: 12),
-
-          OutlinedButton.icon(
-            onPressed: () {
-              setState(() {
-                _showFilters = !_showFilters;
-              });
-            },
-            icon: Icon(
-              _showFilters ? Icons.filter_list_off : Icons.filter_list,
-              size: 18,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            label: Text(
-              _showFilters ? 'Masquer' : 'Plus',
-              style: TextStyle(color: Theme.of(context).colorScheme.primary),
-            ),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          IconButton(
-            onPressed: _resetFilters,
-            icon: Icon(Icons.refresh, size: 20, color: AppTheme.getTextSecondary(context)),
-            tooltip: 'Réinitialiser les filtres',
-          ),
-
-          const SizedBox(width: 12),
-
-          OutlinedButton.icon(
-            onPressed: _exportPaiements,
-            icon: Icon(Icons.download, size: 18, color: Theme.of(context).colorScheme.primary),
-            label: Text(
-              'Exporter',
-              style: TextStyle(color: Theme.of(context).colorScheme.primary),
-            ),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
-            ),
-          ),
-
-          const SizedBox(width: 12),
-
-          ElevatedButton.icon(
-            onPressed: _refreshData,
-            icon: Icon(Icons.refresh, size: 18, color: Colors.white),
-            label: const Text('Actualiser', style: TextStyle(color: Colors.white)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
+          _buildFilterButtons(),
+        ],
+      )
+          : Column(
+        children: [
+          _buildSearchField(isDark),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: _buildStatutDropdown(isDark)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildModeDropdown(isDark)),
+              const SizedBox(width: 8),
+              _buildFilterButtons(),
+            ],
           ),
         ],
       ),
     );
   }
 
-  /// Section des indicateurs rapides (statistiques).
+  Widget _buildSearchField(bool isDark) {
+    return TextField(
+      controller: _searchController,
+      decoration: InputDecoration(
+        hintText: 'Rechercher un étudiant, référence...',
+        prefixIcon: Icon(Icons.search, size: 20, color: AppTheme.getTextSecondary(context)),
+        suffixIcon: _searchController.text.isNotEmpty
+            ? IconButton(
+          icon: Icon(Icons.clear, size: 20, color: AppTheme.getTextSecondary(context)),
+          onPressed: () {
+            _searchController.clear();
+            _applySearch('');
+          },
+        )
+            : null,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
+        ),
+        filled: true,
+        fillColor: isDark ? Colors.grey.shade900.withOpacity(0.3) : Colors.grey.shade50,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        isDense: true,
+        hintStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
+      ),
+      onSubmitted: _applySearch,
+      style: TextStyle(color: AppTheme.getTextPrimary(context)),
+    );
+  }
+
+  Widget _buildStatutDropdown(bool isDark) {
+    return DropdownButtonFormField<String>(
+      value: _selectedStatut,
+      decoration: InputDecoration(
+        labelText: 'Statut',
+        labelStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
+        ),
+        filled: true,
+        fillColor: isDark ? Colors.grey.shade900.withOpacity(0.3) : Colors.grey.shade50,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        isDense: true,
+      ),
+      dropdownColor: AppTheme.getCardBackground(context),
+      items: ['TOUS', 'EN_ATTENTE', 'CONFIRME', 'ECHEC'].map((String value) {
+        return DropdownMenuItem<String>(
+          value: value,
+          child: Text(
+            _getStatutLabel(value),
+            style: TextStyle(fontSize: 14, color: AppTheme.getTextPrimary(context)),
+          ),
+        );
+      }).toList(),
+      onChanged: (value) {
+        setState(() {
+          _selectedStatut = value!;
+        });
+        _applyFilter('statut', value == 'TOUS' ? null : value);
+      },
+      style: TextStyle(color: AppTheme.getTextPrimary(context)),
+    );
+  }
+
+  Widget _buildModeDropdown(bool isDark) {
+    return DropdownButtonFormField<String>(
+      value: _selectedMode,
+      decoration: InputDecoration(
+        labelText: 'Mode',
+        labelStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
+        ),
+        filled: true,
+        fillColor: isDark ? Colors.grey.shade900.withOpacity(0.3) : Colors.grey.shade50,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        isDense: true,
+      ),
+      dropdownColor: AppTheme.getCardBackground(context),
+      items: ['TOUS', 'ORANGE_MONEY', 'MOOV_MONEY', 'ESPECES', 'VIREMENT'].map((String value) {
+        return DropdownMenuItem<String>(
+          value: value,
+          child: Text(
+            _getModeLabel(value),
+            style: TextStyle(fontSize: 14, color: AppTheme.getTextPrimary(context)),
+          ),
+        );
+      }).toList(),
+      onChanged: (value) {
+        setState(() {
+          _selectedMode = value!;
+        });
+        _applyFilter('mode_paiement', value == 'TOUS' ? null : value);
+      },
+      style: TextStyle(color: AppTheme.getTextPrimary(context)),
+    );
+  }
+
+  Widget _buildFilterButtons() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          onPressed: () => setState(() => _showFilters = !_showFilters),
+          icon: Icon(
+            _showFilters ? Icons.filter_list_off : Icons.filter_list,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          tooltip: _showFilters ? 'Masquer filtres' : 'Plus de filtres',
+        ),
+        IconButton(
+          onPressed: _resetFilters,
+          icon: Icon(Icons.refresh, color: AppTheme.getTextSecondary(context)),
+          tooltip: 'Réinitialiser',
+        ),
+        IconButton(
+          onPressed: _exportPaiements,
+          icon: Icon(Icons.download, color: Theme.of(context).colorScheme.primary),
+          tooltip: 'Exporter',
+        ),
+        ElevatedButton(
+          onPressed: _refreshData,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          ),
+          child: const Text('Actualiser', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    );
+  }
+
+  // ==================== STATISTIQUES RESPONSIVES ====================
+
   Widget _buildQuickStats(bool isDark) {
     return Consumer<PaiementAdminProvider>(
       builder: (context, provider, child) {
@@ -327,44 +297,102 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
             ? ((confirmes / totalPaiements) * 100)
             : 0;
 
-        return Container(
-          padding: const EdgeInsets.all(24),
-          color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF1F5F9),
-          child: Row(
-            children: [
-              _buildStatCard(
-                label: 'Total Paiements',
-                value: '$totalPaiements',
-                color: const Color(0xFF3B82F6),
-                icon: Icons.payments,
-                isDark: isDark,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final isWide = constraints.maxWidth > 700;
+
+            return Container(
+              padding: const EdgeInsets.all(24),
+              color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF1F5F9),
+              child: isWide
+                  ? Row(
+                children: [
+                  _buildStatCard(
+                    label: 'Total Paiements',
+                    value: '$totalPaiements',
+                    color: const Color(0xFF3B82F6),
+                    icon: Icons.payments,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(width: 16),
+                  _buildStatCard(
+                    label: 'Montant Total',
+                    value: '${_formatMontant(montantTotal)} F',
+                    color: const Color(0xFF10B981),
+                    icon: Icons.account_balance_wallet,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(width: 16),
+                  _buildStatCard(
+                    label: 'En Attente',
+                    value: '$enAttente',
+                    color: const Color(0xFFF59E0B),
+                    icon: Icons.hourglass_empty,
+                    isDark: isDark,
+                  ),
+                  const SizedBox(width: 16),
+                  _buildStatCard(
+                    label: 'Taux Réussite',
+                    value: '${tauxReussite.toStringAsFixed(1)}%',
+                    color: const Color(0xFF8B5CF6),
+                    icon: Icons.trending_up,
+                    isDark: isDark,
+                  ),
+                ],
+              )
+                  : Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          label: 'Total',
+                          value: '$totalPaiements',
+                          color: const Color(0xFF3B82F6),
+                          icon: Icons.payments,
+                          isDark: isDark,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          label: 'Montant',
+                          value: '${_formatMontant(montantTotal)} F',
+                          color: const Color(0xFF10B981),
+                          icon: Icons.account_balance_wallet,
+                          isDark: isDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildStatCard(
+                          label: 'En Attente',
+                          value: '$enAttente',
+                          color: const Color(0xFFF59E0B),
+                          icon: Icons.hourglass_empty,
+                          isDark: isDark,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildStatCard(
+                          label: 'Taux',
+                          value: '${tauxReussite.toStringAsFixed(1)}%',
+                          color: const Color(0xFF8B5CF6),
+                          icon: Icons.trending_up,
+                          isDark: isDark,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(width: 16),
-              _buildStatCard(
-                label: 'Montant Total',
-                value: '${_formatMontant(montantTotal)} F',
-                color: const Color(0xFF10B981),
-                icon: Icons.account_balance_wallet,
-                isDark: isDark,
-              ),
-              const SizedBox(width: 16),
-              _buildStatCard(
-                label: 'En Attente',
-                value: '$enAttente',
-                color: const Color(0xFFF59E0B),
-                icon: Icons.hourglass_empty,
-                isDark: isDark,
-              ),
-              const SizedBox(width: 16),
-              _buildStatCard(
-                label: 'Taux Réussite',
-                value: '${tauxReussite.toStringAsFixed(1)}%',
-                color: const Color(0xFF8B5CF6),
-                icon: Icons.trending_up,
-                isDark: isDark,
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -378,55 +406,53 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
     required IconData icon,
     required bool isDark,
   }) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppTheme.getCardBackground(context),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.1 : 0.05),
-              blurRadius: 10,
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardBackground(context),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.1 : 0.05),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(isDark ? 0.2 : 0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(isDark ? 0.2 : 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: color,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppTheme.getTextSecondary(context),
-                    ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.getTextSecondary(context),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -619,7 +645,8 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
     );
   }
 
-  /// Liste des paiements avec en‑tête et pagination.
+  // ==================== LISTE DES PAIEMENTS AVEC SCROLL HORIZONTAL ====================
+
   Widget _buildPaiementsList(bool isDark) {
     return Consumer<PaiementAdminProvider>(
       builder: (context, provider, child) {
@@ -654,90 +681,102 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
           ),
           child: Column(
             children: [
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF8FAFC),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(12),
-                    topRight: Radius.circular(12),
+              // Tableau avec scroll horizontal
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: MediaQuery.of(context).size.width - 48,
                   ),
-                  border: Border(
-                    bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF8FAFC),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(12),
+                            topRight: Radius.circular(12),
+                          ),
+                          border: Border(
+                            bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              flex: 3,
+                              child: Text(
+                                'Étudiant',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.getTextPrimary(context),
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                'Montant',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.getTextPrimary(context),
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                'Statut',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.getTextPrimary(context),
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                'Mode',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.getTextPrimary(context),
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              flex: 2,
+                              child: Text(
+                                'Date',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.getTextPrimary(context),
+                                  fontSize: 13,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 100),
+                          ],
+                        ),
+                      ),
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: provider.paiements.length,
+                        itemBuilder: (context, index) {
+                          final paiement = provider.paiements[index];
+                          return _buildPaiementRow(paiement, provider, index, isDark);
+                        },
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      flex: 3,
-                      child: Text(
-                        'Étudiant',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.getTextPrimary(context),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        'Montant',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.getTextPrimary(context),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        'Statut',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.getTextPrimary(context),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        'Mode',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.getTextPrimary(context),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: Text(
-                        'Date',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.getTextPrimary(context),
-                          fontSize: 13,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 100),
-                  ],
-                ),
               ),
-
-              ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: provider.paiements.length,
-                itemBuilder: (context, index) {
-                  final paiement = provider.paiements[index];
-                  return _buildPaiementRow(paiement, provider, index, isDark);
-                },
-              ),
-
               _buildPagination(provider, isDark),
             ],
           ),

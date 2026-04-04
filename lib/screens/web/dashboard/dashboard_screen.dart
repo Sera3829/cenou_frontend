@@ -955,8 +955,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final sidebarWidth = screenWidth > 900 ? 280.0 : 0.0;
     final contentWidth = screenWidth - sidebarWidth;
 
-    print('🔍 screenWidth: $screenWidth | contentWidth: $contentWidth'); // debug temporaire
-
     int crossAxisCount;
     double childAspectRatio;
 
