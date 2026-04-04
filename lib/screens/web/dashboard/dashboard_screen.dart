@@ -53,8 +53,10 @@ class _DashboardLayoutState extends State<DashboardLayout> {
 
   /// Construit la barre latérale pour les écrans de bureau.
   Widget _buildDesktopSidebar(AuthProvider authProvider) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final sidebarWidth = screenWidth > 1200 ? 280.0 : 220.0;
     return Container(
-      width: 280,
+      width: sidebarWidth,
       decoration: BoxDecoration(
         boxShadow: [
           BoxShadow(
@@ -880,9 +882,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   /// Section de bienvenue.
   Widget _buildWelcomeSection() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 900;
 
     return Container(
-      padding: const EdgeInsets.all(28),
+      padding: EdgeInsets.all(isWide ? 28 : 20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isDark
@@ -900,7 +904,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Text(
                   'Bienvenue sur le Dashboard',
                   style: TextStyle(
-                    fontSize: 26,
+                    fontSize: isWide ? 26 : 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
                   ),
@@ -909,21 +913,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Text(
                   'Gérez vos résidences universitaires en temps réel.',
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: isWide ? 15 : 13,
                     color: Colors.white.withOpacity(0.9),
                   ),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton.icon(
                   onPressed: _loadDashboardData,
-                  icon: Icon(Icons.refresh_rounded, size: 18, color: isDark ? const Color(0xFF1E3A8A) : Colors.white),
-                  label: Text(
-                    'Actualiser',
-                    style: TextStyle(color: isDark ? const Color(0xFF1E3A8A) : Colors.white),
-                  ),
+                  icon: Icon(Icons.refresh_rounded, size: 18,
+                      color: isDark ? const Color(0xFF1E3A8A) : Colors.white),
+                  label: Text('Actualiser',
+                      style: TextStyle(
+                          color: isDark ? const Color(0xFF1E3A8A) : Colors.white)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isDark ? Colors.white : Colors.white.withOpacity(0.9),
-                    foregroundColor: isDark ? const Color(0xFF1E3A8A) : const Color(0xFF1E3A8A),
+                    foregroundColor: const Color(0xFF1E3A8A),
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                     elevation: 0,
                   ),
@@ -931,11 +935,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           ),
-          Icon(
-            Icons.insights_rounded,
-            size: 100,
-            color: Colors.white.withOpacity(0.9),
-          ),
+          // Icône cachée sur petit écran
+          if (isWide)
+            Icon(Icons.insights_rounded, size: 100,
+                color: Colors.white.withOpacity(0.9)),
         ],
       ),
     );
@@ -1025,7 +1028,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(MediaQuery.of(context).size.width > 900 ? 20 : 12),
       decoration: BoxDecoration(
         color: AppTheme.getCardBackground(context),
         borderRadius: BorderRadius.circular(12),
