@@ -670,55 +670,64 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
           ),
           child: Column(
             children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: totalWidth,
-                  child: Column(
-                    children: [
-                      // En-tête
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF8FAFC),
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(12),
-                            topRight: Radius.circular(12),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  // Prendre le max entre la largeur disponible et la largeur minimale
+                  final tableWidth = constraints.maxWidth > totalWidth
+                      ? constraints.maxWidth
+                      : totalWidth;
+
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: tableWidth,
+                      child: Column(
+                        children: [
+                          // En-tête
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF8FAFC),
+                              borderRadius: const BorderRadius.only(
+                                topLeft: Radius.circular(12),
+                                topRight: Radius.circular(12),
+                              ),
+                              border: Border(bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1)),
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(width: colEtudiant, child: _headerText('Etudiant')),
+                                SizedBox(width: colMontant, child: _headerText('Montant')),
+                                SizedBox(width: colStatut, child: _headerText('Statut')),
+                                SizedBox(width: colMode, child: _headerText('Mode')),
+                                SizedBox(width: colDate, child: _headerText('Date')),
+                                SizedBox(width: colActions, child: _headerText('Actions')),
+                              ],
+                            ),
                           ),
-                          border: Border(bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1)),
-                        ),
-                        child: Row(
-                          children: [
-                            SizedBox(width: colEtudiant - 40, child: _headerText('Etudiant')),
-                            SizedBox(width: colMontant, child: _headerText('Montant')),
-                            SizedBox(width: colStatut, child: _headerText('Statut')),
-                            SizedBox(width: colMode, child: _headerText('Mode')),
-                            SizedBox(width: colDate, child: _headerText('Date')),
-                            SizedBox(width: colActions, child: _headerText('Actions')),
-                          ],
-                        ),
+                          // Lignes
+                          ListView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: provider.paiements.length,
+                            itemBuilder: (context, index) {
+                              final paiement = provider.paiements[index];
+                              return _buildPaiementRow(
+                                paiement, provider, index, isDark,
+                                colEtudiant: colEtudiant,
+                                colMontant: colMontant,
+                                colStatut: colStatut,
+                                colMode: colMode,
+                                colDate: colDate,
+                                colActions: colActions,
+                              );
+                            },
+                          ),
+                        ],
                       ),
-                      // Lignes
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: provider.paiements.length,
-                        itemBuilder: (context, index) {
-                          final paiement = provider.paiements[index];
-                          return _buildPaiementRow(
-                            paiement, provider, index, isDark,
-                            colEtudiant: colEtudiant,
-                            colMontant: colMontant,
-                            colStatut: colStatut,
-                            colMode: colMode,
-                            colDate: colDate,
-                            colActions: colActions,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
               _buildPagination(provider, isDark),
             ],
@@ -763,7 +772,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
         children: [
           // Etudiant
           SizedBox(
-            width: colEtudiant - 40,
+            width: colEtudiant,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -804,23 +813,25 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
               ),
             ),
           ),
-          // Statut
+          // Statut - avec badge auto-ajusté, aligné à gauche
           SizedBox(
             width: colStatut,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: _getStatutColor(paiement.statut).withOpacity(isDark ? 0.2 : 0.1),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: _getStatutColor(paiement.statut).withOpacity(isDark ? 0.4 : 0.3)),
-              ),
-              child: Text(
-                _getStatutLabel(paiement.statut),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: _getStatutColor(paiement.statut),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: _getStatutColor(paiement.statut).withOpacity(isDark ? 0.2 : 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: _getStatutColor(paiement.statut).withOpacity(isDark ? 0.4 : 0.3)),
+                ),
+                child: Text(
+                  _getStatutLabel(paiement.statut),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _getStatutColor(paiement.statut),
+                  ),
                 ),
               ),
             ),
