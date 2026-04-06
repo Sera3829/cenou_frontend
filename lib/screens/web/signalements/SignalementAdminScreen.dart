@@ -4,18 +4,15 @@ import 'package:intl/intl.dart';
 import 'package:cenou_mobile/providers/web/signalement_admin_provider.dart';
 import 'package:cenou_mobile/models/signalement.dart';
 import 'package:cenou_mobile/config/theme.dart';
-import 'package:cenou_mobile/services/api_service.dart';
 import '../../../config/app_config.dart';
 import '../dashboard/dashboard_screen.dart';
 
-/// Écran d'administration des signalements.
-///
-/// Permet de consulter, filtrer et gérer les signalements des étudiants.
 class SignalementAdminScreen extends StatefulWidget {
   const SignalementAdminScreen({Key? key}) : super(key: key);
 
   @override
-  State<SignalementAdminScreen> createState() => _SignalementAdminScreenState();
+  State<SignalementAdminScreen> createState() =>
+      _SignalementAdminScreenState();
 }
 
 class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
@@ -30,10 +27,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
   @override
   void initState() {
     super.initState();
-    // Charge les données après le premier affichage
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadInitialData();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadInitialData());
   }
 
   @override
@@ -42,286 +36,389 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     super.dispose();
   }
 
-  /// Charge les signalements et les statistiques initiales.
   Future<void> _loadInitialData() async {
     final provider = Provider.of<SignalementAdminProvider>(context, listen: false);
-    await Future.wait([
-      provider.loadSignalements(),
-      provider.loadStatistiques(),
-    ]);
+    await Future.wait([provider.loadSignalements(), provider.loadStatistiques()]);
   }
 
-  /// Formate une date avec l'heure.
-  String _formatDate(DateTime date) => DateFormat('dd/MM/yyyy HH:mm').format(date);
-
-  /// Formate une date sans l'heure.
-  String _formatDateOnly(DateTime date) => DateFormat('dd/MM/yyyy').format(date);
+  String _formatDate(DateTime d) => DateFormat('dd/MM/yy HH:mm').format(d);
+  String _formatDateOnly(DateTime d) => DateFormat('dd/MM/yyyy').format(d);
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return DashboardLayout(
       selectedIndex: 2,
       child: Column(
         children: [
           _buildFloatingFiltersBar(isDark),
-          Expanded(child: _buildMainContent(isDark)),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  _buildQuickStats(isDark),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    height: _showFilters ? null : 0,
+                    child: _showFilters
+                        ? _buildFiltersCard(isDark)
+                        : const SizedBox.shrink(),
+                  ),
+                  _buildSignalementsList(isDark),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
   }
 
-  /// Construit le contenu principal.
-  Widget _buildMainContent(bool isDark) {
-    return Consumer<SignalementAdminProvider>(
-      builder: (context, provider, child) {
-        if (provider.isLoading && provider.signalements.isEmpty) {
-          return Center(
-            child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
-          );
-        }
+  // ==================== BARRE DE FILTRES ====================
 
-        if (provider.error != null && provider.signalements.isEmpty) {
-          return _buildErrorWidget(provider.error!, isDark);
-        }
-
-        if (provider.signalements.isEmpty) {
-          return _buildEmptyState(isDark);
-        }
-
-        return CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(child: _buildQuickStats(isDark)),
-            SliverToBoxAdapter(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                height: _showFilters ? null : 0,
-                child: _showFilters ? _buildFiltersCard(isDark) : const SizedBox.shrink(),
-              ),
-            ),
-            SliverToBoxAdapter(child: _buildSignalementsTableHeader(isDark)),
-            _buildSignalementsList(provider, isDark),
-            SliverToBoxAdapter(child: _buildPagination(provider, isDark)),
-          ],
-        );
-      },
-    );
-  }
-
-  /// Barre flottante des filtres principaux (recherche, statut, type).
   Widget _buildFloatingFiltersBar(bool isDark) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 1100;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
       decoration: BoxDecoration(
         color: AppTheme.getTopBarBackground(context),
-        border: Border(bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Rechercher étudiant, numéro de suivi, description...',
-                hintStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
-                prefixIcon: Icon(Icons.search, size: 20, color: AppTheme.getTextSecondary(context)),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                  icon: Icon(Icons.clear, size: 20, color: AppTheme.getTextSecondary(context)),
-                  onPressed: () {
-                    _searchController.clear();
-                    _applySearch('');
-                  },
-                )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
-                ),
-                filled: true,
-                fillColor: isDark ? Colors.grey.shade900.withOpacity(0.3) : Colors.grey.shade50,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                isDense: true,
-              ),
-              onSubmitted: _applySearch,
-              style: TextStyle(color: AppTheme.getTextPrimary(context)),
-            ),
-          ),
-          const SizedBox(width: 12),
-          _buildFilterDropdown(
-            value: _selectedStatut,
-            label: 'Statut',
-            items: ['TOUS', 'EN_ATTENTE', 'EN_COURS', 'RESOLU', 'ANNULE'],
-            onChanged: (value) {
-              setState(() => _selectedStatut = value!);
-              _applyFilter('statut', value == 'TOUS' ? null : value);
-            },
-            labelBuilder: _getStatutLabel,
-            isDark: isDark,
-          ),
-          const SizedBox(width: 12),
-          _buildFilterDropdown(
-            value: _selectedType,
-            label: 'Type',
-            items: ['TOUS', 'PLOMBERIE', 'ELECTRICITE', 'TOITURE', 'SERRURE', 'MOBILIER', 'AUTRE'],
-            onChanged: (value) {
-              setState(() => _selectedType = value!);
-              _applyFilter('type', value == 'TOUS' ? null : value);
-            },
-            labelBuilder: _getTypeLabel,
-            isDark: isDark,
-          ),
-          const SizedBox(width: 12),
-          OutlinedButton.icon(
-            onPressed: () => setState(() => _showFilters = !_showFilters),
-            icon: Icon(
-              _showFilters ? Icons.filter_list_off : Icons.filter_list,
-              size: 18,
-              color: Theme.of(context).colorScheme.primary,
-            ),
-            label: Text(
-              _showFilters ? 'Masquer' : 'Plus',
-              style: TextStyle(color: Theme.of(context).colorScheme.primary),
-            ),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              side: BorderSide(color: Theme.of(context).colorScheme.primary.withOpacity(0.5)),
-            ),
-          ),
-          const SizedBox(width: 12),
-          IconButton(
-            onPressed: _resetFilters,
-            icon: Icon(Icons.refresh, size: 20, color: AppTheme.getTextSecondary(context)),
-            tooltip: 'Réinitialiser les filtres',
-          ),
-          const SizedBox(width: 12),
-          ElevatedButton.icon(
-            onPressed: _isRefreshing ? null : _refreshData,
-            icon: _isRefreshing
-                ? SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              ),
-            )
-                : Icon(Icons.refresh, size: 18, color: Colors.white),
-            label: _isRefreshing
-                ? Text('Actualisation...', style: TextStyle(color: Colors.white))
-                : Text('Actualiser', style: TextStyle(color: Colors.white)),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Construit un filtre déroulant.
-  Widget _buildFilterDropdown({
-    required String value,
-    required String label,
-    required List<String> items,
-    required ValueChanged<String?> onChanged,
-    required String Function(String) labelBuilder,
-    required bool isDark,
-  }) {
-    return SizedBox(
-      width: 180,
-      child: DropdownButtonFormField<String>(
-        value: value,
-        decoration: InputDecoration(
-          labelText: label,
-          labelStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-          ),
-          filled: true,
-          fillColor: isDark ? Colors.grey.shade900.withOpacity(0.3) : Colors.grey.shade50,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          isDense: true,
+        border: Border(
+          bottom: BorderSide(color: AppTheme.getBorderColor(context)),
         ),
-        dropdownColor: AppTheme.getCardBackground(context),
-        items: items.map((item) => DropdownMenuItem(
-          value: item,
-          child: Text(
-            labelBuilder(item),
-            style: TextStyle(fontSize: 14, color: AppTheme.getTextPrimary(context)),
+      ),
+      child: isWide
+          ? Row(
+        children: [
+          Expanded(flex: 3, child: _buildSearchField(isDark)),
+          const SizedBox(width: 12),
+          SizedBox(width: 160, child: _buildStatutDropdown(isDark)),
+          const SizedBox(width: 12),
+          SizedBox(width: 160, child: _buildTypeDropdown(isDark)),
+          const SizedBox(width: 12),
+          _buildFilterButtons(),
+        ],
+      )
+          : Column(
+        children: [
+          _buildSearchField(isDark),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Expanded(child: _buildStatutDropdown(isDark)),
+              const SizedBox(width: 8),
+              Expanded(child: _buildTypeDropdown(isDark)),
+              const SizedBox(width: 8),
+              _buildFilterButtons(),
+            ],
           ),
-        )).toList(),
-        onChanged: onChanged,
-        style: TextStyle(color: AppTheme.getTextPrimary(context)),
+        ],
       ),
     );
   }
 
-  /// Section des indicateurs rapides (statistiques).
+  Widget _buildSearchField(bool isDark) {
+    return TextField(
+      controller: _searchController,
+      decoration: InputDecoration(
+        hintText: 'Rechercher étudiant, numéro de suivi, description...',
+        prefixIcon: Icon(
+          Icons.search,
+          size: 20,
+          color: AppTheme.getTextSecondary(context),
+        ),
+        suffixIcon: _searchController.text.isNotEmpty
+            ? IconButton(
+          icon: Icon(
+            Icons.clear,
+            size: 20,
+            color: AppTheme.getTextSecondary(context),
+          ),
+          onPressed: () {
+            _searchController.clear();
+            _applySearch('');
+          },
+        )
+            : null,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(
+            color: Theme.of(context).colorScheme.primary,
+            width: 2,
+          ),
+        ),
+        filled: true,
+        fillColor: isDark
+            ? Colors.grey.shade900.withOpacity(0.3)
+            : Colors.grey.shade50,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        isDense: true,
+        hintStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
+      ),
+      onSubmitted: _applySearch,
+      style: TextStyle(color: AppTheme.getTextPrimary(context)),
+    );
+  }
+
+  Widget _buildStatutDropdown(bool isDark) {
+    return DropdownButtonFormField<String>(
+      value: _selectedStatut,
+      decoration: InputDecoration(
+        labelText: 'Statut',
+        labelStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
+        ),
+        filled: true,
+        fillColor: isDark
+            ? Colors.grey.shade900.withOpacity(0.3)
+            : Colors.grey.shade50,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        isDense: true,
+      ),
+      dropdownColor: AppTheme.getCardBackground(context),
+      items: ['TOUS', 'EN_ATTENTE', 'EN_COURS', 'RESOLU', 'ANNULE']
+          .map(
+            (v) => DropdownMenuItem(
+          value: v,
+          child: Text(
+            _getStatutLabel(v),
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.getTextPrimary(context),
+            ),
+          ),
+        ),
+      )
+          .toList(),
+      onChanged: (value) {
+        setState(() => _selectedStatut = value!);
+        _applyFilter('statut', value == 'TOUS' ? null : value);
+      },
+      style: TextStyle(color: AppTheme.getTextPrimary(context)),
+    );
+  }
+
+  Widget _buildTypeDropdown(bool isDark) {
+    return DropdownButtonFormField<String>(
+      value: _selectedType,
+      decoration: InputDecoration(
+        labelText: 'Type',
+        labelStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
+        ),
+        filled: true,
+        fillColor: isDark
+            ? Colors.grey.shade900.withOpacity(0.3)
+            : Colors.grey.shade50,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        isDense: true,
+      ),
+      dropdownColor: AppTheme.getCardBackground(context),
+      items: [
+        'TOUS',
+        'PLOMBERIE',
+        'ELECTRICITE',
+        'TOITURE',
+        'SERRURE',
+        'MOBILIER',
+        'AUTRE'
+      ].map(
+            (v) => DropdownMenuItem(
+          value: v,
+          child: Text(
+            _getTypeLabel(v),
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.getTextPrimary(context),
+            ),
+          ),
+        ),
+      ).toList(),
+      onChanged: (value) {
+        setState(() => _selectedType = value!);
+        _applyFilter('type', value == 'TOUS' ? null : value);
+      },
+      style: TextStyle(color: AppTheme.getTextPrimary(context)),
+    );
+  }
+
+  Widget _buildFilterButtons() {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          onPressed: () => setState(() => _showFilters = !_showFilters),
+          icon: Icon(
+            _showFilters ? Icons.filter_list_off : Icons.filter_list,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          tooltip: _showFilters ? 'Masquer filtres' : 'Plus de filtres',
+        ),
+        IconButton(
+          onPressed: _resetFilters,
+          icon: Icon(
+            Icons.refresh,
+            color: AppTheme.getTextSecondary(context),
+          ),
+          tooltip: 'Réinitialiser',
+        ),
+        ElevatedButton(
+          onPressed: _isRefreshing ? null : _refreshData,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: _isRefreshing
+              ? const SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          )
+              : const Text(
+            'Actualiser',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==================== STATISTIQUES ====================
+
   Widget _buildQuickStats(bool isDark) {
     return Consumer<SignalementAdminProvider>(
       builder: (context, provider, child) {
         final stats = provider.statistiques ?? {};
+        final screenWidth = MediaQuery.of(context).size.width;
+        final sidebarWidth = screenWidth > 900 ? 280.0 : 0.0;
+        final isWide = (screenWidth - sidebarWidth) > 700;
+
         return Container(
           padding: const EdgeInsets.all(24),
-          color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF1F5F9),
-          child: Row(
+          color: isDark
+              ? Colors.grey.shade900.withOpacity(0.5)
+              : const Color(0xFFF1F5F9),
+          child: isWide
+              ? Row(
             children: [
-              _buildStatCard(
-                label: 'Total Signalements',
-                value: '${stats['total'] ?? 0}',
-                color: const Color(0xFF3B82F6),
-                icon: Icons.warning,
-                isDark: isDark,
+              Expanded(
+                child: _buildStatCard(
+                  label: 'Total Signalements',
+                  value: '${stats['total'] ?? 0}',
+                  color: const Color(0xFF3B82F6),
+                  icon: Icons.warning,
+                  isDark: isDark,
+                ),
               ),
               const SizedBox(width: 16),
-              _buildStatCard(
-                label: 'En Attente',
-                value: '${stats['en_attente'] ?? 0}',
-                color: const Color(0xFFF59E0B),
-                icon: Icons.hourglass_empty,
-                isDark: isDark,
+              Expanded(
+                child: _buildStatCard(
+                  label: 'En Attente',
+                  value: '${stats['en_attente'] ?? 0}',
+                  color: const Color(0xFFF59E0B),
+                  icon: Icons.hourglass_empty,
+                  isDark: isDark,
+                ),
               ),
               const SizedBox(width: 16),
-              _buildStatCard(
-                label: 'En Cours',
-                value: '${stats['en_cours'] ?? 0}',
-                color: const Color(0xFF3B82F6),
-                icon: Icons.build,
-                isDark: isDark,
+              Expanded(
+                child: _buildStatCard(
+                  label: 'En Cours',
+                  value: '${stats['en_cours'] ?? 0}',
+                  color: const Color(0xFF3B82F6),
+                  icon: Icons.build,
+                  isDark: isDark,
+                ),
               ),
               const SizedBox(width: 16),
-              _buildStatCard(
-                label: 'Taux Résolution',
-                value: '${(stats['taux_resolution'] ?? 0).toStringAsFixed(1)}%',
-                color: const Color(0xFF10B981),
-                icon: Icons.check_circle,
-                isDark: isDark,
+              Expanded(
+                child: _buildStatCard(
+                  label: 'Taux Résolution',
+                  value:
+                  '${(stats['taux_resolution'] ?? 0).toStringAsFixed(1)}%',
+                  color: const Color(0xFF10B981),
+                  icon: Icons.check_circle,
+                  isDark: isDark,
+                ),
+              ),
+            ],
+          )
+              : Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      label: 'Total',
+                      value: '${stats['total'] ?? 0}',
+                      color: const Color(0xFF3B82F6),
+                      icon: Icons.warning,
+                      isDark: isDark,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      label: 'En Attente',
+                      value: '${stats['en_attente'] ?? 0}',
+                      color: const Color(0xFFF59E0B),
+                      icon: Icons.hourglass_empty,
+                      isDark: isDark,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatCard(
+                      label: 'En Cours',
+                      value: '${stats['en_cours'] ?? 0}',
+                      color: const Color(0xFF3B82F6),
+                      icon: Icons.build,
+                      isDark: isDark,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildStatCard(
+                      label: 'Taux',
+                      value:
+                      '${(stats['taux_resolution'] ?? 0).toStringAsFixed(1)}%',
+                      color: const Color(0xFF10B981),
+                      icon: Icons.check_circle,
+                      isDark: isDark,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -330,7 +427,6 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     );
   }
 
-  /// Carte d’un indicateur statistique.
   Widget _buildStatCard({
     required String label,
     required String value,
@@ -338,56 +434,72 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     required IconData icon,
     required bool isDark,
   }) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: AppTheme.getCardBackground(context),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.1 : 0.05), blurRadius: 10)],
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withOpacity(isDark ? 0.2 : 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 28),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: color),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    label,
-                    style: TextStyle(fontSize: 13, color: AppTheme.getTextSecondary(context)),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Carte des filtres avancés (dates).
-  Widget _buildFiltersCard(bool isDark) {
     return Container(
-      margin: const EdgeInsets.fromLTRB(32, 0, 32, 24),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: AppTheme.getCardBackground(context),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.1 : 0.05), blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.1 : 0.05),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: color.withOpacity(isDark ? 0.2 : 0.1),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: AppTheme.getTextSecondary(context),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ==================== FILTRES AVANCÉS ====================
+
+  Widget _buildFiltersCard(bool isDark) {
+    return Container(
+      margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.getCardBackground(context),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.1 : 0.05),
+            blurRadius: 10,
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -396,13 +508,24 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
             children: [
               Text(
                 'Filtres avancés',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppTheme.getTextPrimary(context)),
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.getTextPrimary(context),
+                ),
               ),
               const Spacer(),
               TextButton.icon(
                 onPressed: () => setState(() => _showFilters = false),
-                icon: Icon(Icons.close, size: 16, color: AppTheme.getTextSecondary(context)),
-                label: Text('Fermer', style: TextStyle(color: AppTheme.getTextSecondary(context))),
+                icon: Icon(
+                  Icons.close,
+                  size: 16,
+                  color: AppTheme.getTextSecondary(context),
+                ),
+                label: Text(
+                  'Fermer',
+                  style: TextStyle(color: AppTheme.getTextSecondary(context)),
+                ),
               ),
             ],
           ),
@@ -413,10 +536,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                 child: _buildDatePicker(
                   label: 'Date début',
                   selectedDate: _selectedDateFrom,
-                  onDateSelected: (date) {
-                    setState(() => _selectedDateFrom = date);
-                    _applyFilter('date_from', date);
-                  },
+                  onDateSelected: (d) => setState(() => _selectedDateFrom = d),
                   isDark: isDark,
                 ),
               ),
@@ -425,22 +545,24 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                 child: _buildDatePicker(
                   label: 'Date fin',
                   selectedDate: _selectedDateTo,
-                  onDateSelected: (date) {
-                    setState(() => _selectedDateTo = date);
-                    _applyFilter('date_to', date);
-                  },
+                  onDateSelected: (d) => setState(() => _selectedDateTo = d),
                   isDark: isDark,
                 ),
               ),
               const SizedBox(width: 16),
               ElevatedButton.icon(
                 onPressed: _applyAllFilters,
-                icon: Icon(Icons.check, size: 18, color: Colors.white),
-                label: Text('Appliquer', style: TextStyle(color: Colors.white)),
+                icon: const Icon(Icons.check, size: 18, color: Colors.white),
+                label: const Text(
+                  'Appliquer',
+                  style: TextStyle(color: Colors.white),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ],
@@ -450,7 +572,6 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     );
   }
 
-  /// Sélecteur de date.
   Widget _buildDatePicker({
     required String label,
     required DateTime? selectedDate,
@@ -464,20 +585,18 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
           initialDate: selectedDate ?? DateTime.now(),
           firstDate: DateTime(2020),
           lastDate: DateTime.now(),
-          builder: (context, child) {
-            return Theme(
-              data: Theme.of(context).copyWith(
-                colorScheme: ColorScheme.light(
-                  primary: Theme.of(context).colorScheme.primary,
-                  onPrimary: Colors.white,
-                  surface: AppTheme.getCardBackground(context),
-                  onSurface: AppTheme.getTextPrimary(context),
-                ),
-                dialogBackgroundColor: AppTheme.getCardBackground(context),
+          builder: (ctx, child) => Theme(
+            data: Theme.of(ctx).copyWith(
+              colorScheme: ColorScheme.light(
+                primary: Theme.of(ctx).colorScheme.primary,
+                onPrimary: Colors.white,
+                surface: AppTheme.getCardBackground(ctx),
+                onSurface: AppTheme.getTextPrimary(ctx),
               ),
-              child: child!,
-            );
-          },
+              dialogBackgroundColor: AppTheme.getCardBackground(ctx),
+            ),
+            child: child!,
+          ),
         );
         if (date != null) onDateSelected(date);
       },
@@ -494,8 +613,14 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
             borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
           ),
           filled: true,
-          fillColor: isDark ? Colors.grey.shade900.withOpacity(0.3) : Colors.grey.shade50,
-          suffixIcon: Icon(Icons.calendar_today, size: 18, color: AppTheme.getTextSecondary(context)),
+          fillColor: isDark
+              ? Colors.grey.shade900.withOpacity(0.3)
+              : Colors.grey.shade50,
+          suffixIcon: Icon(
+            Icons.calendar_today,
+            size: 18,
+            color: AppTheme.getTextSecondary(context),
+          ),
         ),
         child: Text(
           selectedDate != null ? _formatDateOnly(selectedDate) : 'Sélectionner',
@@ -509,291 +634,340 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     );
   }
 
-  /// En‑tête du tableau des signalements.
-  Widget _buildSignalementsTableHeader(bool isDark) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(32, 0, 32, 0),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF8FAFC),
-        borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(12),
-          topRight: Radius.circular(12),
-        ),
-        border: Border(bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1)),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.1 : 0.05), blurRadius: 10)],
-      ),
-      child: Row(
-        children: [
-          Expanded(flex: 2, child: _HeaderText('Étudiant / Signalement', isDark)),
-          Expanded(flex: 2, child: _HeaderText('Description', isDark)),
-          Expanded(child: _HeaderText('Type', isDark)),
-          Expanded(child: _HeaderText('Statut', isDark)),
-          Expanded(child: _HeaderText('Date', isDark)),
-          const SizedBox(width: 100),
-        ],
-      ),
-    );
-  }
+  // ==================== TABLEAU ====================
 
-  /// Liste des signalements.
-  Widget _buildSignalementsList(SignalementAdminProvider provider, bool isDark) {
-    return SliverPadding(
-      padding: const EdgeInsets.fromLTRB(32, 0, 32, 24),
-      sliver: SliverList(
-        delegate: SliverChildBuilderDelegate(
-              (context, index) => _buildSignalementRow(
-              provider.signalements[index],
-              provider,
-              index,
-              isDark
+  Widget _buildSignalementsList(bool isDark) {
+    return Consumer<SignalementAdminProvider>(
+      builder: (context, provider, child) {
+        if (provider.isLoading && provider.signalements.isEmpty) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(48),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        if (provider.error != null && provider.signalements.isEmpty) {
+          return _buildErrorWidget(provider.error!, isDark);
+        }
+        if (provider.signalements.isEmpty) {
+          return _buildEmptyState(isDark);
+        }
+
+        final screenWidth = MediaQuery.of(context).size.width;
+        final sidebarWidth = screenWidth > 900 ? 220.0 : 0.0;
+        final availableWidth = screenWidth - sidebarWidth - 48;
+        final tableWidth = availableWidth > 800 ? availableWidth : 800.0;
+
+        final colEtudiant = tableWidth * 0.22;
+        final colDescription = tableWidth * 0.24;
+        final colType = tableWidth * 0.13;
+        final colStatut = tableWidth * 0.15;
+        final colDate = tableWidth * 0.16;
+        final colActions = tableWidth * 0.10;
+
+        return Container(
+          margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          decoration: BoxDecoration(
+            color: AppTheme.getCardBackground(context),
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.1 : 0.05),
+                blurRadius: 10,
+              ),
+            ],
           ),
-          childCount: provider.signalements.length,
-        ),
+          child: Column(
+            children: [
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: tableWidth,
+                  child: Column(
+                    children: [
+                      // En-tête
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 20, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: isDark
+                              ? Colors.grey.shade900.withOpacity(0.5)
+                              : const Color(0xFFF8FAFC),
+                          borderRadius: const BorderRadius.only(
+                            topLeft: Radius.circular(12),
+                            topRight: Radius.circular(12),
+                          ),
+                          border: Border(
+                            bottom: BorderSide(
+                              color: AppTheme.getBorderColor(context),
+                              width: 1,
+                            ),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                                width: colEtudiant,
+                                child: _headerText('Étudiant')),
+                            SizedBox(
+                                width: colDescription,
+                                child: _headerText('Description')),
+                            SizedBox(width: colType, child: _headerText('Type')),
+                            SizedBox(
+                                width: colStatut,
+                                child: _headerText('Statut')),
+                            SizedBox(width: colDate, child: _headerText('Date')),
+                            SizedBox(
+                                width: colActions,
+                                child: _headerText('Actions')),
+                          ],
+                        ),
+                      ),
+                      // Lignes
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: provider.signalements.length,
+                        itemBuilder: (context, index) => _buildRow(
+                          provider.signalements[index],
+                          provider,
+                          index,
+                          isDark,
+                          colEtudiant: colEtudiant,
+                          colDescription: colDescription,
+                          colType: colType,
+                          colStatut: colStatut,
+                          colDate: colDate,
+                          colActions: colActions,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              _buildPagination(provider, isDark),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _headerText(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontWeight: FontWeight.bold,
+        color: AppTheme.getTextPrimary(context),
+        fontSize: 13,
       ),
     );
   }
 
-  /// Ligne d’un signalement dans la liste.
-  Widget _buildSignalementRow(
-      Signalement signalement,
+  Widget _buildRow(
+      Signalement s,
       SignalementAdminProvider provider,
       int index,
-      bool isDark
-      ) {
+      bool isDark, {
+        required double colEtudiant,
+        required double colDescription,
+        required double colType,
+        required double colStatut,
+        required double colDate,
+        required double colActions,
+      }) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       decoration: BoxDecoration(
         color: index.isEven
             ? AppTheme.getCardBackground(context)
-            : (isDark ? Colors.grey.shade900.withOpacity(0.3) : const Color(0xFFFAFAFA)),
-        border: Border(bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1)),
+            : (isDark
+            ? Colors.grey.shade900.withOpacity(0.3)
+            : const Color(0xFFFAFAFA)),
+        border: Border(
+          bottom: BorderSide(
+            color: AppTheme.getBorderColor(context),
+            width: 1,
+          ),
+        ),
       ),
       child: Row(
         children: [
-          Expanded(flex: 2, child: _buildEtudiantInfo(signalement)),
-          Expanded(flex: 2, child: _buildDescription(signalement)),
-          Expanded(child: _buildTypeBadge(signalement.typeProbleme, isDark)),
-          Expanded(child: _buildStatutBadge(signalement.statut, isDark)),
-          Expanded(
+          // Étudiant
+          SizedBox(
+            width: colEtudiant,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  s.displayEtudiantNomComplet,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppTheme.getTextPrimary(context),
+                    fontSize: 14,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  s.matricule ?? 'N/A',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppTheme.getTextSecondary(context),
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  s.numeroSuivi,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppTheme.getTextTertiary(context),
+                  ),
+                ),
+                if (s.numeroChambre != null && s.nomCentre != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    '${s.nomCentre} - Ch. ${s.numeroChambre}',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.getTextTertiary(context),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          // Description
+          SizedBox(
+            width: colDescription,
             child: Text(
-              _formatDate(signalement.createdAt),
-              style: TextStyle(color: AppTheme.getTextSecondary(context), fontSize: 13),
+              s.description.length > 100
+                  ? '${s.description.substring(0, 100)}...'
+                  : s.description,
+              style: TextStyle(
+                color: AppTheme.getTextSecondary(context),
+                fontSize: 13,
+              ),
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          SizedBox(width: 100, child: _buildActions(signalement, provider, isDark)),
+          // Type - badge aligné à gauche, taille au contenu
+          SizedBox(
+            width: colType,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: _getTypeColor(s.typeProbleme)
+                      .withOpacity(isDark ? 0.2 : 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _getTypeColor(s.typeProbleme)
+                        .withOpacity(isDark ? 0.4 : 0.3),
+                  ),
+                ),
+                child: Text(
+                  _getTypeLabel(s.typeProbleme),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _getTypeColor(s.typeProbleme),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Statut - badge aligné à gauche, taille au contenu
+          SizedBox(
+            width: colStatut,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color:
+                  _getStatutColor(s.statut).withOpacity(isDark ? 0.2 : 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: _getStatutColor(s.statut)
+                        .withOpacity(isDark ? 0.4 : 0.3),
+                  ),
+                ),
+                child: Text(
+                  _getStatutLabel(s.statut),
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _getStatutColor(s.statut),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          // Date
+          SizedBox(
+            width: colDate,
+            child: Text(
+              _formatDate(s.createdAt),
+              style: TextStyle(
+                color: AppTheme.getTextSecondary(context),
+                fontSize: 13,
+              ),
+            ),
+          ),
+          // Actions - alignées à gauche
+          SizedBox(
+            width: colActions,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                IconButton(
+                  onPressed: () => _showSignalementDetails(s, provider),
+                  icon: Icon(
+                    Icons.visibility_outlined,
+                    size: 20,
+                    color: AppTheme.getTextSecondary(context),
+                  ),
+                  tooltip: 'Voir détails',
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+                const SizedBox(width: 8),
+                PopupMenuButton<String>(
+                  icon: Icon(
+                    Icons.more_vert,
+                    size: 20,
+                    color: AppTheme.getTextSecondary(context),
+                  ),
+                  color: AppTheme.getCardBackground(context),
+                  surfaceTintColor: AppTheme.getCardBackground(context),
+                  itemBuilder: (context) => _buildActionMenu(s, isDark),
+                  onSelected: (value) => _handleAction(value, s, provider),
+                  padding: EdgeInsets.zero,
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 
-  /// Affiche les informations de l’étudiant.
-  Widget _buildEtudiantInfo(Signalement signalement) {
-    final nomComplet = signalement.displayEtudiantNomComplet;
+  // ==================== PAGINATION ====================
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          nomComplet,
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            color: AppTheme.getTextPrimary(context),
-            fontSize: 14,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          signalement.matricule ?? 'N/A',
-          style: TextStyle(fontSize: 12, color: AppTheme.getTextSecondary(context)),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          signalement.numeroSuivi,
-          style: TextStyle(fontSize: 11, color: AppTheme.getTextTertiary(context)),
-        ),
-        if (signalement.numeroChambre != null && signalement.nomCentre != null) ...[
-          const SizedBox(height: 2),
-          Text(
-            '${signalement.nomCentre} - Ch. ${signalement.numeroChambre!}',
-            style: TextStyle(fontSize: 11, color: AppTheme.getTextTertiary(context)),
-          ),
-        ],
-      ],
-    );
-  }
-
-  /// Affiche la description du signalement.
-  Widget _buildDescription(Signalement signalement) {
-    return Text(
-      signalement.description.length > 100
-          ? '${signalement.description.substring(0, 100)}...'
-          : signalement.description,
-      style: TextStyle(color: AppTheme.getTextSecondary(context), fontSize: 13),
-      maxLines: 3,
-      overflow: TextOverflow.ellipsis,
-    );
-  }
-
-  /// Badge du type de problème.
-  Widget _buildTypeBadge(String type, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: _getTypeColor(type).withOpacity(isDark ? 0.2 : 0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        _getTypeLabel(type),
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-          color: _getTypeColor(type),
-        ),
-      ),
-    );
-  }
-
-  /// Badge du statut.
-  Widget _buildStatutBadge(String statut, bool isDark) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: _getStatutColor(statut).withOpacity(isDark ? 0.2 : 0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-            color: _getStatutColor(statut).withOpacity(isDark ? 0.4 : 0.3),
-            width: 1
-        ),
-      ),
-      child: Text(
-        _getStatutLabel(statut),
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          color: _getStatutColor(statut),
-        ),
-      ),
-    );
-  }
-
-  /// Actions disponibles (menu contextuel).
-  Widget _buildActions(Signalement signalement, SignalementAdminProvider provider, bool isDark) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        IconButton(
-          onPressed: () => _showSignalementDetails(signalement, provider),
-          icon: Icon(Icons.visibility_outlined, size: 20, color: AppTheme.getTextSecondary(context)),
-          tooltip: 'Voir détails',
-        ),
-        PopupMenuButton<String>(
-          icon: Icon(Icons.more_vert, size: 20, color: AppTheme.getTextSecondary(context)),
-          color: AppTheme.getCardBackground(context),
-          surfaceTintColor: AppTheme.getCardBackground(context),
-          itemBuilder: (context) => _buildActionMenu(signalement, isDark),
-          onSelected: (value) => _handleAction(value, signalement, provider),
-        ),
-      ],
-    );
-  }
-
-  /// Menu contextuel d’un signalement.
-  List<PopupMenuEntry<String>> _buildActionMenu(Signalement signalement, bool isDark) {
-    final items = <PopupMenuEntry<String>>[
-      PopupMenuItem(
-        value: 'details',
-        child: Row(
-          children: [
-            Icon(Icons.info_outline, size: 18, color: AppTheme.getTextSecondary(context)),
-            const SizedBox(width: 8),
-            Text(
-              'Détails complets',
-              style: TextStyle(color: AppTheme.getTextPrimary(context)),
-            ),
-          ],
-        ),
-      ),
-    ];
-
-    if (signalement.isEnAttente) {
-      items.addAll([
-        PopupMenuItem(
-          value: 'prendre_en_charge',
-          child: Row(
-            children: [
-              Icon(Icons.build, size: 18, color: const Color(0xFF3B82F6)),
-              const SizedBox(width: 8),
-              Text(
-                'Prendre en charge',
-                style: TextStyle(color: AppTheme.getTextPrimary(context)),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: 'annuler',
-          child: Row(
-            children: [
-              Icon(Icons.cancel, size: 18, color: const Color(0xFFEF4444)),
-              const SizedBox(width: 8),
-              Text(
-                'Annuler le signalement',
-                style: TextStyle(color: AppTheme.getTextPrimary(context)),
-              ),
-            ],
-          ),
-        ),
-      ]);
-    }
-
-    if (signalement.isEnCours) {
-      items.add(
-        PopupMenuItem(
-          value: 'resoudre',
-          child: Row(
-            children: [
-              Icon(Icons.check_circle, size: 18, color: const Color(0xFF10B981)),
-              const SizedBox(width: 8),
-              Text(
-                'Marquer comme résolu',
-                style: TextStyle(color: AppTheme.getTextPrimary(context)),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    items.addAll([
-      const PopupMenuDivider(),
-      PopupMenuItem(
-        value: 'photos',
-        child: Row(
-          children: [
-            Icon(Icons.photo_library, size: 18, color: AppTheme.getTextSecondary(context)),
-            const SizedBox(width: 8),
-            Text(
-              'Voir les photos',
-              style: TextStyle(color: AppTheme.getTextPrimary(context)),
-            ),
-          ],
-        ),
-      ),
-    ]);
-
-    return items;
-  }
-
-  /// Barre de pagination.
   Widget _buildPagination(SignalementAdminProvider provider, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(20),
-      margin: const EdgeInsets.fromLTRB(32, 0, 32, 24),
       decoration: BoxDecoration(
-        color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF8FAFC),
+        color: isDark
+            ? Colors.grey.shade900.withOpacity(0.5)
+            : const Color(0xFFF8FAFC),
         borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(12),
           bottomRight: Radius.circular(12),
@@ -804,12 +978,16 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
         children: [
           Text(
             'Total: ${provider.totalItems} signalements',
-            style: TextStyle(color: AppTheme.getTextSecondary(context), fontSize: 13),
+            style: TextStyle(
+              color: AppTheme.getTextSecondary(context),
+              fontSize: 13,
+            ),
           ),
           Row(
             children: [
               IconButton(
-                onPressed: provider.currentPage > 1 ? provider.loadPreviousPage : null,
+                onPressed:
+                provider.currentPage > 1 ? provider.loadPreviousPage : null,
                 icon: const Icon(Icons.chevron_left),
                 color: provider.currentPage > 1
                     ? Theme.of(context).colorScheme.primary
@@ -846,23 +1024,29 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     );
   }
 
-  /// Affiche un message lorsque la liste est vide.
+  // ==================== ÉTATS VIDE / ERREUR ====================
+
   Widget _buildEmptyState(bool isDark) {
     return Container(
-      margin: const EdgeInsets.all(32),
+      margin: const EdgeInsets.all(24),
       padding: const EdgeInsets.all(48),
       decoration: BoxDecoration(
         color: AppTheme.getCardBackground(context),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.1 : 0.05), blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.1 : 0.05),
+            blurRadius: 10,
+          ),
+        ],
       ),
       child: Center(
         child: Column(
           children: [
             Icon(
-                Icons.warning_outlined,
-                size: 80,
-                color: AppTheme.getTextTertiary(context)
+              Icons.warning_outlined,
+              size: 80,
+              color: AppTheme.getTextTertiary(context),
             ),
             const SizedBox(height: 24),
             Text(
@@ -893,23 +1077,28 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     );
   }
 
-  /// Affiche un message d’erreur en cas de problème de chargement.
   Widget _buildErrorWidget(String error, bool isDark) {
     return Container(
       padding: const EdgeInsets.all(24),
-      margin: const EdgeInsets.all(32),
+      margin: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: isDark ? Colors.red.shade900.withOpacity(0.1) : const Color(0xFFFEF2F2),
+        color: isDark
+            ? Colors.red.shade900.withOpacity(0.1)
+            : const Color(0xFFFEF2F2),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: isDark ? Colors.red.shade800 : const Color(0xFFFECACA)
+          color: isDark ? Colors.red.shade800 : const Color(0xFFFECACA),
         ),
       ),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: Colors.red.shade400,
+            ),
             const SizedBox(height: 16),
             Text(
               'Erreur de chargement',
@@ -942,183 +1131,118 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     );
   }
 
-  /// Exécute l’action sélectionnée dans le menu contextuel.
-  Future<void> _handleAction(
-      String action,
-      Signalement signalement,
-      SignalementAdminProvider provider,
-      ) async {
-    switch (action) {
-      case 'details':
-        _showSignalementDetails(signalement, provider);
-        break;
-      case 'prendre_en_charge':
-        await _updateSignalementStatus(signalement, 'EN_COURS', provider);
-        break;
-      case 'resoudre':
-        await _updateSignalementStatus(signalement, 'RESOLU', provider);
-        break;
-      case 'annuler':
-        await _updateSignalementStatus(signalement, 'ANNULE', provider);
-        break;
-      case 'photos':
-        _showPhotos(signalement);
-        break;
-    }
-  }
+  // ==================== MENU CONTEXTUEL ====================
 
-  /// Met à jour le statut d’un signalement.
-  Future<void> _updateSignalementStatus(
-      Signalement signalement,
-      String nouveauStatut,
-      SignalementAdminProvider provider,
-      ) async {
-    try {
-      String? commentaire;
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-
-      if (nouveauStatut == 'RESOLU' || nouveauStatut == 'ANNULE') {
-        commentaire = await _askForComment(nouveauStatut, isDark);
-        if (commentaire == null) return;
-      }
-
-      await provider.updateStatutSignalement(
-        signalementId: signalement.id.toString(),
-        nouveauStatut: nouveauStatut,
-        commentaire: commentaire,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Signalement ${_getStatutLabel(nouveauStatut).toLowerCase()} avec succès'),
-            backgroundColor: _getStatutColor(nouveauStatut),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur: ${e.toString()}'),
-            backgroundColor: const Color(0xFFEF4444),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
-
-  /// Demande un commentaire pour la résolution ou l’annulation.
-  Future<String?> _askForComment(String statut, bool isDark) async {
-    final controller = TextEditingController();
-
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: AppTheme.getCardBackground(context),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+  List<PopupMenuEntry<String>> _buildActionMenu(Signalement s, bool isDark) {
+    final items = <PopupMenuEntry<String>>[
+      PopupMenuItem(
+        value: 'details',
+        child: Row(
+          children: [
+            Icon(
+              Icons.info_outline,
+              size: 18,
+              color: AppTheme.getTextSecondary(context),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Détails complets',
+              style: TextStyle(color: AppTheme.getTextPrimary(context)),
+            ),
+          ],
         ),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+      ),
+    ];
+    if (s.isEnAttente) {
+      items.addAll([
+        PopupMenuItem(
+          value: 'prendre_en_charge',
+          child: Row(
             children: [
+              const Icon(Icons.build, size: 18, color: Color(0xFF3B82F6)),
+              const SizedBox(width: 8),
               Text(
-                statut == 'RESOLU' ? 'Commentaire de résolution' : 'Raison de l\'annulation',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.getTextPrimary(context),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                decoration: InputDecoration(
-                  hintText: statut == 'RESOLU'
-                      ? 'Décrivez comment le problème a été résolu...'
-                      : 'Indiquez la raison de l\'annulation...',
-                  hintStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
-                  ),
-                  filled: true,
-                  fillColor: isDark ? Colors.grey.shade900.withOpacity(0.3) : Colors.grey.shade50,
-                ),
-                maxLines: 4,
+                'Prendre en charge',
                 style: TextStyle(color: AppTheme.getTextPrimary(context)),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      'Annuler',
-                      style: TextStyle(color: AppTheme.getTextSecondary(context)),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  ElevatedButton(
-                    onPressed: () {
-                      if (controller.text.trim().isNotEmpty) {
-                        Navigator.pop(context, controller.text.trim());
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Valider'),
-                  ),
-                ],
               ),
             ],
           ),
         ),
+        PopupMenuItem(
+          value: 'annuler',
+          child: Row(
+            children: [
+              const Icon(Icons.cancel, size: 18, color: Color(0xFFEF4444)),
+              const SizedBox(width: 8),
+              Text(
+                'Annuler le signalement',
+                style: TextStyle(color: AppTheme.getTextPrimary(context)),
+              ),
+            ],
+          ),
+        ),
+      ]);
+    }
+    if (s.isEnCours) {
+      items.add(
+        PopupMenuItem(
+          value: 'resoudre',
+          child: Row(
+            children: [
+              const Icon(Icons.check_circle, size: 18, color: Color(0xFF10B981)),
+              const SizedBox(width: 8),
+              Text(
+                'Marquer comme résolu',
+                style: TextStyle(color: AppTheme.getTextPrimary(context)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    items.addAll([
+      const PopupMenuDivider(),
+      PopupMenuItem(
+        value: 'photos',
+        child: Row(
+          children: [
+            Icon(
+              Icons.photo_library,
+              size: 18,
+              color: AppTheme.getTextSecondary(context),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Voir les photos',
+              style: TextStyle(color: AppTheme.getTextPrimary(context)),
+            ),
+          ],
+        ),
       ),
-    );
-
-    controller.dispose();
-    return result;
+    ]);
+    return items;
   }
 
-  /// Affiche une boîte de dialogue détaillée du signalement.
-  void _showSignalementDetails(Signalement signalement, SignalementAdminProvider provider) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  // ==================== DIALOGUE DÉTAILS ====================
 
+  void _showSignalementDetails(Signalement s, SignalementAdminProvider provider) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (context) => Dialog(
         backgroundColor: AppTheme.getCardBackground(context),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: 700,
-            maxHeight: MediaQuery.of(context).size.height * 0.9,
+            maxWidth: 560,
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // En-tête
               Container(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   color: isDark
                       ? Colors.grey.shade900.withOpacity(0.5)
@@ -1133,16 +1257,19 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(0.1),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
                         Icons.info_outline,
                         color: Theme.of(context).colorScheme.primary,
-                        size: 24,
+                        size: 22,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1150,16 +1277,16 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                           Text(
                             'Détails du signalement',
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: AppTheme.getTextPrimary(context),
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 2),
                           Text(
-                            signalement.numeroSuivi,
+                            s.numeroSuivi,
                             style: TextStyle(
-                              fontSize: 13,
+                              fontSize: 12,
                               color: AppTheme.getTextSecondary(context),
                             ),
                           ),
@@ -1172,90 +1299,75 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                         Icons.close,
                         color: AppTheme.getTextSecondary(context),
                       ),
-                      tooltip: 'Fermer',
                     ),
                   ],
                 ),
               ),
-
-              // Contenu scrollable
+              const Divider(height: 1),
               Flexible(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Informations étudiant
-                      _buildSectionHeader('Informations étudiant', Icons.person),
-                      const SizedBox(height: 12),
-                      _buildInfoGrid([
-                        ('Nom complet', signalement.displayEtudiantNomComplet),
-                        if (signalement.matricule != null)
-                          ('Matricule', signalement.matricule!),
-                        if (signalement.telephone != null)
-                          ('Téléphone', signalement.telephone!),
-                        if (signalement.email != null)
-                          ('Email', signalement.email!),
-                      ]),
-
-                      const SizedBox(height: 24),
-
-                      // Localisation
-                      _buildSectionHeader('Localisation', Icons.location_on),
-                      const SizedBox(height: 12),
-                      _buildInfoGrid([
-                        (
+                      _dlgSection('Étudiant', Icons.person),
+                      const SizedBox(height: 10),
+                      _dlgItem('Nom complet', s.displayEtudiantNomComplet),
+                      if (s.matricule != null) _dlgItem('Matricule', s.matricule!),
+                      if (s.telephone != null) _dlgItem('Téléphone', s.telephone!),
+                      if (s.email != null) _dlgItem('Email', s.email!),
+                      const SizedBox(height: 16),
+                      _dlgSection('Localisation', Icons.location_on),
+                      const SizedBox(height: 10),
+                      _dlgItem(
                         'Centre',
-                        '${signalement.nomCentre ?? "N/A"} ${signalement.ville != null ? "(${signalement.ville})" : ""}',
-                        ),
-                        (
+                        '${s.nomCentre ?? "N/A"}${s.ville != null ? " (${s.ville})" : ""}',
+                      ),
+                      _dlgItem(
                         'Chambre',
-                        '${signalement.numeroChambre ?? "N/A"} (${signalement.typeChambre ?? "Type inconnu"})',
-                        ),
-                      ]),
-
-                      const SizedBox(height: 24),
-
-                      // Détails du problème
-                      _buildSectionHeader('Détails du problème', Icons.warning_amber),
-                      const SizedBox(height: 12),
-                      _buildDetailItem('Type de problème', _getTypeLabel(signalement.typeProbleme)),
-                      _buildDetailItem('Description', signalement.description),
-                      _buildDetailItem('Statut', _getStatutLabel(signalement.statut)),
-                      _buildDetailItem('Date création', _formatDate(signalement.createdAt)),
-                      if (signalement.dateResolution != null)
-                        _buildDetailItem('Date résolution', _formatDate(signalement.dateResolution!)),
-                      if (signalement.commentaireResolution != null)
-                        _buildDetailItem('Commentaire', signalement.commentaireResolution!),
-
-                      // Photos
-                      if (signalement.photos.isNotEmpty) ...[
-                        const SizedBox(height: 24),
-                        _buildSectionHeader('Photos (${signalement.photos.length})', Icons.photo_library),
-                        const SizedBox(height: 12),
+                        '${s.numeroChambre ?? "N/A"} (${s.typeChambre ?? "Type inconnu"})',
+                      ),
+                      const SizedBox(height: 16),
+                      _dlgSection('Problème', Icons.warning_amber),
+                      const SizedBox(height: 10),
+                      _dlgItem('Type', _getTypeLabel(s.typeProbleme)),
+                      _dlgItem('Description', s.description),
+                      _dlgItem('Statut', _getStatutLabel(s.statut)),
+                      _dlgItem('Date création', _formatDate(s.createdAt)),
+                      if (s.dateResolution != null)
+                        _dlgItem('Date résolution', _formatDate(s.dateResolution!)),
+                      if (s.commentaireResolution != null)
+                        _dlgItem('Commentaire', s.commentaireResolution!),
+                      if (s.photos.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        _dlgSection('Photos (${s.photos.length})', Icons.photo_library),
+                        const SizedBox(height: 10),
                         Wrap(
                           spacing: 12,
                           runSpacing: 12,
-                          children: signalement.photos.map((photoUrl) {
+                          children: s.photos.map((url) {
+                            final full = url.startsWith('http')
+                                ? url
+                                : '${AppConfig.staticBaseUrl}$url';
                             return ClipRRect(
                               borderRadius: BorderRadius.circular(8),
                               child: Image.network(
-                                photoUrl.startsWith('http') ? photoUrl : '${AppConfig.staticBaseUrl}$photoUrl',
+                                full,
                                 width: 100,
                                 height: 100,
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Container(
-                                    width: 100,
-                                    height: 100,
-                                    color: isDark ? Colors.grey.shade800 : Colors.grey.shade200,
-                                    child: Icon(
-                                      Icons.broken_image,
-                                      size: 32,
-                                      color: AppTheme.getTextTertiary(context),
-                                    ),
-                                  );
-                                },
+                                errorBuilder: (_, __, ___) => Container(
+                                  width: 100,
+                                  height: 100,
+                                  color: isDark
+                                      ? Colors.grey.shade800
+                                      : Colors.grey.shade200,
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    size: 32,
+                                    color: AppTheme.getTextTertiary(context),
+                                  ),
+                                ),
                               ),
                             );
                           }).toList(),
@@ -1265,10 +1377,9 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                   ),
                 ),
               ),
-
-              // Pied de dialogue avec actions
+              const Divider(height: 1),
               Container(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: isDark
                       ? Colors.grey.shade900.withOpacity(0.5)
@@ -1276,9 +1387,6 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(16),
                     bottomRight: Radius.circular(16),
-                  ),
-                  border: Border(
-                    top: BorderSide(color: AppTheme.getBorderColor(context)),
                   ),
                 ),
                 child: Row(
@@ -1291,15 +1399,18 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                         style: TextStyle(color: AppTheme.getTextSecondary(context)),
                       ),
                     ),
-                    if (signalement.isEnAttente) ...[
+                    if (s.isEnAttente) ...[
                       const SizedBox(width: 12),
                       ElevatedButton.icon(
                         onPressed: () {
                           Navigator.pop(context);
-                          _updateSignalementStatus(signalement, 'EN_COURS', provider);
+                          _updateStatus(s, 'EN_COURS', provider);
                         },
-                        icon: Icon(Icons.build, size: 18, color: Colors.white),
-                        label: Text('Prendre en charge', style: TextStyle(color: Colors.white)),
+                        icon: const Icon(Icons.build, size: 18, color: Colors.white),
+                        label: const Text(
+                          'Prendre en charge',
+                          style: TextStyle(color: Colors.white),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(context).colorScheme.primary,
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -1316,17 +1427,15 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     );
   }
 
-  // Méthodes utilitaires pour les cartes de détails
-
-  Widget _buildSectionHeader(String title, IconData icon) {
+  Widget _dlgSection(String title, IconData icon) {
     return Row(
       children: [
-        Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary),
+        Icon(icon, size: 16, color: Theme.of(context).colorScheme.primary),
         const SizedBox(width: 8),
         Text(
           title,
           style: TextStyle(
-            fontSize: 15,
+            fontSize: 14,
             fontWeight: FontWeight.bold,
             color: AppTheme.getTextPrimary(context),
           ),
@@ -1335,22 +1444,9 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     );
   }
 
-  Widget _buildInfoGrid(List<(String, String)> items) {
-    return Wrap(
-      spacing: 16,
-      runSpacing: 12,
-      children: items.map((item) {
-        return SizedBox(
-          width: 300,
-          child: _buildDetailItem(item.$1, item.$2),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildDetailItem(String label, String value) {
+  Widget _dlgItem(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1362,51 +1458,52 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
               fontWeight: FontWeight.w500,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             value,
-            style: TextStyle(fontSize: 16, color: AppTheme.getTextPrimary(context)),
+            style: TextStyle(
+              fontSize: 14,
+              color: AppTheme.getTextPrimary(context),
+            ),
           ),
         ],
       ),
     );
   }
 
-  /// Affiche la galerie de photos.
-  void _showPhotos(Signalement signalement) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+  // ==================== DIALOGUE PHOTOS ====================
 
+  void _showPhotos(Signalement s) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
       builder: (context) => Dialog(
         backgroundColor: AppTheme.getCardBackground(context),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: 600,
+            maxWidth: 480,
             maxHeight: MediaQuery.of(context).size.height * 0.8,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // En‑tête
               Padding(
-                padding: const EdgeInsets.all(24),
+                padding: const EdgeInsets.all(20),
                 child: Row(
                   children: [
                     Icon(
                       Icons.photo_library,
                       color: Theme.of(context).colorScheme.primary,
-                      size: 24,
+                      size: 22,
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Photos du signalement',
                         style: TextStyle(
-                          fontSize: 20,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                           color: AppTheme.getTextPrimary(context),
                         ),
@@ -1418,17 +1515,13 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                         Icons.close,
                         color: AppTheme.getTextSecondary(context),
                       ),
-                      tooltip: 'Fermer',
                     ),
                   ],
                 ),
               ),
-
               Divider(height: 1, color: AppTheme.getBorderColor(context)),
-
-              // Contenu scrollable
               Flexible(
-                child: signalement.photos.isEmpty
+                child: s.photos.isEmpty
                     ? Padding(
                   padding: const EdgeInsets.all(48),
                   child: Column(
@@ -1451,78 +1544,49 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                   ),
                 )
                     : ListView.separated(
-                  padding: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.all(20),
                   shrinkWrap: true,
-                  itemCount: signalement.photos.length,
-                  separatorBuilder: (context, index) => const SizedBox(height: 16),
+                  itemCount: s.photos.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 16),
                   itemBuilder: (context, index) {
-                    final photoUrl = signalement.photos[index];
+                    final url = s.photos[index];
+                    final full = url.startsWith('http')
+                        ? url
+                        : '${AppConfig.staticBaseUrl}$url';
                     return ClipRRect(
                       borderRadius: BorderRadius.circular(12),
                       child: Image.network(
-                        photoUrl.startsWith('http') ? photoUrl : '${AppConfig.staticBaseUrl}$photoUrl',
+                        full,
                         fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            height: 200,
+                        errorBuilder: (_, __, ___) => Container(
+                          height: 200,
+                          decoration: BoxDecoration(
                             color: isDark
                                 ? Colors.grey.shade800
                                 : Colors.grey.shade200,
-                            child: Center(
-                              child: CircularProgressIndicator(
-                                value: loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded /
-                                    loadingProgress.expectedTotalBytes!
-                                    : null,
-                              ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Center(
+                            child: Icon(
+                              Icons.broken_image,
+                              size: 48,
+                              color: AppTheme.getTextTertiary(context),
                             ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            height: 200,
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? Colors.grey.shade800
-                                  : Colors.grey.shade200,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(
-                                  Icons.broken_image,
-                                  size: 48,
-                                  color: AppTheme.getTextTertiary(context),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Image non disponible',
-                                  style: TextStyle(
-                                    color: AppTheme.getTextSecondary(context),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
+                          ),
+                        ),
                       ),
                     );
                   },
                 ),
               ),
-
               Divider(height: 1, color: AppTheme.getBorderColor(context)),
-
-              // Pied
               Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '${signalement.photos.length} photo${signalement.photos.length > 1 ? 's' : ''}',
+                      '${s.photos.length} photo${s.photos.length > 1 ? "s" : ""}',
                       style: TextStyle(
                         color: AppTheme.getTextSecondary(context),
                         fontSize: 14,
@@ -1545,69 +1609,183 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     );
   }
 
-  // Méthodes d’affichage des libellés et couleurs
+  // ==================== ACTIONS ====================
 
-  String _getStatutLabel(String statut) {
-    const statutLabels = {
-      'EN_ATTENTE': 'En attente',
-      'EN_COURS': 'En cours',
-      'RESOLU': 'Résolu',
-      'ANNULE': 'Annulé',
-      'TOUS': 'Tous',
-    };
-    return statutLabels[statut] ?? statut;
+  Future<void> _handleAction(
+      String action,
+      Signalement s,
+      SignalementAdminProvider provider,
+      ) async {
+    switch (action) {
+      case 'details':
+        _showSignalementDetails(s, provider);
+        break;
+      case 'prendre_en_charge':
+        await _updateStatus(s, 'EN_COURS', provider);
+        break;
+      case 'resoudre':
+        await _updateStatus(s, 'RESOLU', provider);
+        break;
+      case 'annuler':
+        await _updateStatus(s, 'ANNULE', provider);
+        break;
+      case 'photos':
+        _showPhotos(s);
+        break;
+    }
   }
 
-  Color _getStatutColor(String statut) {
-    const statutColors = {
-      'EN_ATTENTE': Color(0xFFF59E0B),
-      'EN_COURS': Color(0xFF3B82F6),
-      'RESOLU': Color(0xFF10B981),
-      'ANNULE': Color(0xFFEF4444),
-    };
-    return statutColors[statut] ?? const Color(0xFF64748B);
+  Future<void> _updateStatus(
+      Signalement s,
+      String nouveauStatut,
+      SignalementAdminProvider provider,
+      ) async {
+    try {
+      String? commentaire;
+      if (nouveauStatut == 'RESOLU' || nouveauStatut == 'ANNULE') {
+        commentaire = await _askForComment(
+          nouveauStatut,
+          Theme.of(context).brightness == Brightness.dark,
+        );
+        if (commentaire == null) return;
+      }
+      await provider.updateStatutSignalement(
+        signalementId: s.id.toString(),
+        nouveauStatut: nouveauStatut,
+        commentaire: commentaire,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Signalement ${_getStatutLabel(nouveauStatut).toLowerCase()} avec succès',
+            ),
+            backgroundColor: _getStatutColor(nouveauStatut),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: ${e.toString()}'),
+            backgroundColor: const Color(0xFFEF4444),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
-  String _getTypeLabel(String type) {
-    const typeLabels = {
-      'PLOMBERIE': 'Plomberie',
-      'ELECTRICITE': 'Électricité',
-      'TOITURE': 'Toiture',
-      'SERRURE': 'Serrure',
-      'MOBILIER': 'Mobilier',
-      'AUTRE': 'Autre',
-      'TOUS': 'Tous',
-    };
-    return typeLabels[type] ?? type;
+  Future<String?> _askForComment(String statut, bool isDark) async {
+    final ctrl = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: AppTheme.getCardBackground(context),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  statut == 'RESOLU'
+                      ? 'Commentaire de résolution'
+                      : 'Raison de l\'annulation',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.getTextPrimary(context),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: ctrl,
+                  decoration: InputDecoration(
+                    hintText: statut == 'RESOLU'
+                        ? 'Décrivez comment le problème a été résolu...'
+                        : 'Indiquez la raison de l\'annulation...',
+                    hintStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(
+                        color: Theme.of(context).colorScheme.primary,
+                        width: 2,
+                      ),
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? Colors.grey.shade900.withOpacity(0.3)
+                        : Colors.grey.shade50,
+                  ),
+                  maxLines: 4,
+                  style: TextStyle(color: AppTheme.getTextPrimary(context)),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'Annuler',
+                        style: TextStyle(color: AppTheme.getTextSecondary(context)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (ctrl.text.trim().isNotEmpty) {
+                          Navigator.pop(context, ctrl.text.trim());
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Valider'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    ctrl.dispose();
+    return result;
   }
 
-  Color _getTypeColor(String type) {
-    const typeColors = {
-      'PLOMBERIE': Color(0xFF3B82F6),
-      'ELECTRICITE': Color(0xFFF59E0B),
-      'TOITURE': Color(0xFF8B5CF6),
-      'SERRURE': Color(0xFFEF4444),
-      'MOBILIER': Color(0xFF10B981),
-      'AUTRE': Color(0xFF64748B),
-    };
-    return typeColors[type] ?? const Color(0xFF64748B);
-  }
-
-  // Actions sur les filtres
+  // ==================== FILTRES ====================
 
   Future<void> _applySearch(String query) async {
-    final provider = Provider.of<SignalementAdminProvider>(context, listen: false);
-    await provider.searchSignalements(query);
+    await Provider.of<SignalementAdminProvider>(context, listen: false)
+        .searchSignalements(query);
   }
 
   Future<void> _applyFilter(String key, dynamic value) async {
-    final provider = Provider.of<SignalementAdminProvider>(context, listen: false);
-    await provider.applyFilter(key, value);
+    await Provider.of<SignalementAdminProvider>(context, listen: false)
+        .applyFilter(key, value);
   }
 
   Future<void> _applyAllFilters() async {
-    final provider = Provider.of<SignalementAdminProvider>(context, listen: false);
-    await provider.loadSignalements(resetPage: true);
+    await Provider.of<SignalementAdminProvider>(context, listen: false)
+        .loadSignalements(resetPage: true);
   }
 
   Future<void> _resetFilters() async {
@@ -1618,25 +1796,16 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
       _selectedDateFrom = null;
       _selectedDateTo = null;
     });
-
-    final provider = Provider.of<SignalementAdminProvider>(context, listen: false);
-    await provider.resetFilters();
+    await Provider.of<SignalementAdminProvider>(context, listen: false)
+        .resetFilters();
   }
 
   Future<void> _refreshData() async {
     if (_isRefreshing) return;
-
-    setState(() {
-      _isRefreshing = true;
-    });
-
+    setState(() => _isRefreshing = true);
     try {
       final provider = Provider.of<SignalementAdminProvider>(context, listen: false);
-      await Future.wait([
-        provider.loadSignalements(),
-        provider.loadStatistiques(),
-      ]);
-
+      await Future.wait([provider.loadSignalements(), provider.loadStatistiques()]);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -1651,39 +1820,62 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur lors de l\'actualisation: $e'),
+            content: Text('Erreur: $e'),
             backgroundColor: const Color(0xFFEF4444),
-            duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() {
-          _isRefreshing = false;
-        });
-      }
+      if (mounted) setState(() => _isRefreshing = false);
     }
   }
-}
 
-/// Widget utilitaire pour les en‑têtes de colonnes du tableau.
-class _HeaderText extends StatelessWidget {
-  final String text;
-  final bool isDark;
+  // ==================== LIBELLÉS & COULEURS ====================
 
-  const _HeaderText(this.text, this.isDark);
+  String _getStatutLabel(String s) {
+    const map = {
+      'EN_ATTENTE': 'En attente',
+      'EN_COURS': 'En cours',
+      'RESOLU': 'Résolu',
+      'ANNULE': 'Annulé',
+      'TOUS': 'Tous',
+    };
+    return map[s] ?? s;
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontWeight: FontWeight.bold,
-        color: AppTheme.getTextPrimary(context),
-        fontSize: 13,
-      ),
-    );
+  Color _getStatutColor(String s) {
+    const map = {
+      'EN_ATTENTE': Color(0xFFF59E0B),
+      'EN_COURS': Color(0xFF3B82F6),
+      'RESOLU': Color(0xFF10B981),
+      'ANNULE': Color(0xFFEF4444),
+    };
+    return map[s] ?? const Color(0xFF64748B);
+  }
+
+  String _getTypeLabel(String t) {
+    const map = {
+      'PLOMBERIE': 'Plomberie',
+      'ELECTRICITE': 'Électricité',
+      'TOITURE': 'Toiture',
+      'SERRURE': 'Serrure',
+      'MOBILIER': 'Mobilier',
+      'AUTRE': 'Autre',
+      'TOUS': 'Tous',
+    };
+    return map[t] ?? t;
+  }
+
+  Color _getTypeColor(String t) {
+    const map = {
+      'PLOMBERIE': Color(0xFF3B82F6),
+      'ELECTRICITE': Color(0xFFF59E0B),
+      'TOITURE': Color(0xFF8B5CF6),
+      'SERRURE': Color(0xFFEF4444),
+      'MOBILIER': Color(0xFF10B981),
+      'AUTRE': Color(0xFF64748B),
+    };
+    return map[t] ?? const Color(0xFF64748B);
   }
 }

@@ -630,104 +630,85 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
     return Consumer<PaiementAdminProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading && provider.paiements.isEmpty) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(48.0),
-              child: CircularProgressIndicator(),
-            ),
-          );
+          return const Center(child: Padding(padding: EdgeInsets.all(48.0), child: CircularProgressIndicator()));
         }
-
         if (provider.error != null && provider.paiements.isEmpty) {
           return _buildErrorWidget(provider.error!, isDark);
         }
-
         if (provider.paiements.isEmpty) {
           return _buildEmptyState(isDark);
         }
 
-        // Largeurs fixes cohérentes entre header et lignes
-        const double colEtudiant = 240.0;
-        const double colMontant  = 130.0;
-        const double colStatut   = 130.0;
-        const double colMode     = 150.0;
-        const double colDate     = 150.0;
-        const double colActions  = 100.0;
-        const double totalWidth  = colEtudiant + colMontant + colStatut +
-            colMode + colDate + colActions;
+        // Largeur dynamique basée sur l'écran réel
+        final screenWidth = MediaQuery.of(context).size.width;
+        final sidebarWidth = screenWidth > 900 ? 220.0 : 0.0;
+        final availableWidth = screenWidth - sidebarWidth - 48; // 48 = margins (24*2)
+
+        // Largeur minimale pour le scroll horizontal si écran trop petit
+        final tableWidth = availableWidth > 700 ? availableWidth : 700.0;
+
+        // Proportions des colonnes
+        final colEtudiant = tableWidth * 0.22;
+        final colMontant  = tableWidth * 0.16;
+        final colStatut   = tableWidth * 0.16;
+        final colMode     = tableWidth * 0.18;
+        final colDate     = tableWidth * 0.18;
+        final colActions  = tableWidth * 0.10;
 
         return Container(
           margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           decoration: BoxDecoration(
             color: AppTheme.getCardBackground(context),
             borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.1 : 0.05),
-                blurRadius: 10,
-              ),
-            ],
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.1 : 0.05), blurRadius: 10)],
           ),
           child: Column(
             children: [
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  // Prendre le max entre la largeur disponible et la largeur minimale
-                  final tableWidth = constraints.maxWidth > totalWidth
-                      ? constraints.maxWidth
-                      : totalWidth;
-
-                  return SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    child: SizedBox(
-                      width: tableWidth,
-                      child: Column(
-                        children: [
-                          // En-tête
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                            decoration: BoxDecoration(
-                              color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF8FAFC),
-                              borderRadius: const BorderRadius.only(
-                                topLeft: Radius.circular(12),
-                                topRight: Radius.circular(12),
-                              ),
-                              border: Border(bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1)),
-                            ),
-                            child: Row(
-                              children: [
-                                SizedBox(width: colEtudiant, child: _headerText('Etudiant')),
-                                SizedBox(width: colMontant, child: _headerText('Montant')),
-                                SizedBox(width: colStatut, child: _headerText('Statut')),
-                                SizedBox(width: colMode, child: _headerText('Mode')),
-                                SizedBox(width: colDate, child: _headerText('Date')),
-                                SizedBox(width: colActions, child: _headerText('Actions')),
-                              ],
-                            ),
-                          ),
-                          // Lignes
-                          ListView.builder(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: provider.paiements.length,
-                            itemBuilder: (context, index) {
-                              final paiement = provider.paiements[index];
-                              return _buildPaiementRow(
-                                paiement, provider, index, isDark,
-                                colEtudiant: colEtudiant,
-                                colMontant: colMontant,
-                                colStatut: colStatut,
-                                colMode: colMode,
-                                colDate: colDate,
-                                colActions: colActions,
-                              );
-                            },
-                          ),
-                        ],
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SizedBox(
+                  width: tableWidth,
+                  child: Column(
+                    children: [
+                      // En-tête
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF8FAFC),
+                          borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+                          border: Border(bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1)),
+                        ),
+                        child: Row(
+                          children: [
+                            SizedBox(width: colEtudiant, child: _headerText('Étudiant')),
+                            SizedBox(width: colMontant,  child: _headerText('Montant')),
+                            SizedBox(width: colStatut,   child: _headerText('Statut')),
+                            SizedBox(width: colMode,     child: _headerText('Mode')),
+                            SizedBox(width: colDate,     child: _headerText('Date')),
+                            SizedBox(width: colActions,  child: _headerText('Actions')),
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
+                      // Lignes
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: provider.paiements.length,
+                        itemBuilder: (context, index) {
+                          return _buildPaiementRow(
+                            provider.paiements[index], provider, index, isDark,
+                            colEtudiant: colEtudiant,
+                            colMontant: colMontant,
+                            colStatut: colStatut,
+                            colMode: colMode,
+                            colDate: colDate,
+                            colActions: colActions,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
               ),
               _buildPagination(provider, isDark),
             ],
@@ -823,7 +804,9 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                 decoration: BoxDecoration(
                   color: _getStatutColor(paiement.statut).withOpacity(isDark ? 0.2 : 0.1),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: _getStatutColor(paiement.statut).withOpacity(isDark ? 0.4 : 0.3)),
+                  border: Border.all(
+                    color: _getStatutColor(paiement.statut).withOpacity(isDark ? 0.4 : 0.3),
+                  ),
                 ),
                 child: Text(
                   _getStatutLabel(paiement.statut),
@@ -860,7 +843,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
           SizedBox(
             width: colActions,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 IconButton(
                   onPressed: () => _showPaiementDetails(paiement, provider),
@@ -1147,52 +1130,73 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
       builder: (context) => Dialog(
         backgroundColor: AppTheme.getCardBackground(context),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Details du paiement', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppTheme.getTextPrimary(context))),
-              const SizedBox(height: 16),
-              SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 40),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Détails du paiement',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
+                        color: AppTheme.getTextPrimary(context))),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 8),
+                SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _buildDetailItem('Référence', paiement.referenceTransaction ?? 'N/A'),
+                      _buildDetailItem('Étudiant', paiement.etudiantNomComplet),
+                      if (paiement.matricule != null) _buildDetailItem('Matricule', paiement.matricule!),
+                      _buildDetailItem('Centre', paiement.centreNom ?? 'N/A'),
+                      _buildDetailItem('Chambre', paiement.numeroChambre ?? 'N/A'),
+                      if (paiement.typeChambre != null) _buildDetailItem('Type chambre', paiement.typeChambre!),
+                      _buildDetailItem('Type paiement', paiement.typePaiement ?? 'Loyer'),
+                      _buildDetailItem('Montant', '${_formatMontant(paiement.montant)} FCFA'),
+                      _buildDetailItem('Statut', _getStatutLabel(paiement.statut)),
+                      _buildDetailItem('Mode', _getModeLabel(paiement.modePaiement)),
+                      _buildDetailItem('Date paiement', paiement.datePaiement != null
+                          ? DateFormat('dd/MM/yyyy HH:mm').format(paiement.datePaiement!) : 'Non définie'),
+                      if (paiement.dateEcheance != null)
+                        _buildDetailItem('Date échéance', DateFormat('dd/MM/yyyy').format(paiement.dateEcheance!)),
+                      if (paiement.prixMensuel != null)
+                        _buildDetailItem('Prix mensuel', '${_formatMontant(paiement.prixMensuel!)} FCFA'),
+                      if (paiement.centreVille != null) _buildDetailItem('Ville', paiement.centreVille!),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    _buildDetailItem('Reference', paiement.referenceTransaction ?? 'N/A'),
-                    _buildDetailItem('Etudiant', paiement.etudiantNomComplet),
-                    if (paiement.matricule != null) _buildDetailItem('Matricule', paiement.matricule!),
-                    _buildDetailItem('Centre', paiement.centreNom ?? 'N/A'),
-                    _buildDetailItem('Chambre', paiement.numeroChambre ?? 'N/A'),
-                    if (paiement.typeChambre != null) _buildDetailItem('Type chambre', paiement.typeChambre!),
-                    _buildDetailItem('Type paiement', paiement.typePaiement ?? 'Loyer'),
-                    _buildDetailItem('Montant', '${_formatMontant(paiement.montant)} FCFA'),
-                    _buildDetailItem('Statut', _getStatutLabel(paiement.statut)),
-                    _buildDetailItem('Mode', _getModeLabel(paiement.modePaiement)),
-                    _buildDetailItem('Date paiement', paiement.datePaiement != null ? DateFormat('dd/MM/yyyy HH:mm').format(paiement.datePaiement!) : 'Non definie'),
-                    if (paiement.dateEcheance != null) _buildDetailItem('Date echeance', DateFormat('dd/MM/yyyy').format(paiement.dateEcheance!)),
-                    if (paiement.prixMensuel != null) _buildDetailItem('Prix mensuel', '${_formatMontant(paiement.prixMensuel!)} FCFA'),
-                    if (paiement.centreVille != null) _buildDetailItem('Ville', paiement.centreVille!),
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text('Fermer', style: TextStyle(color: AppTheme.getTextSecondary(context))),
+                    ),
+                    if (paiement.statut == 'EN_ATTENTE') ...[
+                      const SizedBox(width: 12),
+                      ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _confirmPaiement(paiement.id.toString(), provider);
+                        },
+                        style: ElevatedButton.styleFrom(
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Colors.white),
+                        child: const Text('Confirmer'),
+                      ),
+                    ],
                   ],
                 ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(onPressed: () => Navigator.pop(context), child: Text('Fermer', style: TextStyle(color: AppTheme.getTextSecondary(context)))),
-                  if (paiement.statut == 'EN_ATTENTE') ...[
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      onPressed: () { Navigator.pop(context); _confirmPaiement(paiement.id.toString(), provider); },
-                      style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white),
-                      child: const Text('Confirmer'),
-                    ),
-                  ],
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
