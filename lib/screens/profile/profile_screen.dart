@@ -479,13 +479,15 @@ class ProfileScreen extends StatelessWidget {
       ),
     );
 
+    if (result != true || !context.mounted) return;
+
+// ← PAS de dialog loader (PopScope bloquait pushNamedAndRemoveUntil)
     try {
       await authProvider.logout();
     } catch (_) {}
 
     if (!context.mounted) return;
 
-    // Fermer le loader + TOUT le stack → aller sur /login
     Navigator.of(context, rootNavigator: true)
         .pushNamedAndRemoveUntil('/login', (route) => false);
   }

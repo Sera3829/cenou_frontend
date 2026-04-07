@@ -320,36 +320,35 @@ class AuthProvider with ChangeNotifier {
   /// Déconnecte l'utilisateur et réinitialise les données persistantes.
   Future<void> logout() async {
     try {
-      // Vider IMMÉDIATEMENT la mémoire avant tout appel réseau
+      _isLoading = true;
+      // ← supprimer le _safeNotify() ici
+
+      try {
+        await _apiService
+            .post('/api/auth/logout', body: {})
+            .timeout(const Duration(seconds: 5), onTimeout: () {
+          print('Timeout logout serveur, on continue');
+          return null;
+        });
+      } catch (e) {
+        print('Erreur logout serveur (ignorée) : $e');
+      }
+
       _currentUser = null;
       _isAuthenticated = false;
-      _isLoading = true;
+      _isLoading = false;
       _errorMessage = null;
       _notificationsEnabled = true;
       _preferredLanguage = 'fr';
       _preferredTheme = 'system';
       _sessionId = null;
-      _safeNotify(); // L'UI se vide immédiatement
 
-      // Appel logout avec timeout (5 secondes max)
-      try {
-        await _apiService
-            .post('/api/auth/logout', body: {})
-            .timeout(const Duration(seconds: 5), onTimeout: () {
-          print('Timeout lors de l\'appel logout serveur, on continue');
-          return null;
-        });
-      } catch (e) {
-        print('Erreur lors du logout serveur (ignorée) : $e');
-      }
-
-      // Supprimer toutes les données stockées
       await _storageService.clearAll();
     } catch (e) {
       _errorMessage = 'Erreur lors de la déconnexion';
     } finally {
       _isLoading = false;
-      _safeNotify();
+      _safeNotify(); // un seul notify à la fin
     }
   }
 
