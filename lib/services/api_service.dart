@@ -34,7 +34,6 @@ class ApiService {
 
   /// Génère les en-têtes d'authentification incluant le jeton Bearer.
   Future<Map<String, String>> _getAuthHeaders() async {
-    // Toujours relire depuis le storage pour avoir le token le plus récent
     _token = await _storageService.getToken();
 
     final headers = {
@@ -178,7 +177,6 @@ class ApiService {
       print('Response Status: ${response.statusCode}');
       print('Content-Type: ${response.headers['content-type']}');
 
-      /// Détection des réponses binaires (fichiers)
       final contentType = response.headers['content-type'] ?? '';
       if (contentType.contains('application/pdf') ||
           contentType.contains('application/vnd.ms-excel') ||
@@ -193,7 +191,6 @@ class ApiService {
       print('Timeout: $e');
       throw Exception('Timeout: Le serveur ne repond pas');
     } catch (e) {
-      // Détection des erreurs réseau (SocketException, ClientException, XMLHttpRequest)
       if (e.toString().contains('SocketException') ||
           e.toString().contains('ClientException') ||
           e.toString().contains('XMLHttpRequest')) {
@@ -517,12 +514,14 @@ class ApiService {
       }
     } else {
       String errorMessage = 'Une erreur est survenue';
+      List<dynamic>? details;
       try {
         if (response.body.isNotEmpty) {
           final errorData = json.decode(response.body);
           errorMessage = errorData['error'] ??
               errorData['message'] ??
               'Une erreur est survenue';
+          details = errorData['details'] as List<dynamic>?;
         }
       } catch (_) {
         errorMessage = response.body.isNotEmpty
@@ -534,8 +533,10 @@ class ApiService {
 
       final uri = response.request?.url.toString() ?? '';
 
-      if (response.statusCode == 401) {
-        //Déclencher la déconnexion automatique
+      // Gestion des erreurs de validation (400 - express-validator)
+      if (response.statusCode == 400) {
+        throw ApiException(errorMessage, 400, details);
+      } else if (response.statusCode == 401) {
         print('Token expiré détecté → déconnexion automatique');
         onUnauthorized?.call();
 
@@ -574,8 +575,9 @@ class ApiService {
 class ApiException implements Exception {
   final String message;
   final int statusCode;
+  final List<dynamic>? details;  // ✅ AJOUTÉ pour les erreurs de validation
 
-  ApiException(this.message, this.statusCode);
+  ApiException(this.message, this.statusCode, [this.details]);
 
   @override
   String toString() => message;

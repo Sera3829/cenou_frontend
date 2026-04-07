@@ -5,10 +5,11 @@ import '../../config/theme.dart';
 import '../../providers/paiement_provider.dart';
 import '../../services/connectivity_service.dart';
 import '../../models/paiement.dart';
+import '../../utils/mobile_responsive.dart';
 import 'paiement_detail_screen.dart';
 import 'initier_paiement_screen.dart';
 
-/// Écran affichant la liste des paiements de l'utilisateur.
+/// Écran liste des paiements — responsive mobile/tablette.
 class PaiementsListScreen extends StatefulWidget {
   const PaiementsListScreen({Key? key}) : super(key: key);
 
@@ -25,145 +26,212 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
     });
   }
 
+  // ── Navigation vers le paiement (avec vérif connexion) ──────────────────
+  void _goToPaiement(BuildContext context) {
+    final conn = Provider.of<ConnectivityService>(context, listen: false);
+    if (conn.isOffline) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Connexion internet requise pour effectuer un paiement'),
+          backgroundColor: Colors.orange,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const InitierPaiementScreen()),
+    );
+  }
+
+  // ── Infos statut ─────────────────────────────────────────────────────────
+  _StatusInfo _getStatusInfo(Paiement p) {
+    if (p.isConfirme) return _StatusInfo(AppTheme.successColor, Icons.check_circle_rounded);
+    if (p.isEchec) return _StatusInfo(AppTheme.errorColor, Icons.cancel_rounded);
+    return _StatusInfo(AppTheme.warningColor, Icons.pending_actions_rounded);
+  }
+
+  IconData _getModeIcon(String mode) {
+    switch (mode.toUpperCase()) {
+      case 'ORANGE_MONEY': return Icons.phone_android_rounded;
+      case 'MOOV_MONEY':  return Icons.phone_iphone_rounded;
+      case 'WAVE':         return Icons.account_balance_wallet_rounded;
+      case 'ESPECES':      return Icons.money_rounded;
+      case 'VIREMENT':     return Icons.account_balance_rounded;
+      default:             return Icons.payment_rounded;
+    }
+  }
+
+  // ── Build ────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: const Text(
-          'Mes Paiements',
-          style: TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 20,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          Consumer<PaiementProvider>(
+      appBar: _buildAppBar(isDark),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final config = ResponsiveConfig.fromConstraints(constraints);
+          return Consumer<PaiementProvider>(
             builder: (context, provider, _) {
-              if (provider.isFromCache) {
-                return Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.amber,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: const [
-                      Icon(Icons.history, size: 14, color: Colors.white),
-                      SizedBox(width: 4),
-                      Text(
-                        'Cache',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  ),
+              if (provider.isLoading && provider.paiements.isEmpty) {
+                return _LoadingState(config: config);
+              }
+              if (provider.error != null) {
+                return _ErrorState(
+                  error: provider.error!,
+                  isDark: isDark,
+                  config: config,
+                  onRetry: provider.refresh,
                 );
               }
-              return const SizedBox.shrink();
-            },
-          ),
-
-          IconButton(
-            icon: const Icon(Icons.history_rounded),
-            onPressed: () {
-              // TODO: Afficher historique complet
-            },
-            tooltip: 'Historique complet',
-          ),
-        ],
-      ),
-      body: Consumer<PaiementProvider>(
-        builder: (context, paiementProvider, _) {
-          if (paiementProvider.isLoading && paiementProvider.paiements.isEmpty) {
-            return const _LoadingState();
-          }
-
-          if (paiementProvider.error != null) {
-            return _buildErrorState(paiementProvider, isDark);
-          }
-
-          return RefreshIndicator(
-            onRefresh: () => paiementProvider.refresh(),
-            color: Theme.of(context).colorScheme.primary,
-            backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                // Carte des statistiques
-                SliverToBoxAdapter(
-                  child: _buildStatsCard(paiementProvider),
-                ),
-                // Liste des paiements historiques
-                SliverPadding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-                  sliver: paiementProvider.paiements.isEmpty
-                      ? SliverToBoxAdapter(child: _buildEmptyState(isDark))
-                      : SliverList(
-                    delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                        final paiement = paiementProvider.paiements[index];
-                        return _buildPaiementCard(context, paiement, isDark);
-                      },
-                      childCount: paiementProvider.paiements.length,
+              return RefreshIndicator(
+                onRefresh: provider.refresh,
+                color: Theme.of(context).colorScheme.primary,
+                backgroundColor: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+                child: CustomScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: _StatsCard(
+                        provider: provider,
+                        isDark: isDark,
+                        config: config,
+                        onPay: () => _goToPaiement(context),
+                      ),
                     ),
-                  ),
+                    SliverPadding(
+                      padding: EdgeInsets.fromLTRB(
+                        config.isSmall ? 12 : 16,
+                        12,
+                        config.isSmall ? 12 : 16,
+                        100, // espace pour le FAB
+                      ),
+                      sliver: provider.paiements.isEmpty
+                          ? SliverToBoxAdapter(
+                          child: _EmptyState(isDark: isDark, config: config))
+                          : SliverList(
+                        delegate: SliverChildBuilderDelegate(
+                              (_, i) => _PaiementCard(
+                            paiement: provider.paiements[i],
+                            isDark: isDark,
+                            config: config,
+                            statusInfo: _getStatusInfo(provider.paiements[i]),
+                            modeIcon: _getModeIcon(provider.paiements[i].modePaiement),
+                            onTap: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PaiementDetailScreen(
+                                    paiementId: provider.paiements[i].id),
+                              ),
+                            ),
+                          ),
+                          childCount: provider.paiements.length,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // Vérifier la connexion avant de permettre un nouveau paiement
-          final connectivity = Provider.of<ConnectivityService>(context, listen: false);
-          if (connectivity.isOffline) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Connexion internet requise pour effectuer un paiement'),
-                backgroundColor: Colors.orange,
-              ),
-            );
-            return;
-          }
-
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const InitierPaiementScreen(),
-            ),
-          );
-        },
-        icon: const Icon(Icons.add_rounded, size: 22),
-        label: const Text(
-          'Nouveau paiement',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        foregroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        elevation: 4,
-      ),
+      floatingActionButton: _buildFab(context),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
-  /// Construit la carte récapitulative des statistiques financières.
-  Widget _buildStatsCard(PaiementProvider provider) {
+  PreferredSizeWidget _buildAppBar(bool isDark) {
+    return AppBar(
+      title: const Text(
+        'Mes Paiements',
+        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 19),
+      ),
+      centerTitle: true,
+      actions: [
+        Consumer<PaiementProvider>(
+          builder: (_, provider, __) {
+            if (!provider.isFromCache) return const SizedBox.shrink();
+            return Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.amber,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.history, size: 13, color: Colors.white),
+                  SizedBox(width: 3),
+                  Text(
+                    'Cache',
+                    style: TextStyle(
+                        fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.history_rounded),
+          onPressed: () {},
+          tooltip: 'Historique complet',
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFab(BuildContext context) {
+    final config = ResponsiveConfig.fromConstraints(
+      BoxConstraints(maxWidth: MediaQuery.of(context).size.width),
+    );
+    return FloatingActionButton.extended(
+      onPressed: () => _goToPaiement(context),
+      icon: const Icon(Icons.add_rounded, size: 22),
+      label: Text(
+        config.isSmall ? 'Paiement' : 'Nouveau paiement',
+        style: const TextStyle(fontWeight: FontWeight.w600),
+      ),
+      backgroundColor: Theme.of(context).colorScheme.primary,
+      foregroundColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 4,
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// Carte statistiques
+// ════════════════════════════════════════════════════════════════
+
+class _StatsCard extends StatelessWidget {
+  final PaiementProvider provider;
+  final bool isDark;
+  final ResponsiveConfig config;
+  final VoidCallback onPay;
+
+  const _StatsCard({
+    required this.provider,
+    required this.isDark,
+    required this.config,
+    required this.onPay,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final margin = config.isSmall ? 12.0 : 16.0;
+    final pad = config.responsive(small: 14, medium: 18, large: 22);
+    final titleSize = config.responsive(small: 12, medium: 13, large: 14);
+    final amountSize = config.responsive(small: 13, medium: 15, large: 16);
+
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      padding: const EdgeInsets.all(20),
+      margin: EdgeInsets.fromLTRB(margin, margin, margin, 6),
+      padding: EdgeInsets.all(pad),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -185,478 +253,295 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // En-tête
           Row(
             children: [
-              Icon(
-                Icons.bar_chart_rounded,
-                color: Colors.white.withOpacity(0.9),
-                size: 20,
-              ),
+              Icon(Icons.bar_chart_rounded,
+                  color: Colors.white.withOpacity(0.9), size: 18),
               const SizedBox(width: 8),
               Text(
                 'Résumé financier',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.9),
-                  fontSize: 14,
+                  fontSize: titleSize,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: config.isShortScreen ? 10 : 14),
 
-          // Grille de statistiques
-          GridView.count(
+          // 3 stats : Total | Confirmés | En cours
+          // Sur tablette → Row directe, sur mobile → GridView
+          config.isTablet
+              ? Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _StatItem(
+                label: 'Total',
+                value: provider.totalPaiements.toString(),
+                icon: Icons.receipt_long_rounded,
+                iconColor: Colors.white.withOpacity(0.9),
+                config: config,
+              ),
+              _StatItem(
+                label: 'Confirmés',
+                value: provider.paiementsConfirmes.toString(),
+                icon: Icons.check_circle_rounded,
+                iconColor: Colors.green[300]!,
+                config: config,
+              ),
+              _StatItem(
+                label: 'En cours',
+                value: provider.pendingPaiementsCount.toString(),
+                icon: Icons.pending_actions_rounded,
+                iconColor: Colors.amber[300]!,
+                config: config,
+              ),
+            ],
+          )
+              : GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 3,
-            childAspectRatio: 1.2,
-            crossAxisSpacing: 12,
+            childAspectRatio: config.isSmall ? 1.0 : 1.2,
+            crossAxisSpacing: config.isSmall ? 6 : 10,
             mainAxisSpacing: 0,
             children: [
-              _buildStatItem(
-                'Total',
-                provider.totalPaiements.toString(),
-                Icons.receipt_long_rounded,
-                Colors.white.withOpacity(0.9),
+              _StatItem(
+                label: 'Total',
+                value: provider.totalPaiements.toString(),
+                icon: Icons.receipt_long_rounded,
+                iconColor: Colors.white.withOpacity(0.9),
+                config: config,
               ),
-              _buildStatItem(
-                'Confirmés',
-                provider.paiementsConfirmes.toString(),
-                Icons.check_circle_rounded,
-                Colors.green[300]!,
+              _StatItem(
+                label: 'Confirmés',
+                value: provider.paiementsConfirmes.toString(),
+                icon: Icons.check_circle_rounded,
+                iconColor: Colors.green[300]!,
+                config: config,
               ),
-              _buildStatItem(
-                'En cours',
-                provider.pendingPaiementsCount.toString(),
-                Icons.pending_actions_rounded,
-                Colors.amber[300]!,
+              _StatItem(
+                label: 'En cours',
+                value: provider.pendingPaiementsCount.toString(),
+                icon: Icons.pending_actions_rounded,
+                iconColor: Colors.amber[300]!,
+                config: config,
               ),
             ],
           ),
-          const SizedBox(height: 16),
+
+          SizedBox(height: config.isShortScreen ? 10 : 14),
 
           // Montant total payé
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.attach_money_rounded,
-                  color: Colors.white.withOpacity(0.9),
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Flexible(
-                  child: Text(
-                    'Total payé: ${NumberFormat('#,###').format(provider.montantTotal)} FCFA',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
+          _AmountRow(
+            icon: Icons.attach_money_rounded,
+            iconColor: Colors.white.withOpacity(0.9),
+            bgColor: Colors.white.withOpacity(0.1),
+            text:
+            'Total payé: ${NumberFormat('#,###').format(provider.montantTotal)} FCFA',
+            textColor: Colors.white,
+            fontSize: amountSize,
+            config: config,
           ),
-
-          // Montant attendu (à payer)
           const SizedBox(height: 8),
+
+          // Montant à régler
+          _AmountRow(
+            icon: Icons.warning_amber_rounded,
+            iconColor: Colors.orange[300]!,
+            bgColor: Colors.orange.withOpacity(0.2),
+            text:
+            'À régler: ${NumberFormat('#,###').format(provider.montantTotalAttendu)} FCFA',
+            textColor: Colors.orange[300]!,
+            fontSize: config.responsive(small: 11, medium: 13, large: 14),
+            config: config,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color iconColor;
+  final ResponsiveConfig config;
+
+  const _StatItem({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.iconColor,
+    required this.config,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final iconPad = config.responsive(small: 6, medium: 8, large: 10);
+    final iconSize = config.responsive(small: 16, medium: 19, large: 22);
+    final valueSize = config.responsive(small: 14, medium: 17, large: 19);
+    final labelSize = config.responsive(small: 9, medium: 10, large: 11);
+
+    return FittedBox(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: EdgeInsets.all(iconPad),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
+              color: Colors.white.withOpacity(0.15),
+              shape: BoxShape.circle,
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.warning_amber_rounded,
-                  color: Colors.orange[300],
-                  size: 20,
-                ),
-                const SizedBox(width: 12),
-                Flexible(
-                  child: Text(
-                    'À régler: ${NumberFormat('#,###').format(provider.montantTotalAttendu)} FCFA',
-                    style: TextStyle(
-                      color: Colors.orange[300],
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
+            child: Icon(icon, color: iconColor, size: iconSize),
+          ),
+          SizedBox(height: config.isSmall ? 5 : 7),
+          Text(
+            value,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: valueSize,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: labelSize,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  /// Affiche la section des paiements attendus (non encore payés).
-  Widget _buildPaiementsAttendusSection(BuildContext context, PaiementProvider provider, bool isDark) {
-    final attendus = provider.paiementsAttendus;
-    if (attendus.isEmpty) return const SizedBox.shrink();
+class _AmountRow extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final Color bgColor;
+  final String text;
+  final Color textColor;
+  final double fontSize;
+  final ResponsiveConfig config;
+
+  const _AmountRow({
+    required this.icon,
+    required this.iconColor,
+    required this.bgColor,
+    required this.text,
+    required this.textColor,
+    required this.fontSize,
+    required this.config,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final iconSize = config.responsive(small: 16, medium: 20, large: 22);
+    final pad = config.isSmall ? 10.0 : 14.0;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
+      padding: EdgeInsets.symmetric(horizontal: pad, vertical: 10),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.warning_amber_rounded,
-                color: Colors.red,
-                size: 20,
+          Icon(icon, color: iconColor, size: iconSize),
+          const SizedBox(width: 10),
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                color: textColor,
+                fontSize: fontSize,
+                fontWeight: FontWeight.w700,
               ),
-              const SizedBox(width: 8),
-              Text(
-                'Paiements attendus',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : Colors.grey[800],
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${attendus.length}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.red,
-                  ),
-                ),
-              ),
-            ],
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          const SizedBox(height: 12),
-          ...attendus.map((p) => _buildPaiementAttenduCard(context, p, isDark)).toList(),
         ],
       ),
     );
   }
+}
 
-  /// Carte pour un paiement attendu.
-  Widget _buildPaiementAttenduCard(BuildContext context, Paiement paiement, bool isDark) {
-    final isEnRetard = paiement.isEnRetard;
+// ════════════════════════════════════════════════════════════════
+// Carte paiement historique
+// ════════════════════════════════════════════════════════════════
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Card(
-        elevation: isDark ? 4 : 2,
-        color: isDark ? const Color(0xFF1E1E1E) : null,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: isEnRetard ? Colors.red : Colors.orange,
-            width: 1.5,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: (isEnRetard ? Colors.red : Colors.orange).withOpacity(isDark ? 0.2 : 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  isEnRetard ? Icons.error_rounded : Icons.schedule_rounded,
-                  color: isEnRetard ? Colors.red : Colors.orange,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${NumberFormat('#,###').format(paiement.montant)} FCFA',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isEnRetard
-                          ? 'En retard • Échéance: ${DateFormat('dd/MM/yyyy').format(paiement.dateEcheance as DateTime)}'
-                          : 'Échéance: ${DateFormat('dd/MM/yyyy').format(paiement.dateEcheance as DateTime)}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: isDark ? Colors.grey.shade400 : Colors.grey[600],
-                      ),
-                    ),
-                    if (paiement.description != null) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        paiement.description!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? Colors.grey.shade500 : Colors.grey[500],
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              ElevatedButton(
-                onPressed: () {
-                  // Vérifier la connexion avant de lancer le paiement
-                  final connectivity = Provider.of<ConnectivityService>(context, listen: false);
-                  if (connectivity.isOffline) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Connexion internet requise pour effectuer un paiement'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
-                    return;
-                  }
+class _PaiementCard extends StatelessWidget {
+  final Paiement paiement;
+  final bool isDark;
+  final ResponsiveConfig config;
+  final _StatusInfo statusInfo;
+  final IconData modeIcon;
+  final VoidCallback onTap;
 
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const InitierPaiementScreen(),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Payer',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  const _PaiementCard({
+    required this.paiement,
+    required this.isDark,
+    required this.config,
+    required this.statusInfo,
+    required this.modeIcon,
+    required this.onTap,
+  });
 
-  /// Affiche la section des paiements en cours (initiés).
-  Widget _buildPaiementsEnAttenteSection(BuildContext context, List<Paiement> paiementsEnAttente, bool isDark) {
-    return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.pending_actions_rounded,
-                color: Theme.of(context).colorScheme.primary,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Paiements en cours',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : Colors.grey[800],
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(isDark ? 0.2 : 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '${paiementsEnAttente.length}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...paiementsEnAttente.map((p) => _buildPendingCard(context, p, isDark)).toList(),
-        ],
-      ),
-    );
-  }
+  @override
+  Widget build(BuildContext context) {
+    final cardPad = config.responsive(small: 12, medium: 16, large: 18);
+    final amountSize = config.responsive(small: 15, medium: 17, large: 19);
+    final modeSize = config.responsive(small: 11, medium: 13, large: 14);
+    final metaSize = config.responsive(small: 10, medium: 12, large: 12);
+    final iconSize = config.responsive(small: 18, medium: 21, large: 23);
+    final iconPad = config.responsive(small: 8, medium: 10, large: 11);
+    final statusFontSize = config.responsive(small: 10, medium: 12, large: 12);
 
-  /// Carte pour un paiement en attente (en cours).
-  Widget _buildPendingCard(BuildContext context, Paiement paiement, bool isDark) {
-    final isEnRetard = paiement.isEnRetard;
+    // Référence tronquée
+    final ref = paiement.referenceTransaction as String? ?? '';
+    final displayRef = ref.length > (config.isSmall ? 10 : 16)
+        ? '${ref.substring(0, config.isSmall ? 9 : 15)}…'
+        : ref;
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Card(
-        elevation: isDark ? 4 : 2,
-        color: isDark ? const Color(0xFF1E1E1E) : null,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: isEnRetard ? AppTheme.errorColor : AppTheme.warningColor,
-            width: 1.5,
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: (isEnRetard ? AppTheme.errorColor : AppTheme.warningColor)
-                      .withOpacity(isDark ? 0.2 : 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  isEnRetard ? Icons.error_rounded : Icons.pending_actions_rounded,
-                  color: isEnRetard ? AppTheme.errorColor : AppTheme.warningColor,
-                  size: 22,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '${NumberFormat('#,###').format(paiement.montant)} FCFA',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: isDark ? Colors.white : Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isEnRetard
-                          ? 'En retard • Échéance: ${DateFormat('dd/MM/yyyy').format(paiement.dateEcheance as DateTime)}'
-                          : 'Échéance: ${DateFormat('dd/MM/yyyy').format(paiement.dateEcheance as DateTime)}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: isDark ? Colors.grey.shade400 : Colors.grey[600],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              ElevatedButton(
-                onPressed: () {
-                  final connectivity = Provider.of<ConnectivityService>(context, listen: false);
-                  if (connectivity.isOffline) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Connexion internet requise pour effectuer un paiement'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
-                    return;
-                  }
-
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const InitierPaiementScreen(),
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).colorScheme.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text(
-                  'Payer',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// Carte pour un paiement historique.
-  Widget _buildPaiementCard(BuildContext context, Paiement paiement, bool isDark) {
-    final statusInfo = _getStatusInfo(paiement);
+    // Nom du centre tronqué
+    final centre = paiement.nomCentre ?? '';
+    final displayCentre = centre.length > (config.isSmall ? 12 : 18)
+        ? '${centre.substring(0, config.isSmall ? 11 : 17)}…'
+        : centre;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: Card(
         elevation: isDark ? 4 : 1,
         color: isDark ? const Color(0xFF1E1E1E) : null,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => PaiementDetailScreen(paiementId: paiement.id),
-              ),
-            );
-          },
+          onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(18),
+            padding: EdgeInsets.all(cardPad),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // En-tête avec statut et montant
+                // ── Ligne 1 : statut + référence ──
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Badge de statut
+                    // Badge statut
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: config.isSmall ? 8 : 10,
+                        vertical: config.isSmall ? 4 : 5,
+                      ),
                       decoration: BoxDecoration(
                         color: statusInfo.color.withOpacity(isDark ? 0.2 : 0.1),
                         borderRadius: BorderRadius.circular(20),
@@ -664,17 +549,14 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            statusInfo.icon,
-                            color: statusInfo.color,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 6),
+                          Icon(statusInfo.icon,
+                              color: statusInfo.color, size: 12),
+                          const SizedBox(width: 4),
                           Text(
                             paiement.statut,
                             style: TextStyle(
                               color: statusInfo.color,
-                              fontSize: 12,
+                              fontSize: statusFontSize,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -683,36 +565,36 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
                     ),
                     const Spacer(),
                     // Référence
-                    Expanded(
-                      child: Text(
-                        paiement.referenceTransaction as String,
-                        textAlign: TextAlign.right,
+                    if (displayRef.isNotEmpty)
+                      Text(
+                        displayRef,
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: metaSize,
                           color: isDark ? Colors.grey.shade400 : Colors.grey[500],
                           fontWeight: FontWeight.w500,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
                   ],
                 ),
-                const SizedBox(height: 16),
 
-                // Montant et mode
+                SizedBox(height: config.isSmall ? 10 : 14),
+
+                // ── Ligne 2 : icône mode + montant ──
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: EdgeInsets.all(iconPad),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(isDark ? 0.2 : 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        color: Theme.of(context)
+                            .colorScheme
+                            .primary
+                            .withOpacity(isDark ? 0.2 : 0.1),
+                        borderRadius: BorderRadius.circular(10),
                       ),
                       child: Icon(
-                        _getPaymentModeIcon(paiement.modePaiement),
+                        modeIcon,
                         color: Theme.of(context).colorScheme.primary,
-                        size: 22,
+                        size: iconSize,
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -724,98 +606,66 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
                           Text(
                             '${NumberFormat('#,###').format(paiement.montant)} FCFA',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: amountSize,
                               fontWeight: FontWeight.w700,
                               color: isDark ? Colors.white : Colors.black87,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          const SizedBox(height: 4),
+                          const SizedBox(height: 3),
                           Text(
                             paiement.modePaiement.replaceAll('_', ' '),
                             style: TextStyle(
-                              fontSize: 14,
-                              color: isDark ? Colors.grey.shade400 : Colors.grey[600],
+                              fontSize: modeSize,
+                              color: isDark
+                                  ? Colors.grey.shade400
+                                  : Colors.grey[600],
                             ),
                           ),
                         ],
                       ),
+                    ),
+                    // Flèche
+                    Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 13,
+                      color: isDark ? Colors.grey.shade600 : Colors.grey[400],
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
 
-                // Informations complémentaires
+                SizedBox(height: config.isSmall ? 8 : 12),
+
+                // ── Ligne 3 : méta (date | chambre | centre) ──
                 Wrap(
-                  spacing: 12,
-                  runSpacing: 8,
+                  spacing: config.isSmall ? 8 : 12,
+                  runSpacing: 4,
                   children: [
-                    // Date de paiement
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.calendar_today_rounded,
-                          size: 14,
-                          color: isDark ? Colors.grey.shade400 : Colors.grey[500],
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          paiement.datePaiement != null
-                              ? DateFormat('dd MMM yyyy - HH:mm').format(paiement.datePaiement!)
-                              : 'En attente',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: isDark ? Colors.grey.shade400 : Colors.grey[600],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
+                    _MetaChip(
+                      icon: Icons.calendar_today_rounded,
+                      text: paiement.datePaiement != null
+                          ? (config.isSmall
+                          ? DateFormat('dd/MM/yy').format(paiement.datePaiement!)
+                          : DateFormat('dd MMM yyyy · HH:mm')
+                          .format(paiement.datePaiement!))
+                          : 'En attente',
+                      isDark: isDark,
+                      fontSize: metaSize,
                     ),
-                    // Chambre
-                    if (paiement.numeroChambre != null && paiement.numeroChambre!.isNotEmpty)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.room_rounded,
-                            size: 14,
-                            color: isDark ? Colors.grey.shade400 : Colors.grey[500],
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Ch. ${paiement.numeroChambre!}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: isDark ? Colors.grey.shade400 : Colors.grey[600],
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
+                    if ((paiement.numeroChambre ?? '').isNotEmpty)
+                      _MetaChip(
+                        icon: Icons.room_rounded,
+                        text: 'Ch. ${paiement.numeroChambre!}',
+                        isDark: isDark,
+                        fontSize: metaSize,
                       ),
-                    // Centre
-                    if (paiement.nomCentre != null && paiement.nomCentre!.isNotEmpty)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.business_rounded,
-                            size: 14,
-                            color: isDark ? Colors.grey.shade400 : Colors.grey[500],
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            paiement.nomCentre!,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: isDark ? Colors.grey.shade400 : Colors.grey[600],
-                              fontWeight: FontWeight.w500,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
+                    if (displayCentre.isNotEmpty)
+                      _MetaChip(
+                        icon: Icons.business_rounded,
+                        text: displayCentre,
+                        isDark: isDark,
+                        fontSize: metaSize,
                       ),
                   ],
                 ),
@@ -826,180 +676,54 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
       ),
     );
   }
-
-  /// Construit un élément de statistique dans la carte.
-  Widget _buildStatItem(String label, String value, IconData icon, Color iconColor) {
-    return FittedBox(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.15),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              icon,
-              color: iconColor,
-              size: 20,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Affiche l'état vide.
-  Widget _buildEmptyState(bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 60),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.receipt_long_outlined,
-            size: 80,
-            color: isDark ? Colors.grey.shade700 : Colors.grey[300],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Aucun paiement',
-            style: TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w700,
-              color: isDark ? Colors.grey.shade300 : Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'Vos paiements effectués apparaîtront ici',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 15,
-              color: isDark ? Colors.grey.shade400 : Colors.grey[500],
-              height: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Affiche un message d'erreur.
-  Widget _buildErrorState(PaiementProvider provider, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline_rounded,
-            size: 72,
-            color: isDark ? Colors.grey.shade600 : Colors.grey[400],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Erreur de chargement',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: isDark ? Colors.grey.shade300 : Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            provider.error!,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 15,
-              color: isDark ? Colors.grey.shade400 : Colors.grey[500],
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: () => provider.refresh(),
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Réessayer'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Méthodes utilitaires
-
-  _StatusInfo _getStatusInfo(Paiement paiement) {
-    if (paiement.isConfirme) {
-      return _StatusInfo(AppTheme.successColor, Icons.check_circle_rounded);
-    } else if (paiement.isEchec) {
-      return _StatusInfo(AppTheme.errorColor, Icons.cancel_rounded);
-    } else {
-      return _StatusInfo(AppTheme.warningColor, Icons.pending_actions_rounded);
-    }
-  }
-
-  IconData _getPaymentModeIcon(String mode) {
-    switch (mode.toUpperCase()) {
-      case 'ORANGE_MONEY':
-        return Icons.phone_android_rounded;
-      case 'MOOV_MONEY':
-        return Icons.phone_iphone_rounded;
-      case 'WAVE':
-        return Icons.account_balance_wallet_rounded;
-      case 'ESPECES':
-        return Icons.money_rounded;
-      case 'VIREMENT':
-        return Icons.account_balance_rounded;
-      default:
-        return Icons.payment_rounded;
-    }
-  }
 }
 
-/// Structure d'information sur le statut d'un paiement (couleur et icône).
-class _StatusInfo {
-  final Color color;
+class _MetaChip extends StatelessWidget {
   final IconData icon;
+  final String text;
+  final bool isDark;
+  final double fontSize;
 
-  _StatusInfo(this.color, this.icon);
+  const _MetaChip({
+    required this.icon,
+    required this.text,
+    required this.isDark,
+    required this.fontSize,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = isDark ? Colors.grey.shade400 : Colors.grey[600]!;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 12, color: color),
+        const SizedBox(width: 4),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: fontSize,
+            color: color,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
-/// Écran de chargement temporaire.
+// ════════════════════════════════════════════════════════════════
+// États : loading / erreur / vide
+// ════════════════════════════════════════════════════════════════
+
 class _LoadingState extends StatelessWidget {
-  const _LoadingState({Key? key}) : super(key: key);
+  final ResponsiveConfig config;
+  const _LoadingState({required this.config});
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
+    final textSize = config.responsive(small: 13, medium: 15, large: 16);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1008,11 +732,11 @@ class _LoadingState extends StatelessWidget {
             strokeWidth: 2,
             color: Theme.of(context).colorScheme.primary,
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           Text(
-            'Chargement des paiements...',
+            'Chargement des paiements…',
             style: TextStyle(
-              fontSize: 16,
+              fontSize: textSize,
               color: isDark ? Colors.grey.shade300 : Colors.grey[600],
             ),
           ),
@@ -1020,4 +744,138 @@ class _LoadingState extends StatelessWidget {
       ),
     );
   }
+}
+
+class _EmptyState extends StatelessWidget {
+  final bool isDark;
+  final ResponsiveConfig config;
+  const _EmptyState({required this.isDark, required this.config});
+
+  @override
+  Widget build(BuildContext context) {
+    final iconSize = config.responsive(small: 60, medium: 75, large: 85);
+    final titleSize = config.responsive(small: 18, medium: 21, large: 23);
+    final bodySize = config.responsive(small: 13, medium: 14, large: 15);
+    final hPad = config.responsive(small: 20, medium: 32, large: 48);
+    final vPad = config.responsive(small: 40, medium: 55, large: 65);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.receipt_long_outlined,
+            size: iconSize,
+            color: isDark ? Colors.grey.shade700 : Colors.grey[300],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Aucun paiement',
+            style: TextStyle(
+              fontSize: titleSize,
+              fontWeight: FontWeight.w700,
+              color: isDark ? Colors.grey.shade300 : Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            'Vos paiements effectués apparaîtront ici',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: bodySize,
+              color: isDark ? Colors.grey.shade400 : Colors.grey[500],
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  final String error;
+  final bool isDark;
+  final ResponsiveConfig config;
+  final VoidCallback onRetry;
+
+  const _ErrorState({
+    required this.error,
+    required this.isDark,
+    required this.config,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final iconSize = config.responsive(small: 56, medium: 68, large: 76);
+    final titleSize = config.responsive(small: 17, medium: 19, large: 21);
+    final bodySize = config.responsive(small: 12, medium: 14, large: 15);
+    final hPad = config.responsive(small: 20, medium: 32, large: 48);
+
+    // Tronquer l'erreur sur petit écran
+    final displayError = config.isSmall && error.length > 80
+        ? '${error.substring(0, 79)}…'
+        : error;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: hPad),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline_rounded,
+            size: iconSize,
+            color: isDark ? Colors.grey.shade600 : Colors.grey[400],
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'Erreur de chargement',
+            style: TextStyle(
+              fontSize: titleSize,
+              fontWeight: FontWeight.w600,
+              color: isDark ? Colors.grey.shade300 : Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            displayError,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: bodySize,
+              color: isDark ? Colors.grey.shade400 : Colors.grey[500],
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 28),
+          ElevatedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded, size: 18),
+            label: const Text('Réessayer'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(
+                horizontal: config.isSmall ? 20 : 28,
+                vertical: config.isSmall ? 11 : 13,
+              ),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+// Modèle statut
+// ════════════════════════════════════════════════════════════════
+
+class _StatusInfo {
+  final Color color;
+  final IconData icon;
+  const _StatusInfo(this.color, this.icon);
 }

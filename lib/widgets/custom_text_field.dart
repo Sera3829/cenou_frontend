@@ -1,3 +1,4 @@
+// lib/widgets/custom_text_field.dart
 import 'package:flutter/material.dart';
 import '../config/theme.dart';
 
@@ -21,6 +22,9 @@ class CustomTextField extends StatelessWidget {
   final TextInputAction? textInputAction;
   final FocusNode? focusNode;
   final Color? labelColor;
+  final void Function(String)? onFieldSubmitted;
+  final Iterable<String>? autofillHints;
+  final TextCapitalization textCapitalization;
 
   const CustomTextField({
     Key? key,
@@ -43,11 +47,16 @@ class CustomTextField extends StatelessWidget {
     this.textInputAction,
     this.focusNode,
     this.labelColor,
+    this.onFieldSubmitted,
+    this.autofillHints,
+    this.textCapitalization = TextCapitalization.none,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final bool hasError = errorText != null && errorText!.isNotEmpty;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final bool hasExternalError = errorText != null && errorText!.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,11 +66,13 @@ class CustomTextField extends StatelessWidget {
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: hasError ? AppTheme.errorColor : (labelColor ?? Colors.black87),
+            color: hasExternalError
+                ? AppTheme.errorColor
+                : (labelColor ?? theme.textTheme.bodyLarge?.color),
           ),
         ),
         const SizedBox(height: 8),
-        TextField( // TextField au lieu de TextFormField
+        TextFormField(
           controller: controller,
           obscureText: obscureText,
           keyboardType: keyboardType,
@@ -73,83 +84,74 @@ class CustomTextField extends StatelessWidget {
           focusNode: focusNode,
           onChanged: onChanged,
           onTap: onTap,
+          onFieldSubmitted: onFieldSubmitted,
+          autofillHints: autofillHints,
+          textCapitalization: textCapitalization,
+          validator: validator,
           style: TextStyle(
-            color: (enabled == false) ? Colors.grey[600] : Colors.black,
+            color: (enabled == false) ? Colors.grey[600] : theme.textTheme.bodyLarge?.color,
           ),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(
-              color: Colors.grey[400],
-            ),
+            hintStyle: TextStyle(color: Colors.grey[400]),
             prefixIcon: prefixIcon != null
-                ? Icon(
-              prefixIcon,
-              color: hasError
-                  ? AppTheme.errorColor
-                  : Colors.grey[600],
-            )
+                ? Icon(prefixIcon, color: Colors.grey[600])
                 : null,
             suffixIcon: suffixIcon,
             filled: true,
             fillColor: (enabled == false)
-                ? Colors.grey[100]
-                : Colors.grey[50],
+                ? (isDark ? Colors.grey[800] : Colors.grey[100])
+                : (isDark ? Colors.grey[900] : Colors.grey[50]),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: hasError
-                    ? AppTheme.errorColor
-                    : (borderColor ?? Colors.grey[300]!),
-                width: hasError ? 2 : 1,
+                color: borderColor ?? Colors.grey[300]!,
+                width: 1,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: hasError
-                    ? AppTheme.errorColor
-                    : (borderColor ?? Colors.grey[300]!),
-                width: hasError ? 2 : 1,
+                color: borderColor ?? Colors.grey[300]!,
+                width: 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: hasError
-                    ? AppTheme.errorColor
-                    : (borderColor ?? AppTheme.primaryColor),
+                color: borderColor ?? AppTheme.primaryColor,
                 width: 2,
               ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.errorColor, width: 2),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: AppTheme.errorColor, width: 2),
             ),
             contentPadding: EdgeInsets.symmetric(
               horizontal: 16,
               vertical: maxLines != null && maxLines! > 1 ? 12 : 16,
             ),
-            // PAS de errorText dans InputDecoration
             counterText: maxLength != null ? null : '',
+            errorStyle: const TextStyle(fontSize: 12, color: AppTheme.errorColor),
+            errorMaxLines: 2,
           ),
         ),
-        // Message d'erreur EXTERNE au TextField
-        if (hasError) ...[
+        if (hasExternalError) ...[
           const SizedBox(height: 6),
           Padding(
             padding: const EdgeInsets.only(left: 16.0),
             child: Row(
               children: [
-                const Icon(
-                  Icons.error_outline,
-                  size: 14,
-                  color: AppTheme.errorColor,
-                ),
+                const Icon(Icons.error_outline, size: 14, color: AppTheme.errorColor),
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
                     errorText!,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppTheme.errorColor,
-                      height: 1.2,
-                    ),
+                    style: const TextStyle(fontSize: 12, color: AppTheme.errorColor),
                   ),
                 ),
               ],

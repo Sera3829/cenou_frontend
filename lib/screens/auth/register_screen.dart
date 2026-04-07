@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/api_service.dart';
+import '../../utils/mobile_responsive.dart';
+import '../../utils/validators.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 
@@ -14,6 +17,8 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  // Contrôleurs
   final _matriculeController = TextEditingController();
   final _nomController = TextEditingController();
   final _prenomController = TextEditingController();
@@ -22,9 +27,34 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
+  // Focus nodes pour la navigation clavier
+  final _matriculeFocus = FocusNode();
+  final _nomFocus = FocusNode();
+  final _prenomFocus = FocusNode();
+  final _emailFocus = FocusNode();
+  final _telephoneFocus = FocusNode();
+  final _passwordFocus = FocusNode();
+  final _confirmPasswordFocus = FocusNode();
+
+  // État UI
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _isLoading = false;
+
+  // Force du mot de passe (indicateurs)
+  bool _hasMinLength = false;
+  bool _hasUppercase = false;
+  bool _hasLowercase = false;
+  bool _hasDigit = false;
+
+  // Erreurs retournées par le backend (express-validator)
+  Map<String, String> _backendErrors = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _passwordController.addListener(_updatePasswordStrength);
+  }
 
   @override
   void dispose() {
@@ -33,18 +63,52 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _prenomController.dispose();
     _emailController.dispose();
     _telephoneController.dispose();
+    _passwordController.removeListener(_updatePasswordStrength);
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _matriculeFocus.dispose();
+    _nomFocus.dispose();
+    _prenomFocus.dispose();
+    _emailFocus.dispose();
+    _telephoneFocus.dispose();
+    _passwordFocus.dispose();
+    _confirmPasswordFocus.dispose();
     super.dispose();
   }
 
+  // Mise à jour optimisée des indicateurs de force du mot de passe
+  void _updatePasswordStrength() {
+    final pwd = _passwordController.text;
+    final newMin = pwd.length >= 6;
+    final newUpper = RegExp(r'[A-Z]').hasMatch(pwd);
+    final newLower = RegExp(r'[a-z]').hasMatch(pwd);
+    final newDigit = RegExp(r'[0-9]').hasMatch(pwd);
+
+    if (newMin != _hasMinLength ||
+        newUpper != _hasUppercase ||
+        newLower != _hasLowercase ||
+        newDigit != _hasDigit) {
+      setState(() {
+        _hasMinLength = newMin;
+        _hasUppercase = newUpper;
+        _hasLowercase = newLower;
+        _hasDigit = newDigit;
+      });
+    }
+  }
+
+  // Soumission du formulaire
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    setState(() {
+      _isLoading = true;
+      _backendErrors.clear();
+    });
 
     try {
-      await Provider.of<AuthProvider>(context, listen: false).register(
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      await auth.register(
         matricule: _matriculeController.text.trim(),
         nom: _nomController.text.trim(),
         prenom: _prenomController.text.trim(),
@@ -57,269 +121,545 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Compte créé avec succès'),
+            backgroundColor: Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 2),
+          ),
+        );
         Navigator.pushReplacementNamed(context, '/home');
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: AppTheme.errorColor,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+        if (e is ApiException && e.details != null) {
+          final Map<String, String> errors = {};
+          for (final err in e.details!) {
+            final param = err['param'] as String?;
+            final msg = err['msg'] as String?;
+            if (param != null && msg != null) {
+              errors[param] = msg;
+            }
+          }
+          setState(() => _backendErrors = errors);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Veuillez corriger les erreurs dans le formulaire'),
+              backgroundColor: Colors.orange,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(e.toString()),
+              backgroundColor: AppTheme.errorColor,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
       }
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  // Helper pour construire un champ avec navigation, autofill et gestion d'erreurs backend
+  Widget _buildField({
+    required String fieldKey,
+    required TextEditingController controller,
+    required FocusNode focusNode,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    bool obscure = false,
+    Widget? suffix,
+    String? Function(String?)? validator,
+    FocusNode? nextFocus,
+    List<String>? autofillHints,
+    TextCapitalization textCapitalization = TextCapitalization.none,
+  }) {
+    return CustomTextField(
+      controller: controller,
+      focusNode: focusNode,
+      label: label,
+      hint: hint,
+      prefixIcon: icon,
+      keyboardType: keyboardType,
+      obscureText: obscure,
+      suffixIcon: suffix,
+      validator: validator,
+      enabled: !_isLoading,
+      textInputAction: nextFocus != null ? TextInputAction.next : TextInputAction.done,
+      onFieldSubmitted: (_) {
+        if (nextFocus != null) {
+          FocusScope.of(context).requestFocus(nextFocus);
+        } else {
+          FocusScope.of(context).unfocus();
+        }
+      },
+      autofillHints: autofillHints,
+      textCapitalization: textCapitalization,
+      errorText: _backendErrors[fieldKey],
+      onChanged: (_) {
+        if (_backendErrors.containsKey(fieldKey)) {
+          setState(() => _backendErrors.remove(fieldKey));
+        }
+      },
+    );
+  }
+
+  // Widget d'indicateur de règle (force mot de passe)
+  Widget _buildRule(String text, bool valid) {
+    return Row(
+      children: [
+        Icon(
+          valid ? Icons.check_circle : Icons.cancel,
+          size: 14,
+          color: valid ? Colors.green : Colors.red.shade400,
+        ),
+        const SizedBox(width: 6),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 11,
+            color: valid ? Colors.green : Colors.grey.shade600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==================== HEADER ====================
+
+  Widget _buildHeader(bool isDark, ResponsiveConfig config) {
+    final titleSize = config.responsive(small: 24, medium: 28, large: 32);
+    final subtitleSize = config.responsive(small: 14, medium: 15, large: 16);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Créer un compte',
+          style: TextStyle(
+            fontSize: titleSize,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Remplissez vos informations pour vous inscrire',
+          style: TextStyle(
+            fontSize: subtitleSize,
+            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+          ),
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  // ==================== FORMULAIRE MOBILE ====================
+
+  Widget _buildMobileForm(bool isDark, ResponsiveConfig config) {
+    final fieldSpacing = config.responsive(small: 12, medium: 14, large: 16);
+    final sectionSpacing = config.responsive(small: 24, medium: 28, large: 32);
+
+    return Column(
+      children: [
+        _buildField(
+          fieldKey: 'matricule',
+          controller: _matriculeController,
+          focusNode: _matriculeFocus,
+          label: 'Matricule',
+          hint: 'Entrez votre matricule',
+          icon: Icons.badge_outlined,
+          validator: Validators.validateMatricule,
+          nextFocus: _nomFocus,
+          autofillHints: const [AutofillHints.username],
+          textCapitalization: TextCapitalization.characters,
+        ),
+        SizedBox(height: fieldSpacing),
+
+        _buildField(
+          fieldKey: 'nom',
+          controller: _nomController,
+          focusNode: _nomFocus,
+          label: 'Nom',
+          hint: 'Nom',
+          icon: Icons.person_outline,
+          validator: Validators.validateNom,
+          nextFocus: _prenomFocus,
+          autofillHints: const [AutofillHints.familyName],
+        ),
+        SizedBox(height: fieldSpacing),
+
+        _buildField(
+          fieldKey: 'prenom',
+          controller: _prenomController,
+          focusNode: _prenomFocus,
+          label: 'Prénom',
+          hint: 'Prénom',
+          icon: Icons.person_outline,
+          validator: Validators.validateNom,
+          nextFocus: _emailFocus,
+          autofillHints: const [AutofillHints.givenName],
+        ),
+        SizedBox(height: fieldSpacing),
+
+        _buildField(
+          fieldKey: 'email',
+          controller: _emailController,
+          focusNode: _emailFocus,
+          label: 'Email',
+          hint: 'exemple@cenou.bf',
+          icon: Icons.email_outlined,
+          keyboardType: TextInputType.emailAddress,
+          validator: Validators.validateEmail,
+          nextFocus: _telephoneFocus,
+          autofillHints: const [AutofillHints.email],
+        ),
+        SizedBox(height: fieldSpacing),
+
+        _buildField(
+          fieldKey: 'telephone',
+          controller: _telephoneController,
+          focusNode: _telephoneFocus,
+          label: 'Téléphone (optionnel)',
+          hint: '+226 70 XX XX XX',
+          icon: Icons.phone_outlined,
+          keyboardType: TextInputType.phone,
+          validator: Validators.validatePhone,
+          nextFocus: _passwordFocus,
+          autofillHints: const [AutofillHints.telephoneNumber],
+        ),
+        SizedBox(height: fieldSpacing),
+
+        // Mot de passe avec indicateurs de force
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildField(
+              fieldKey: 'mot_de_passe',
+              controller: _passwordController,
+              focusNode: _passwordFocus,
+              label: 'Mot de passe',
+              hint: 'Minimum 6 caractères',
+              icon: Icons.lock_outline,
+              obscure: !_isPasswordVisible,
+              suffix: IconButton(
+                icon: Icon(
+                  _isPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                ),
+                onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+              ),
+              validator: Validators.validatePassword,
+              nextFocus: _confirmPasswordFocus,
+              autofillHints: const [AutofillHints.newPassword],
+            ),
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 12,
+              runSpacing: 4,
+              children: [
+                _buildRule('6+ caractères', _hasMinLength),
+                _buildRule('1 majuscule', _hasUppercase),
+                _buildRule('1 minuscule', _hasLowercase),
+                _buildRule('1 chiffre', _hasDigit),
+              ],
+            ),
+          ],
+        ),
+        SizedBox(height: fieldSpacing),
+
+        _buildField(
+          fieldKey: 'confirmation_mot_de_passe',
+          controller: _confirmPasswordController,
+          focusNode: _confirmPasswordFocus,
+          label: 'Confirmer le mot de passe',
+          hint: 'Retapez votre mot de passe',
+          icon: Icons.lock_outline,
+          obscure: !_isConfirmPasswordVisible,
+          suffix: IconButton(
+            icon: Icon(
+              _isConfirmPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+            ),
+            onPressed: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+          ),
+          validator: (value) => Validators.validateConfirmPassword(value, _passwordController.text),
+          nextFocus: null,
+          autofillHints: const [AutofillHints.newPassword],
+        ),
+        SizedBox(height: sectionSpacing),
+      ],
+    );
+  }
+
+  // ==================== FORMULAIRE TABLETTE (2 colonnes) ====================
+
+  Widget _buildTabletForm(bool isDark, ResponsiveConfig config) {
+    final fieldSpacing = config.responsive(small: 12, medium: 14, large: 16);
+    final sectionSpacing = config.responsive(small: 24, medium: 28, large: 32);
+    final rowGap = config.responsive(small: 12, medium: 16, large: 20);
+
+    return Column(
+      children: [
+        // Ligne 1 : Matricule + Email
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _buildField(
+                fieldKey: 'matricule',
+                controller: _matriculeController,
+                focusNode: _matriculeFocus,
+                label: 'Matricule',
+                hint: 'Entrez votre matricule',
+                icon: Icons.badge_outlined,
+                validator: Validators.validateMatricule,
+                nextFocus: _nomFocus,
+                autofillHints: const [AutofillHints.username],
+                textCapitalization: TextCapitalization.characters,
+              ),
+            ),
+            SizedBox(width: rowGap),
+            Expanded(
+              child: _buildField(
+                fieldKey: 'email',
+                controller: _emailController,
+                focusNode: _emailFocus,
+                label: 'Email',
+                hint: 'exemple@cenou.bf',
+                icon: Icons.email_outlined,
+                keyboardType: TextInputType.emailAddress,
+                validator: Validators.validateEmail,
+                nextFocus: _nomFocus,
+                autofillHints: const [AutofillHints.email],
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: fieldSpacing),
+
+        // Ligne 2 : Nom + Prénom
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _buildField(
+                fieldKey: 'nom',
+                controller: _nomController,
+                focusNode: _nomFocus,
+                label: 'Nom',
+                hint: 'Nom',
+                icon: Icons.person_outline,
+                validator: Validators.validateNom,
+                nextFocus: _prenomFocus,
+                autofillHints: const [AutofillHints.familyName],
+              ),
+            ),
+            SizedBox(width: rowGap),
+            Expanded(
+              child: _buildField(
+                fieldKey: 'prenom',
+                controller: _prenomController,
+                focusNode: _prenomFocus,
+                label: 'Prénom',
+                hint: 'Prénom',
+                icon: Icons.person_outline,
+                validator: Validators.validateNom,
+                nextFocus: _telephoneFocus,
+                autofillHints: const [AutofillHints.givenName],
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: fieldSpacing),
+
+        // Ligne 3 : Téléphone + Mot de passe
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: _buildField(
+                fieldKey: 'telephone',
+                controller: _telephoneController,
+                focusNode: _telephoneFocus,
+                label: 'Téléphone (optionnel)',
+                hint: '+226 70 XX XX XX',
+                icon: Icons.phone_outlined,
+                keyboardType: TextInputType.phone,
+                validator: Validators.validatePhone,
+                nextFocus: _passwordFocus,
+                autofillHints: const [AutofillHints.telephoneNumber],
+              ),
+            ),
+            SizedBox(width: rowGap),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildField(
+                    fieldKey: 'mot_de_passe',
+                    controller: _passwordController,
+                    focusNode: _passwordFocus,
+                    label: 'Mot de passe',
+                    hint: 'Minimum 6 caractères',
+                    icon: Icons.lock_outline,
+                    obscure: !_isPasswordVisible,
+                    suffix: IconButton(
+                      icon: Icon(
+                        _isPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                      ),
+                      onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                    ),
+                    validator: Validators.validatePassword,
+                    nextFocus: _confirmPasswordFocus,
+                    autofillHints: const [AutofillHints.newPassword],
+                  ),
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 4,
+                    children: [
+                      _buildRule('6+ caractères', _hasMinLength),
+                      _buildRule('1 majuscule', _hasUppercase),
+                      _buildRule('1 minuscule', _hasLowercase),
+                      _buildRule('1 chiffre', _hasDigit),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: fieldSpacing),
+
+        // Ligne 4 : Confirmation mot de passe (pleine largeur)
+        _buildField(
+          fieldKey: 'confirmation_mot_de_passe',
+          controller: _confirmPasswordController,
+          focusNode: _confirmPasswordFocus,
+          label: 'Confirmer le mot de passe',
+          hint: 'Retapez votre mot de passe',
+          icon: Icons.lock_outline,
+          obscure: !_isConfirmPasswordVisible,
+          suffix: IconButton(
+            icon: Icon(
+              _isConfirmPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+              color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+            ),
+            onPressed: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+          ),
+          validator: (value) => Validators.validateConfirmPassword(value, _passwordController.text),
+          nextFocus: null,
+          autofillHints: const [AutofillHints.newPassword],
+        ),
+        SizedBox(height: sectionSpacing),
+      ],
+    );
+  }
+
+  // ==================== FOOTER ====================
+
+  Widget _buildFooter(bool isDark, ResponsiveConfig config) {
+    return Column(
+      children: [
+        CustomButton(
+          text: "S'INSCRIRE",
+          onPressed: _isLoading ? null : _handleRegister,
+          isLoading: _isLoading,
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              'Déjà un compte ? ',
+              style: TextStyle(
+                color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+              ),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Se connecter',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // ==================== BUILD PRINCIPAL ====================
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      backgroundColor: isDark ? Color(0xFF121212) : Colors.white,
+      backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-              Icons.arrow_back,
-              color: isDark ? Colors.white : Colors.black87
-          ),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Titre avec taille de police responsive
-                Text(
-                  'Créer un compte',
-                  style: TextStyle(
-                    fontSize: MediaQuery.of(context).size.width < 360 ? 24 : 28,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Remplissez vos informations pour vous inscrire',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: isDark ? Colors.grey.shade400 : Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 32),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final config = ResponsiveConfig.fromConstraints(constraints);
+          final maxWidth = config.isTablet ? 500.0 : double.infinity;
 
-                // Matricule
-                CustomTextField(
-                  controller: _matriculeController,
-                  label: 'Matricule',
-                  hint: 'Entrez votre matricule',
-                  prefixIcon: Icons.badge_outlined,
-                  keyboardType: TextInputType.text,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Le matricule est requis';
-                    }
-                    if (value.length < 5) {
-                      return 'Le matricule doit contenir au moins 5 caractères';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Nom et Prénom sur la même ligne
-                Row(
-                  children: [
-                    Expanded(
-                      child: CustomTextField(
-                        controller: _nomController,
-                        label: 'Nom',
-                        hint: 'Nom',
-                        prefixIcon: Icons.person_outline,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Requis';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: CustomTextField(
-                        controller: _prenomController,
-                        label: 'Prénom',
-                        hint: 'Prénom',
-                        prefixIcon: Icons.person_outline,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Requis';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
-                // Email
-                CustomTextField(
-                  controller: _emailController,
-                  label: 'Email',
-                  hint: 'exemple@cenou.bf',
-                  prefixIcon: Icons.email_outlined,
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'L\'email est requis';
-                    }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                      return 'Email invalide';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Téléphone
-                CustomTextField(
-                  controller: _telephoneController,
-                  label: 'Téléphone (optionnel)',
-                  hint: '+226 70 XX XX XX',
-                  prefixIcon: Icons.phone_outlined,
-                  keyboardType: TextInputType.phone,
-                  validator: (value) {
-                    if (value != null && value.isNotEmpty) {
-                      if (!RegExp(r'^\+?[0-9]{8,15}$').hasMatch(value.replaceAll(' ', ''))) {
-                        return 'Numéro de téléphone invalide';
-                      }
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Mot de passe
-                CustomTextField(
-                  controller: _passwordController,
-                  label: 'Mot de passe',
-                  hint: 'Minimum 6 caractères',
-                  prefixIcon: Icons.lock_outline,
-                  obscureText: !_isPasswordVisible,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _isPasswordVisible
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      color: isDark ? Colors.grey.shade400 : Colors.grey[600],
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _isPasswordVisible = !_isPasswordVisible;
-                      });
-                    },
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Le mot de passe est requis';
-                    }
-                    if (value.length < 6) {
-                      return 'Au moins 6 caractères';
-                    }
-                    if (!RegExp(r'[A-Z]').hasMatch(value)) {
-                      return 'Au moins une majuscule';
-                    }
-                    if (!RegExp(r'[0-9]').hasMatch(value)) {
-                      return 'Au moins un chiffre';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-
-                // Confirmation mot de passe
-                CustomTextField(
-                  controller: _confirmPasswordController,
-                  label: 'Confirmer le mot de passe',
-                  hint: 'Retapez votre mot de passe',
-                  prefixIcon: Icons.lock_outline,
-                  obscureText: !_isConfirmPasswordVisible,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _isConfirmPasswordVisible
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      color: isDark ? Colors.grey.shade400 : Colors.grey[600],
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
-                      });
-                    },
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Confirmation requise';
-                    }
-                    if (value != _passwordController.text) {
-                      return 'Les mots de passe ne correspondent pas';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 32),
-
-                // Bouton d'inscription
-                CustomButton(
-                  text: 'S\'INSCRIRE',
-                  onPressed: _isLoading ? null : _handleRegister,
-                  isLoading: _isLoading,
-                ),
-                const SizedBox(height: 16),
-
-                // Lien vers connexion
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Déjà un compte ? ',
-                      style: TextStyle(
-                          color: isDark ? Colors.grey.shade400 : Colors.grey[600]
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.pop(context);
-                      },
-                      child: Text(
-                        'Se connecter',
-                        style: TextStyle(
-                          color: Theme.of(context).colorScheme.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+          return SingleChildScrollView(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            padding: config.horizontalPadding.copyWith(
+              top: config.verticalSpacing,
+              bottom: MediaQuery.of(context).viewInsets.bottom + config.verticalSpacing,
             ),
-          ),
-        ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: maxWidth),
+              child: Form(
+                key: _formKey,
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                child: config.isTablet
+                    ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(isDark, config),
+                    const SizedBox(height: 8),
+                    _buildTabletForm(isDark, config),
+                    const SizedBox(height: 24),
+                    _buildFooter(isDark, config),
+                  ],
+                )
+                    : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildHeader(isDark, config),
+                    const SizedBox(height: 8),
+                    _buildMobileForm(isDark, config),
+                    const SizedBox(height: 24),
+                    _buildFooter(isDark, config),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
