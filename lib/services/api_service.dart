@@ -7,73 +7,46 @@ import 'storage_service.dart';
 
 /// Service centralisé pour les appels API et la gestion de l'authentification.
 class ApiService {
+  // 🔥 SINGLETON
+  static final ApiService _instance = ApiService._internal();
+  factory ApiService() => _instance;
+  ApiService._internal();
+
   final StorageService _storageService = StorageService();
-  String? _token;
-  String? _refreshToken;
 
   /// Callback appelé automatiquement quand le token expire (401)
   Function()? onUnauthorized;
 
-  /// Initialise le service en chargeant le jeton d'authentification depuis le stockage.
+  /// Initialise le service (aucun token en mémoire).
   Future<void> init() async {
-    try {
-      _token = await _storageService.getToken();
-      print('Token charge: ${_token != null ? "OUI" : "NON"}');
-    } catch (e) {
-      print('Erreur initialisation ApiService: $e');
-    }
+    print('ApiService initialisé (mode sans mémoire)');
   }
 
   // ==================== GESTION DES HEADERS ====================
 
-  /// En-têtes par défaut pour les requêtes JSON.
-  Map<String, String> get _defaultHeaders => {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  };
-
-  /// Génère les en-têtes d'authentification incluant le jeton Bearer.
+  /// Génère les en-têtes d'authentification en lisant le token à chaque appel.
   Future<Map<String, String>> _getAuthHeaders() async {
-    _token = await _storageService.getToken();
-
+    final token = await _storageService.getToken();
     final headers = {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     };
-
-    if (_token != null && _token!.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $_token';
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
     }
-
     return headers;
   }
 
-  /// Version synchrone des en-têtes, utilisée en interne.
-  Map<String, String> _getHeaders() {
-    final headers = {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-    };
-
-    if (_token != null && _token!.isNotEmpty) {
-      headers['Authorization'] = 'Bearer $_token';
-    }
-
-    return headers;
-  }
-
-  /// Met à jour le jeton en mémoire et dans le stockage persistant.
+  /// Met à jour le jeton dans le stockage persistant.
   Future<void> setToken(String token) async {
-    _token = token;
     await _storageService.saveToken(token);
-    print('Token mis a jour');
+    print('Token sauvegardé dans storage');
   }
 
-  /// Supprime le jeton d'authentification.
+  /// Supprime le jeton du stockage.
   Future<void> clearToken() async {
-    _token = null;
     await _storageService.deleteToken();
-    print('Token supprime');
+    print('Token supprimé du storage');
   }
 
   // ==================== MÉTHODES HTTP GÉNÉRIQUES ====================
@@ -82,25 +55,126 @@ class ApiService {
   Future<dynamic> get(String endpoint, {Map<String, String>? params}) async {
     try {
       Uri uri = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
-
       if (params != null && params.isNotEmpty) {
         uri = uri.replace(queryParameters: params);
       }
-
       final headers = await _getAuthHeaders();
-
       print('GET: $uri');
-
       final response = await http
           .get(uri, headers: headers)
           .timeout(AppConfig.connectionTimeout);
-
       return _handleResponse(response);
     } catch (e) {
       print('GET Error: $e');
       throw _handleError(e);
     }
   }
+
+  /// Effectue une requête POST avec corps JSON.
+  Future<dynamic> post(String endpoint, {Map<String, dynamic>? body}) async {
+    try {
+      final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
+      final headers = await _getAuthHeaders();
+      print('POST: $url');
+      if (body != null) {
+        print('Body: $body');
+      }
+      final response = await http.post(
+        url,
+        headers: headers,
+        body: body != null ? json.encode(body) : null,
+      ).timeout(AppConfig.connectionTimeout);
+      print('Response Status: ${response.statusCode}');
+      final contentType = response.headers['content-type'] ?? '';
+      if (contentType.contains('application/pdf') ||
+          contentType.contains('application/vnd.ms-excel') ||
+          contentType.contains('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') ||
+          contentType.contains('application/octet-stream')) {
+        print('Réponse binaire détectée, retour brut');
+        return response;
+      }
+      return _handleResponse(response);
+    } on TimeoutException catch (e) {
+      print('Timeout: $e');
+      throw Exception('Timeout: Le serveur ne répond pas');
+    } catch (e) {
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('ClientException') ||
+          e.toString().contains('XMLHttpRequest')) {
+        print('Network error: $e');
+        throw Exception('Pas de connexion internet ou serveur inaccessible');
+      }
+      print('POST Error: $e');
+      rethrow;
+    }
+  }
+
+  /// Effectue une requête PUT avec corps JSON.
+  Future<dynamic> put(String endpoint, {Map<String, dynamic>? body}) async {
+    try {
+      final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
+      final headers = await _getAuthHeaders();
+      print('PUT: $url');
+      if (body != null) {
+        print('Body: $body');
+      }
+      final response = await http.put(
+        url,
+        headers: headers,
+        body: body != null ? json.encode(body) : null,
+      ).timeout(AppConfig.connectionTimeout);
+      return _handleResponse(response);
+    } catch (e) {
+      print('PUT Error: $e');
+      throw _handleError(e);
+    }
+  }
+
+  /// Effectue une requête DELETE.
+  Future<dynamic> delete(String endpoint) async {
+    try {
+      final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
+      final headers = await _getAuthHeaders();
+      print('DELETE: $url');
+      final response = await http
+          .delete(url, headers: headers)
+          .timeout(AppConfig.connectionTimeout);
+      return _handleResponse(response);
+    } catch (e) {
+      print('DELETE Error: $e');
+      throw _handleError(e);
+    }
+  }
+
+  /// Effectue une requête multipart pour l'upload de fichiers.
+  Future<dynamic> postMultipart(
+      String endpoint, {
+        required Map<String, String> fields,
+        required List<http.MultipartFile> files,
+      }) async {
+    try {
+      final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
+      final token = await _storageService.getToken();
+      print('POST Multipart: $url');
+      print('Fields: $fields');
+      print('Files: ${files.length}');
+      final request = http.MultipartRequest('POST', url);
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.fields.addAll(fields);
+      request.files.addAll(files);
+      final streamedResponse =
+      await request.send().timeout(AppConfig.connectionTimeout);
+      final response = await http.Response.fromStream(streamedResponse);
+      return _handleResponse(response);
+    } catch (e) {
+      print('Multipart Error: $e');
+      throw _handleError(e);
+    }
+  }
+
+  // ==================== MÉTHODES ADMIN SPÉCIFIQUES ====================
 
   /// Récupère la liste des utilisateurs pour l'administration avec filtres.
   Future<Map<String, dynamic>> getAdminUsers({
@@ -118,7 +192,6 @@ class ApiService {
     if (search != null) params['search'] = search;
     if (page != null) params['page'] = page.toString();
     if (limit != null) params['limit'] = limit.toString();
-
     final response = await get('/api/users/admin/all', params: params);
     return response as Map<String, dynamic>;
   }
@@ -157,130 +230,6 @@ class ApiService {
     return response as Map<String, dynamic>;
   }
 
-  /// Effectue une requête POST avec corps JSON.
-  Future<dynamic> post(String endpoint, {Map<String, dynamic>? body}) async {
-    try {
-      final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
-      final headers = await _getAuthHeaders();
-
-      print('POST: $url');
-      if (body != null) {
-        print('Body: $body');
-      }
-
-      final response = await http.post(
-        url,
-        headers: headers,
-        body: body != null ? json.encode(body) : null,
-      ).timeout(AppConfig.connectionTimeout);
-
-      print('Response Status: ${response.statusCode}');
-      print('Content-Type: ${response.headers['content-type']}');
-
-      final contentType = response.headers['content-type'] ?? '';
-      if (contentType.contains('application/pdf') ||
-          contentType.contains('application/vnd.ms-excel') ||
-          contentType.contains('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') ||
-          contentType.contains('application/octet-stream')) {
-        print('Reponse binaire detectee, retour brut');
-        return response;
-      }
-
-      return _handleResponse(response);
-    } on TimeoutException catch (e) {
-      print('Timeout: $e');
-      throw Exception('Timeout: Le serveur ne repond pas');
-    } catch (e) {
-      if (e.toString().contains('SocketException') ||
-          e.toString().contains('ClientException') ||
-          e.toString().contains('XMLHttpRequest')) {
-        print('Network error: $e');
-        throw Exception('Pas de connexion internet ou serveur inaccessible');
-      }
-      print('POST Error: $e');
-      rethrow;
-    }
-  }
-
-  /// Effectue une requête PUT avec corps JSON.
-  Future<dynamic> put(String endpoint, {Map<String, dynamic>? body}) async {
-    try {
-      final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
-      final headers = await _getAuthHeaders();
-
-      print('PUT: $url');
-      if (body != null) {
-        print('Body: $body');
-      }
-
-      final response = await http.put(
-        url,
-        headers: headers,
-        body: body != null ? json.encode(body) : null,
-      ).timeout(AppConfig.connectionTimeout);
-
-      return _handleResponse(response);
-    } catch (e) {
-      print('PUT Error: $e');
-      throw _handleError(e);
-    }
-  }
-
-  /// Effectue une requête DELETE.
-  Future<dynamic> delete(String endpoint) async {
-    try {
-      final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
-      final headers = await _getAuthHeaders();
-
-      print('DELETE: $url');
-
-      final response = await http
-          .delete(url, headers: headers)
-          .timeout(AppConfig.connectionTimeout);
-
-      return _handleResponse(response);
-    } catch (e) {
-      print('DELETE Error: $e');
-      throw _handleError(e);
-    }
-  }
-
-  /// Effectue une requête multipart pour l'upload de fichiers.
-  Future<dynamic> postMultipart(
-      String endpoint, {
-        required Map<String, String> fields,
-        required List<http.MultipartFile> files,
-      }) async {
-    try {
-      final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
-      final token = await _storageService.getToken();
-
-      print('POST Multipart: $url');
-      print('Fields: $fields');
-      print('Files: ${files.length}');
-
-      final request = http.MultipartRequest('POST', url);
-
-      if (token != null) {
-        request.headers['Authorization'] = 'Bearer $token';
-      }
-
-      request.fields.addAll(fields);
-      request.files.addAll(files);
-
-      final streamedResponse =
-      await request.send().timeout(AppConfig.connectionTimeout);
-      final response = await http.Response.fromStream(streamedResponse);
-
-      return _handleResponse(response);
-    } catch (e) {
-      print('Multipart Error: $e');
-      throw _handleError(e);
-    }
-  }
-
-  // ==================== MÉTHODES ADMIN SPÉCIFIQUES ====================
-
   /// Récupère l'activité récente pour le tableau de bord.
   Future<Map<String, dynamic>> getRecentActivity() async {
     final response = await get('/api/admin/dashboard/recent-activity');
@@ -292,21 +241,14 @@ class ApiService {
     required String identifiant,
     required String motDePasse,
   }) async {
-    try {
-      print('Debut loginAdmin');
-
-      final response = await login(
-        identifiant: identifiant,
-        motDePasse: motDePasse,
-        requireAdmin: true,
-      );
-
-      print('Admin login reussi: ${response['user']['role']}');
-      return response;
-    } catch (e) {
-      print('Admin Login Error: $e');
-      rethrow;
-    }
+    print('Debut loginAdmin');
+    final response = await login(
+      identifiant: identifiant,
+      motDePasse: motDePasse,
+      requireAdmin: true,
+    );
+    print('Admin login réussi: ${response['user']['role']}');
+    return response;
   }
 
   /// Authentification générique avec option de vérification administrateur.
@@ -317,9 +259,7 @@ class ApiService {
   }) async {
     try {
       final url = Uri.parse('${AppConfig.apiBaseUrl}/api/auth/login');
-
       print('LOGIN: $url');
-
       final response = await http.post(
         url,
         headers: {
@@ -332,21 +272,17 @@ class ApiService {
           'mot_de_passe': motDePasse,
         }),
       ).timeout(AppConfig.connectionTimeout);
-
       final result = _handleResponse(response);
-
       if (result['token'] != null) {
         await setToken(result['token']);
       }
-
       if (requireAdmin) {
         final userRole = result['user']['role'];
         if (!['ADMIN', 'GESTIONNAIRE'].contains(userRole)) {
           await clearToken();
-          throw ApiException('Acces reserve aux administrateurs', 403);
+          throw ApiException('Accès réservé aux administrateurs', 403);
         }
       }
-
       return result;
     } catch (e) {
       print('Login Error: $e');
@@ -359,7 +295,6 @@ class ApiService {
     try {
       final token = await _storageService.getToken();
       if (token == null) return false;
-
       final response = await get('/api/auth/me');
       final result = response as Map<String, dynamic>;
       final userRole = result['user']['role'];
@@ -382,7 +317,6 @@ class ApiService {
     final params = <String, String>{};
     if (period != null) params['period'] = period;
     if (centreId != null) params['centre_id'] = centreId.toString();
-
     final response = await get('/api/admin/dashboard/charts', params: params);
     return response as Map<String, dynamic>;
   }
@@ -407,7 +341,6 @@ class ApiService {
     if (dateTo != null) params['date_to'] = dateTo;
     if (centreId != null) params['centre_id'] = centreId.toString();
     if (search != null) params['search'] = search;
-
     final response = await get('/api/paiements/admin/all', params: params);
     return response as Map<String, dynamic>;
   }
@@ -420,7 +353,6 @@ class ApiService {
       'statut': statut,
       if (raison != null) 'raison': raison,
     };
-
     final response = await put(
       '/api/paiements/admin/$paiementId/statut',
       body: body,
@@ -454,7 +386,6 @@ class ApiService {
     if (search != null) params['search'] = search;
     if (page != null) params['page'] = page.toString();
     if (limit != null) params['limit'] = limit.toString();
-
     final response = await get('/api/signalements/admin/all', params: params);
     return response as Map<String, dynamic>;
   }
@@ -467,15 +398,12 @@ class ApiService {
       'statut': statut,
       if (commentaire != null) 'commentaire_resolution': commentaire,
     };
-
     print('Body avant envoi: $bodyData');
-
     final response = await put(
       '/api/signalements/admin/$signalementId/statut',
       body: bodyData,
     );
-
-    print('Reponse API: $response');
+    print('Réponse API: $response');
     return response as Map<String, dynamic>;
   }
 
@@ -492,7 +420,6 @@ class ApiService {
     if (dateFrom != null) params['date_from'] = dateFrom;
     if (dateTo != null) params['date_to'] = dateTo;
     if (centreId != null) params['centre_id'] = centreId.toString();
-
     final response = await get('/api/admin/reports/financial', params: params);
     return response as Map<String, dynamic>;
   }
@@ -503,13 +430,12 @@ class ApiService {
   dynamic _handleResponse(http.Response response) {
     print('Response Status: ${response.statusCode}');
     print('Response Body: ${response.body}');
-
     if (response.statusCode >= 200 && response.statusCode < 300) {
       if (response.body.isEmpty) return {};
       try {
         return json.decode(response.body);
       } catch (e) {
-        print("Avertissement: Reponse non JSON recue pour un statut 2xx");
+        print("Avertissement: Réponse non JSON pour un statut 2xx");
         return {"data": response.body};
       }
     } else {
@@ -528,18 +454,13 @@ class ApiService {
             ? response.body
             : 'Erreur HTTP ${response.statusCode}';
       }
-
       print('Backend error message: "$errorMessage"');
-
       final uri = response.request?.url.toString() ?? '';
-
-      // Gestion des erreurs de validation (400 - express-validator)
       if (response.statusCode == 400) {
         throw ApiException(errorMessage, 400, details);
       } else if (response.statusCode == 401) {
         print('Token expiré détecté → déconnexion automatique');
         onUnauthorized?.call();
-
         if (uri.contains('/api/auth/login')) {
           throw ApiException(errorMessage, 401);
         } else {
@@ -575,10 +496,8 @@ class ApiService {
 class ApiException implements Exception {
   final String message;
   final int statusCode;
-  final List<dynamic>? details;  // ✅ AJOUTÉ pour les erreurs de validation
-
+  final List<dynamic>? details;
   ApiException(this.message, this.statusCode, [this.details]);
-
   @override
   String toString() => message;
 }

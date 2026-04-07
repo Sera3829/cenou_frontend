@@ -13,6 +13,7 @@ import '../paiements/paiements_list_screen.dart';
 import '../signalements/signalements_list_screen.dart';
 import '../notifications/notifications_screen.dart';
 import 'dart:async';
+import '../profile/profile_screen.dart';
 
 /// Écran principal avec navigation par onglets — responsive mobile/tablette.
 class HomeScreen extends StatefulWidget {
@@ -97,8 +98,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
       const PaiementsListScreen(),
       const SignalementsListScreen(),
-      // ProfileScreen — importé selon votre arborescence
-      const _PlaceholderScreen(label: 'Profil'),
+      const ProfileScreen(),
     ];
   }
 
@@ -628,39 +628,44 @@ class _StatsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Tablette → 4 colonnes / mobile → 2 colonnes
-    final crossAxis = config.isTablet ? 4 : 2;
-    // Ratio : plus haut sur petit écran (icône + texte ont besoin de place)
-    final ratio = config.responsive(small: 1.05, medium: 1.2, large: 1.4);
+    // Toujours 2 colonnes sur toutes les tailles (mobile/tablette)
+    const crossAxis = 2;
+
+    // Ratio : plus haut sur mobile (0.9), plus large sur tablette (1.2, 1.4)
+    final ratio = config.responsive(
+      small: 0.9,
+      medium: 1.2,
+      large: 1.4,
+    );
 
     final items = [
       _StatItem(
-        title: 'Paiements',
+        title: 'Confirmés',
         value: paiementProvider.paiementsConfirmes.toString(),
-        icon: Icons.payment_rounded,
+        icon: Icons.check_circle_rounded,
         color: AppTheme.successColor,
-        subtitle: 'Confirmés',
+        subtitle: 'Paiements',
       ),
       _StatItem(
         title: 'En attente',
         value: paiementProvider.pendingPaiementsCount.toString(),
-        icon: Icons.pending_actions_rounded,
+        icon: Icons.schedule_rounded,
         color: AppTheme.warningColor,
         subtitle: 'Paiements',
       ),
       _StatItem(
-        title: 'Signalements',
+        title: 'Total',
         value: signalementProvider.totalSignalements.toString(),
-        icon: Icons.report_problem_rounded,
+        icon: Icons.report_rounded,
         color: AppTheme.errorColor,
-        subtitle: 'Total',
+        subtitle: 'Signalements',
       ),
       _StatItem(
-        title: config.isSmall ? 'Signalem.' : 'Signalements',
+        title: 'En attente',
         value: signalementProvider.signalementsEnAttente.toString(),
-        icon: Icons.pending_rounded,
+        icon: Icons.pending_actions_rounded,
         color: AppTheme.infoColor,
-        subtitle: 'En attente',
+        subtitle: 'Signalements',
       ),
     ];
 
@@ -708,43 +713,46 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconSize = config.responsive(small: 20, medium: 24, large: 28);
-    final iconPad = config.responsive(small: 8, medium: 10, large: 12);
-    final valueSize = config.responsive(small: 20, medium: 24, large: 26);
+    final valueSize = config.responsive(small: 22, medium: 26, large: 28);
     final titleSize = config.responsive(small: 11, medium: 13, large: 14);
-    final subtitleSize = config.responsive(small: 9, medium: 11, large: 12);
-    final cardPad = config.responsive(small: 10, medium: 14, large: 16);
+    final subtitleSize = config.responsive(small: 10, medium: 11, large: 12);
+    final iconSize = config.responsive(small: 18, medium: 22, large: 24);
 
     return Card(
       elevation: isDark ? 4 : 2,
-      color: isDark ? const Color(0xFF1E1E1E) : null,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      color: isDark ? const Color(0xFF1E1E1E) : Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
-        padding: EdgeInsets.all(cardPad),
+        padding: const EdgeInsets.all(12),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Container(
-              padding: EdgeInsets.all(iconPad),
-              decoration: BoxDecoration(
-                color: item.color.withOpacity(isDark ? 0.2 : 0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(item.icon, color: item.color, size: iconSize),
+            // Ligne du haut (label + icône)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  item.subtitle,
+                  style: TextStyle(
+                    fontSize: subtitleSize,
+                    color: isDark ? Colors.grey.shade400 : Colors.grey[600],
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                Icon(item.icon, color: item.color, size: iconSize),
+              ],
             ),
-            SizedBox(height: config.isSmall ? 6 : 10),
+            // Valeur principale
             Text(
               item.value,
               style: TextStyle(
                 fontSize: valueSize,
-                fontWeight: FontWeight.w700,
+                fontWeight: FontWeight.bold,
                 color: item.color,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 2),
+            // Titre
             Text(
               item.title,
               style: TextStyle(
@@ -752,17 +760,7 @@ class _StatCard extends StatelessWidget {
                 fontWeight: FontWeight.w600,
                 color: isDark ? Colors.white : Colors.grey[800],
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              item.subtitle,
-              style: TextStyle(
-                fontSize: subtitleSize,
-                color: isDark ? Colors.grey.shade400 : Colors.grey[600],
-              ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

@@ -25,7 +25,9 @@ class AuthProvider with ChangeNotifier {
 
   AuthProvider() {
     _apiService.onUnauthorized = () {
-      _forceLogout();
+      if (_isAuthenticated) {
+        _forceLogout();
+      }
     };
   }
 
@@ -107,61 +109,45 @@ class AuthProvider with ChangeNotifier {
       _isLoading = true;
       _safeNotify();
 
-      // 1. Vérification de la présence d'un jeton d'accès (Token)
       final token = await _storageService.getToken();
       if (token == null) {
-        final cachedUser = await _storageService.getUser();
-        if (cachedUser != null) {
-          _currentUser = cachedUser.toJson();
-          _isAuthenticated = false;
-        } else {
-          _isAuthenticated = false;
-          _currentUser = null;
-        }
-
+        // Pas de token → pas d'authentification possible
+        _currentUser = null;
+        _isAuthenticated = false;
         _isLoading = false;
         _safeNotify();
         return;
       }
 
-      // 2. Validation du jeton auprès du service distant
+      // Validation du token auprès du serveur
       try {
         final response = await _apiService.get('/api/auth/me');
         _currentUser = response['user'];
         _isAuthenticated = true;
         await _storageService.saveUser(User.fromJson(_currentUser!));
       } catch (e) {
-        // Si 401, token expiré ou session invalide → déconnexion forcée
+        // Si 401 ou session invalide → déconnexion forcée
         if (e.toString().contains('401') ||
             e.toString().contains('expiré') ||
             e.toString().contains('Session invalide')) {
           await _storageService.clearAll();
-          _isAuthenticated = false;
           _currentUser = null;
+          _isAuthenticated = false;
         } else {
-          // Fallback cache pour les erreurs réseau
+          // Erreur réseau → fallback cache, mais on ne marque pas authentifié
           final cachedUser = await _storageService.getUser();
           if (cachedUser != null) {
             _currentUser = cachedUser.toJson();
-            _isAuthenticated = true;
+            _isAuthenticated = false; // ← important : on a un cache mais pas de validité réseau
+          } else {
+            _currentUser = null;
+            _isAuthenticated = false;
           }
         }
       }
-
     } catch (e) {
-      try {
-        final cachedUser = await _storageService.getUser();
-        if (cachedUser != null) {
-          _currentUser = cachedUser.toJson();
-          _isAuthenticated = false;
-        } else {
-          _isAuthenticated = false;
-          _currentUser = null;
-        }
-      } catch (cacheError) {
-        _isAuthenticated = false;
-        _currentUser = null;
-      }
+      _currentUser = null;
+      _isAuthenticated = false;
     } finally {
       _isLoading = false;
       _safeNotify();
@@ -345,15 +331,20 @@ class AuthProvider with ChangeNotifier {
       _sessionId = null;
       _safeNotify(); // L'UI se vide immédiatement
 
-      // Appels réseau et storage ensuite (en arrière-plan)
+      // Appel logout avec timeout (5 secondes max)
       try {
-        await _apiService.post('/api/auth/logout', body: {});
+        await _apiService
+            .post('/api/auth/logout', body: {})
+            .timeout(const Duration(seconds: 5), onTimeout: () {
+          print('Timeout lors de l\'appel logout serveur, on continue');
+          return null;
+        });
       } catch (e) {
-        // Ignoré si indisponible
+        print('Erreur lors du logout serveur (ignorée) : $e');
       }
 
+      // Supprimer toutes les données stockées
       await _storageService.clearAll();
-
     } catch (e) {
       _errorMessage = 'Erreur lors de la déconnexion';
     } finally {

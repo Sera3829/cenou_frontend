@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:universal_platform/universal_platform.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'services/api_service.dart';
 import 'widgets/admin_guard.dart';
 
 // Import communs
@@ -60,6 +61,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialisation des services
+  final apiService = ApiService();
+  await apiService.init();
   final preferenceService = PreferenceService();
   await preferenceService.init();
 
@@ -445,19 +448,15 @@ class _MobileAuthWrapperState extends State<MobileAuthWrapper> {
   @override
   Widget build(BuildContext context) {
     if (!_authChecked) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    // Consumer pour réagir aux changements d'état en temps réel
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
         if (auth.isAuthenticated) {
           return const HomeScreen();
         }
+        // Déconnexion détectée → login immédiat sans stack résiduel
         return const LoginScreen();
       },
     );
