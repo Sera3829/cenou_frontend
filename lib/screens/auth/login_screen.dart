@@ -5,6 +5,7 @@ import '../../providers/auth_provider.dart';
 import '../../utils/mobile_responsive.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../l10n/app_localizations.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -53,15 +54,16 @@ class _LoginScreenState extends State<LoginScreen>
   // ==================== LOGIQUE MÉTIER ====================
 
   Future<void> _handleLogin() async {
+    final l10n = AppLocalizations.of(context);
     final identifiant = _identifiantController.text.trim();
     final password = _passwordController.text;
 
     if (identifiant.isEmpty) {
-      setState(() => _errorMessage = 'Veuillez entrer votre identifiant');
+      setState(() => _errorMessage = l10n.pleaseEnterUsername);
       return;
     }
     if (password.isEmpty) {
-      setState(() => _errorMessage = 'Veuillez entrer votre mot de passe');
+      setState(() => _errorMessage = l10n.pleaseEnterPassword);
       return;
     }
 
@@ -84,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen>
           if (mounted) Navigator.pushReplacementNamed(context, '/home');
         });
       } else {
-        final error = authProvider.errorMessage ?? 'Erreur de connexion';
+        final error = authProvider.errorMessage ?? l10n.loginError;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           setState(() => _errorMessage = error);
@@ -114,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen>
           );
           if (error.contains('désactivé') || error.contains('suspendu')) {
             Future.delayed(const Duration(milliseconds: 300), () {
-              if (mounted) _showAccountDisabledDialog();
+              if (mounted) _showAccountDisabledDialog(l10n);
             });
           }
         });
@@ -122,7 +124,7 @@ class _LoginScreenState extends State<LoginScreen>
     } catch (e) {
       if (mounted) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() => _errorMessage = 'Erreur inattendue');
+          if (mounted) setState(() => _errorMessage = l10n.unexpectedError);
         });
       }
     } finally {
@@ -134,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
-  void _showAccountDisabledDialog() {
+  void _showAccountDisabledDialog(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
@@ -156,7 +158,7 @@ class _LoginScreenState extends State<LoginScreen>
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Compte désactivé',
+                l10n.accountDisabled,
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.bold,
@@ -170,7 +172,7 @@ class _LoginScreenState extends State<LoginScreen>
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Votre compte a été désactivé ou suspendu.',
+              l10n.accountDisabledMessage,
               style: TextStyle(
                   fontSize: 15,
                   color: isDark ? Colors.grey.shade300 : Colors.black87),
@@ -192,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen>
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Contactez l\'administration pour réactiver votre compte.',
+                      l10n.contactAdminToReactivate,
                       style: TextStyle(
                         fontSize: 12,
                         color: isDark
@@ -210,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen>
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'J\'ai compris',
+              l10n.iUnderstand,
               style: TextStyle(
                   color: isDark ? Colors.blue.shade300 : AppTheme.primaryColor),
             ),
@@ -224,6 +226,7 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
@@ -246,8 +249,8 @@ class _LoginScreenState extends State<LoginScreen>
                     child: ConstrainedBox(
                       constraints: BoxConstraints(maxWidth: maxContentWidth),
                       child: config.isTablet
-                          ? _buildTabletLayout(isDark, config)
-                          : _buildMobileLayout(isDark, config),
+                          ? _buildTabletLayout(isDark, config, l10n)
+                          : _buildMobileLayout(isDark, config, l10n),
                     ),
                   );
                 },
@@ -261,26 +264,26 @@ class _LoginScreenState extends State<LoginScreen>
 
   // ==================== LAYOUTS ====================
 
-  Widget _buildMobileLayout(bool isDark, ResponsiveConfig config) {
+  Widget _buildMobileLayout(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _buildLogo(isDark, config),
         SizedBox(height: config.verticalSpacing),
-        _buildTitle(isDark, config),
+        _buildTitle(isDark, config, l10n),
         const SizedBox(height: 16),
         if (_errorMessage != null) ...[
-          _buildErrorBanner(isDark, config),
+          _buildErrorBanner(isDark, config, l10n),
           const SizedBox(height: 16),
         ],
-        _buildForm(isDark, config),
+        _buildForm(isDark, config, l10n),
         const SizedBox(height: 20),
-        _buildRegisterLink(isDark, config),
+        _buildRegisterLink(isDark, config, l10n),
       ],
     );
   }
 
-  Widget _buildTabletLayout(bool isDark, ResponsiveConfig config) {
+  Widget _buildTabletLayout(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -290,7 +293,7 @@ class _LoginScreenState extends State<LoginScreen>
             children: [
               _buildLogo(isDark, config),
               const SizedBox(height: 20),
-              _buildTitle(isDark, config),
+              _buildTitle(isDark, config, l10n),
             ],
           ),
         ),
@@ -299,12 +302,12 @@ class _LoginScreenState extends State<LoginScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (_errorMessage != null) ...[
-                _buildErrorBanner(isDark, config),
+                _buildErrorBanner(isDark, config, l10n),
                 const SizedBox(height: 16),
               ],
-              _buildForm(isDark, config),
+              _buildForm(isDark, config, l10n),
               const SizedBox(height: 20),
-              _buildRegisterLink(isDark, config),
+              _buildRegisterLink(isDark, config, l10n),
             ],
           ),
         ),
@@ -348,14 +351,14 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildTitle(bool isDark, ResponsiveConfig config) {
+  Widget _buildTitle(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     final titleSize = config.responsive(small: 22, medium: 28, large: 34);
     final subtitleSize = config.responsive(small: 13, medium: 15, large: 17);
 
     return Column(
       children: [
         Text(
-          'Bienvenue',
+          l10n.welcome,
           style: TextStyle(
             fontSize: titleSize,
             fontWeight: FontWeight.bold,
@@ -364,7 +367,7 @@ class _LoginScreenState extends State<LoginScreen>
         ),
         const SizedBox(height: 6),
         Text(
-          'Veuillez vous connecter',
+          l10n.pleaseLogin,
           style: TextStyle(
             fontSize: subtitleSize,
             color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -374,7 +377,7 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildErrorBanner(bool isDark, ResponsiveConfig config) {
+  Widget _buildErrorBanner(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     final fontSize = config.responsive(small: 12, medium: 13, large: 14);
     final iconSize = config.responsive(small: 16, medium: 18, large: 20);
     final horizontalPad = config.isSmall ? 12.0 : 16.0;
@@ -414,10 +417,10 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildForm(bool isDark, ResponsiveConfig config) {
-    final labelIdentifiant = config.isSmall ? 'Matricule / Email' : 'Matricule ou Email';
-    final hintIdentifiant = config.isSmall ? 'Votre matricule' : 'Entrez votre matricule';
-    final hintPassword = config.isSmall ? 'Votre mot de passe' : 'Entrez votre mot de passe';
+  Widget _buildForm(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
+    final labelIdentifiant = config.isSmall ? l10n.usernameShort : l10n.usernameOrEmail;
+    final hintIdentifiant = config.isSmall ? l10n.yourUsername : l10n.enterUsername;
+    final hintPassword = config.isSmall ? l10n.yourPassword : l10n.enterPassword;
     final iconSize = config.responsive(small: 20, medium: 22, large: 24);
     final fieldSpacing = config.responsive(small: 12.0, medium: 14.0, large: 16.0);
 
@@ -436,7 +439,7 @@ class _LoginScreenState extends State<LoginScreen>
         SizedBox(height: fieldSpacing),
         CustomTextField(
           controller: _passwordController,
-          label: 'Mot de passe',
+          label: l10n.password,
           hint: hintPassword,
           prefixIcon: Icons.lock_outline,
           obscureText: !_isPasswordVisible,
@@ -457,7 +460,7 @@ class _LoginScreenState extends State<LoginScreen>
         SizedBox(
           width: double.infinity,
           child: CustomButton(
-            text: config.isSmall ? 'CONNEXION' : 'SE CONNECTER',
+            text: config.isSmall ? l10n.loginShort : l10n.login,
             onPressed: _isLoading ? null : _handleLogin,
             isLoading: _isLoading,
           ),
@@ -466,7 +469,7 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  Widget _buildRegisterLink(bool isDark, ResponsiveConfig config) {
+  Widget _buildRegisterLink(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     final fontSize = config.responsive(small: 12, medium: 14, large: 16);
     return Wrap(
       alignment: WrapAlignment.center,
@@ -474,7 +477,7 @@ class _LoginScreenState extends State<LoginScreen>
       spacing: 2,
       children: [
         Text(
-          'Pas encore de compte ?',
+          l10n.noAccount,
           style: TextStyle(
             color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
             fontSize: fontSize,
@@ -493,7 +496,7 @@ class _LoginScreenState extends State<LoginScreen>
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
           child: Text(
-            'Créer un compte',
+            l10n.createAccount,
             style: TextStyle(
               color: isDark ? Colors.blue.shade300 : AppTheme.primaryColor,
               fontWeight: FontWeight.bold,

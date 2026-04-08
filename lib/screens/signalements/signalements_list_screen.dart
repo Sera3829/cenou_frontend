@@ -6,6 +6,7 @@ import '../../providers/signalement_provider.dart';
 import '../../services/connectivity_service.dart';
 import '../../models/signalement.dart';
 import '../../utils/mobile_responsive.dart';
+import '../../l10n/app_localizations.dart';
 import 'signalement_detail_screen.dart';
 import 'create_signalement_screen.dart';
 
@@ -27,11 +28,11 @@ class _SignalementsListScreenState extends State<SignalementsListScreen> {
   }
 
   // ── Navigation vers créer signalement (avec vérif connexion) ────────────
-  void _goToCreate(BuildContext context) {
+  void _goToCreate(BuildContext context, AppLocalizations l10n) {
     final conn = Provider.of<ConnectivityService>(context, listen: false);
     if (conn.isOffline) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Connexion internet requise pour créer un signalement'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(l10n.offlineCreateReport),
         backgroundColor: Colors.orange,
         behavior: SnackBarBehavior.floating,
       ));
@@ -65,18 +66,19 @@ class _SignalementsListScreenState extends State<SignalementsListScreen> {
   // ── Build ────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppTheme.backgroundColor,
-      appBar: _buildAppBar(isDark),
+      appBar: _buildAppBar(isDark, l10n),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final config = ResponsiveConfig.fromConstraints(constraints);
           return Consumer<SignalementProvider>(
             builder: (context, provider, _) {
               if (provider.isLoading && provider.signalements.isEmpty) {
-                return _LoadingState(config: config);
+                return _LoadingState(config: config, l10n: l10n);
               }
               if (provider.error != null) {
                 return _ErrorState(
@@ -84,6 +86,7 @@ class _SignalementsListScreenState extends State<SignalementsListScreen> {
                   isDark: isDark,
                   config: config,
                   onRetry: provider.refresh,
+                  l10n: l10n,
                 );
               }
               return RefreshIndicator(
@@ -98,6 +101,7 @@ class _SignalementsListScreenState extends State<SignalementsListScreen> {
                         provider: provider,
                         isDark: isDark,
                         config: config,
+                        l10n: l10n,
                       ),
                     ),
                     if (provider.signalements.isNotEmpty)
@@ -113,6 +117,7 @@ class _SignalementsListScreenState extends State<SignalementsListScreen> {
                             provider: provider,
                             isDark: isDark,
                             config: config,
+                            l10n: l10n,
                           ),
                         ),
                       ),
@@ -125,7 +130,7 @@ class _SignalementsListScreenState extends State<SignalementsListScreen> {
                       ),
                       sliver: provider.signalements.isEmpty
                           ? SliverToBoxAdapter(
-                          child: _EmptyState(isDark: isDark, config: config))
+                          child: _EmptyState(isDark: isDark, config: config, l10n: l10n))
                           : SliverList(
                         delegate: SliverChildBuilderDelegate(
                               (_, i) => _SignalementCard(
@@ -141,6 +146,7 @@ class _SignalementsListScreenState extends State<SignalementsListScreen> {
                                     signalementId: provider.signalements[i].id),
                               ),
                             ),
+                            l10n: l10n,
                           ),
                           childCount: provider.signalements.length,
                         ),
@@ -153,16 +159,16 @@ class _SignalementsListScreenState extends State<SignalementsListScreen> {
           );
         },
       ),
-      floatingActionButton: _buildFab(context),
+      floatingActionButton: _buildFab(context, l10n),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
-  PreferredSizeWidget _buildAppBar(bool isDark) {
+  PreferredSizeWidget _buildAppBar(bool isDark, AppLocalizations l10n) {
     return AppBar(
-      title: const Text(
-        'Mes Signalements',
-        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 19),
+      title: Text(
+        l10n.myReports,
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 19),
       ),
       centerTitle: true,
       actions: [
@@ -176,13 +182,13 @@ class _SignalementsListScreenState extends State<SignalementsListScreen> {
                 color: Colors.amber,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.history, size: 13, color: Colors.white),
-                  SizedBox(width: 3),
-                  Text('Cache',
-                      style: TextStyle(
+                  const Icon(Icons.history, size: 13, color: Colors.white),
+                  const SizedBox(width: 3),
+                  Text(l10n.cacheBadge,
+                      style: const TextStyle(
                           fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white)),
                 ],
               ),
@@ -191,23 +197,23 @@ class _SignalementsListScreenState extends State<SignalementsListScreen> {
         ),
         IconButton(
           icon: const Icon(Icons.info_outline_rounded),
-          onPressed: _showInfoDialog,
-          tooltip: 'Types de problèmes',
+          onPressed: () => _showInfoDialog(l10n),
+          tooltip: l10n.problemTypes,
         ),
       ],
     );
   }
 
-  Widget _buildFab(BuildContext context) {
+  Widget _buildFab(BuildContext context, AppLocalizations l10n) {
     final config = ResponsiveConfig.fromConstraints(
       BoxConstraints(maxWidth: MediaQuery.of(context).size.width),
     );
     return FloatingActionButton.extended(
       heroTag: 'btn_ajouter_signalement',
-      onPressed: () => _goToCreate(context),
+      onPressed: () => _goToCreate(context, l10n),
       icon: const Icon(Icons.add_rounded, size: 22),
       label: Text(
-        config.isSmall ? 'Signalement' : 'Créer un signalement',
+        config.isSmall ? l10n.reportShort : l10n.createReport,
         style: const TextStyle(fontWeight: FontWeight.w600),
       ),
       backgroundColor: AppTheme.errorColor,
@@ -217,15 +223,15 @@ class _SignalementsListScreenState extends State<SignalementsListScreen> {
     );
   }
 
-  void _showInfoDialog() {
+  void _showInfoDialog(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final problems = [
-      {'type': 'PLOMBERIE',   'desc': 'Fuite d\'eau, robinets, sanitaires'},
-      {'type': 'ÉLECTRICITÉ', 'desc': 'Pannes, prises, interrupteurs'},
-      {'type': 'TOITURE',     'desc': 'Infiltrations, tuiles, gouttières'},
-      {'type': 'SERRURE',     'desc': 'Portes, fenêtres, fermetures'},
-      {'type': 'MOBILIER',    'desc': 'Lits, tables, chaises, armoires'},
-      {'type': 'AUTRE',       'desc': 'Autres problèmes non listés'},
+      {'type': l10n.plumbing,       'desc': l10n.plumbingDesc},
+      {'type': l10n.electricity,    'desc': l10n.electricityDesc},
+      {'type': l10n.roofing,        'desc': l10n.roofingDesc},
+      {'type': l10n.locks,          'desc': l10n.locksDesc},
+      {'type': l10n.furniture,      'desc': l10n.furnitureDesc},
+      {'type': l10n.other,          'desc': l10n.otherDesc},
     ];
 
     showDialog(
@@ -243,14 +249,14 @@ class _SignalementsListScreenState extends State<SignalementsListScreen> {
                 Icon(Icons.info_rounded,
                     color: Theme.of(context).colorScheme.primary, size: 24),
                 const SizedBox(width: 12),
-                Text('Types de problèmes',
+                Text(l10n.problemTypesTitle,
                     style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: isDark ? Colors.white : Colors.black87)),
               ]),
               const SizedBox(height: 16),
-              Text('Catégories de signalements disponibles :',
+              Text(l10n.availableCategories,
                   style: TextStyle(
                       fontSize: 13,
                       color: isDark ? Colors.grey.shade400 : Colors.grey,
@@ -288,7 +294,7 @@ class _SignalementsListScreenState extends State<SignalementsListScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  child: const Text('Compris'),
+                  child: Text(l10n.understood),
                 ),
               ),
             ],
@@ -307,11 +313,13 @@ class _StatsCard extends StatelessWidget {
   final SignalementProvider provider;
   final bool isDark;
   final ResponsiveConfig config;
+  final AppLocalizations l10n;
 
   const _StatsCard({
     required this.provider,
     required this.isDark,
     required this.config,
+    required this.l10n,
   });
 
   @override
@@ -345,7 +353,7 @@ class _StatsCard extends StatelessWidget {
             Icon(Icons.bar_chart_rounded,
                 color: Colors.white.withOpacity(0.9), size: 18),
             const SizedBox(width: 8),
-            Text('Aperçu des signalements',
+            Text(l10n.reportOverview,
                 style: TextStyle(
                     color: Colors.white.withOpacity(0.9),
                     fontSize: titleSize,
@@ -357,10 +365,10 @@ class _StatsCard extends StatelessWidget {
               ? Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              _StatItem(label: 'Total',      value: provider.totalSignalements.toString(),    icon: Icons.report_problem_rounded,  iconColor: Colors.white.withOpacity(0.9), config: config),
-              _StatItem(label: 'En attente', value: provider.signalementsEnAttente.toString(), icon: Icons.pending_actions_rounded, iconColor: Colors.amber[300]!,           config: config),
-              _StatItem(label: 'En cours',   value: provider.signalementsEnCours.toString(),   icon: Icons.build_rounded,          iconColor: Colors.blue[300]!,            config: config),
-              _StatItem(label: 'Résolus',    value: provider.signalementsResolus.toString(),   icon: Icons.check_circle_rounded,   iconColor: Colors.green[300]!,           config: config),
+              _StatItem(label: l10n.total,      value: provider.totalSignalements.toString(),    icon: Icons.report_problem_rounded,  iconColor: Colors.white.withOpacity(0.9), config: config),
+              _StatItem(label: l10n.pending,    value: provider.signalementsEnAttente.toString(), icon: Icons.pending_actions_rounded, iconColor: Colors.amber[300]!,           config: config),
+              _StatItem(label: l10n.inProgress, value: provider.signalementsEnCours.toString(),   icon: Icons.build_rounded,          iconColor: Colors.blue[300]!,            config: config),
+              _StatItem(label: l10n.resolved,   value: provider.signalementsResolus.toString(),   icon: Icons.check_circle_rounded,   iconColor: Colors.green[300]!,           config: config),
             ],
           )
               : GridView.count(
@@ -371,10 +379,10 @@ class _StatsCard extends StatelessWidget {
             crossAxisSpacing: config.isSmall ? 6 : 10,
             mainAxisSpacing: 0,
             children: [
-              _StatItem(label: 'Total',      value: provider.totalSignalements.toString(),    icon: Icons.report_problem_rounded,  iconColor: Colors.white.withOpacity(0.9), config: config),
-              _StatItem(label: 'En attente', value: provider.signalementsEnAttente.toString(), icon: Icons.pending_actions_rounded, iconColor: Colors.amber[300]!,           config: config),
-              _StatItem(label: 'En cours',   value: provider.signalementsEnCours.toString(),   icon: Icons.build_rounded,          iconColor: Colors.blue[300]!,            config: config),
-              _StatItem(label: 'Résolus',    value: provider.signalementsResolus.toString(),   icon: Icons.check_circle_rounded,   iconColor: Colors.green[300]!,           config: config),
+              _StatItem(label: l10n.total,      value: provider.totalSignalements.toString(),    icon: Icons.report_problem_rounded,  iconColor: Colors.white.withOpacity(0.9), config: config),
+              _StatItem(label: l10n.pending,    value: provider.signalementsEnAttente.toString(), icon: Icons.pending_actions_rounded, iconColor: Colors.amber[300]!,           config: config),
+              _StatItem(label: l10n.inProgress, value: provider.signalementsEnCours.toString(),   icon: Icons.build_rounded,          iconColor: Colors.blue[300]!,            config: config),
+              _StatItem(label: l10n.resolved,   value: provider.signalementsResolus.toString(),   icon: Icons.check_circle_rounded,   iconColor: Colors.green[300]!,           config: config),
             ],
           ),
         ],
@@ -439,11 +447,13 @@ class _ListHeader extends StatelessWidget {
   final SignalementProvider provider;
   final bool isDark;
   final ResponsiveConfig config;
+  final AppLocalizations l10n;
 
   const _ListHeader({
     required this.provider,
     required this.isDark,
     required this.config,
+    required this.l10n,
   });
 
   @override
@@ -455,7 +465,7 @@ class _ListHeader extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
-          'Historique (${provider.totalSignalements})',
+          l10n.historyCount(provider.totalSignalements),
           style: TextStyle(
               fontSize: titleSize,
               fontWeight: FontWeight.w600,
@@ -470,7 +480,7 @@ class _ListHeader extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
           ),
           child: Text(
-            '${provider.totalSignalements} signalement${provider.totalSignalements > 1 ? "s" : ""}',
+            l10n.reportCount(provider.totalSignalements),
             style: TextStyle(
                 fontSize: badgeSize,
                 fontWeight: FontWeight.w500,
@@ -493,6 +503,7 @@ class _SignalementCard extends StatelessWidget {
   final _StatusInfo statusInfo;
   final IconData problemIcon;
   final VoidCallback onTap;
+  final AppLocalizations l10n;
 
   const _SignalementCard({
     required this.signalement,
@@ -501,6 +512,7 @@ class _SignalementCard extends StatelessWidget {
     required this.statusInfo,
     required this.problemIcon,
     required this.onTap,
+    required this.l10n,
   });
 
   @override
@@ -521,8 +533,8 @@ class _SignalementCard extends StatelessWidget {
 
     // Date formatée
     final dateStr = config.isSmall
-        ? DateFormat('dd/MM/yy').format(signalement.createdAt)
-        : DateFormat('dd MMM yyyy · HH:mm').format(signalement.createdAt);
+        ? DateFormat('dd/MM/yy', l10n.locale.languageCode).format(signalement.createdAt)
+        : DateFormat('dd MMM yyyy · HH:mm', l10n.locale.languageCode).format(signalement.createdAt);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -638,7 +650,7 @@ class _SignalementCard extends StatelessWidget {
                     if ((signalement.numeroChambre ?? '').isNotEmpty)
                       _MetaChip(
                           icon: Icons.room_rounded,
-                          text: signalement.numeroChambre!,
+                          text: l10n.roomAbbr(signalement.numeroChambre!),
                           isDark: isDark,
                           fontSize: metaSize),
                   ],
@@ -682,7 +694,8 @@ class _MetaChip extends StatelessWidget {
 
 class _LoadingState extends StatelessWidget {
   final ResponsiveConfig config;
-  const _LoadingState({required this.config});
+  final AppLocalizations l10n;
+  const _LoadingState({required this.config, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -692,7 +705,7 @@ class _LoadingState extends StatelessWidget {
         CircularProgressIndicator(
             strokeWidth: 2, color: Theme.of(context).colorScheme.primary),
         const SizedBox(height: 18),
-        Text('Chargement des signalements…',
+        Text(l10n.loadingReports,
             style: TextStyle(
                 fontSize: config.responsive(small: 13, medium: 15, large: 16),
                 color: isDark ? Colors.grey.shade300 : Colors.grey[600])),
@@ -704,7 +717,8 @@ class _LoadingState extends StatelessWidget {
 class _EmptyState extends StatelessWidget {
   final bool isDark;
   final ResponsiveConfig config;
-  const _EmptyState({required this.isDark, required this.config});
+  final AppLocalizations l10n;
+  const _EmptyState({required this.isDark, required this.config, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -720,13 +734,13 @@ class _EmptyState extends StatelessWidget {
         Icon(Icons.report_problem_outlined,
             size: iconSize, color: isDark ? Colors.grey.shade700 : Colors.grey[300]),
         const SizedBox(height: 20),
-        Text('Aucun signalement',
+        Text(l10n.noReports,
             style: TextStyle(
                 fontSize: titleSize,
                 fontWeight: FontWeight.w700,
                 color: isDark ? Colors.grey.shade300 : Colors.grey[600])),
         const SizedBox(height: 10),
-        Text('Vous n\'avez effectué aucun signalement pour le moment',
+        Text(l10n.noReportsSub,
             textAlign: TextAlign.center,
             style: TextStyle(
                 fontSize: bodySize,
@@ -742,12 +756,14 @@ class _ErrorState extends StatelessWidget {
   final bool isDark;
   final ResponsiveConfig config;
   final VoidCallback onRetry;
+  final AppLocalizations l10n;
 
   const _ErrorState(
       {required this.error,
         required this.isDark,
         required this.config,
-        required this.onRetry});
+        required this.onRetry,
+        required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -765,7 +781,7 @@ class _ErrorState extends StatelessWidget {
         Icon(Icons.error_outline_rounded,
             size: iconSize, color: isDark ? Colors.grey.shade600 : Colors.grey[400]),
         const SizedBox(height: 20),
-        Text('Erreur de chargement',
+        Text(l10n.loadingError,
             style: TextStyle(
                 fontSize: titleSize,
                 fontWeight: FontWeight.w600,
@@ -781,7 +797,7 @@ class _ErrorState extends StatelessWidget {
         ElevatedButton.icon(
           onPressed: onRetry,
           icon: const Icon(Icons.refresh_rounded, size: 18),
-          label: const Text('Réessayer'),
+          label: Text(l10n.retry),
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.primary,
             foregroundColor: Colors.white,

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../../config/theme.dart';
 import '../../providers/notification_provider.dart';
 import '../../services/connectivity_service.dart';
+import '../../l10n/app_localizations.dart';
 import 'annonce_details_screen.dart';
 
 /// Écran affichant la liste des notifications.
@@ -25,6 +26,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -40,7 +42,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   children: [
                     Expanded(
                       child: Text(
-                        'Notifications',
+                        l10n.notifications,
                         style: TextStyle(
                           color: isDark ? Colors.white : Colors.black87,
                         ),
@@ -58,12 +60,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(Icons.history, size: 12, color: Colors.white),
-                            SizedBox(width: 4),
+                          children: [
+                            const Icon(Icons.history, size: 12, color: Colors.white),
+                            const SizedBox(width: 4),
                             Text(
-                              'Cache',
-                              style: TextStyle(
+                              l10n.cacheBadge,
+                              style: const TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
                                 color: Colors.white,
@@ -77,7 +79,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                 ),
                 if (provider.unreadCount > 0)
                   Text(
-                    '${provider.unreadCount} non lue(s)',
+                    l10n.unreadCountText(provider.unreadCount),
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.normal,
@@ -97,8 +99,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     final success = await provider.markAllAsRead();
                     if (success && context.mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Toutes les notifications marquées comme lues'),
+                        SnackBar(
+                          content: Text(l10n.allMarkedAsRead),
                           backgroundColor: AppTheme.successColor,
                           behavior: SnackBarBehavior.floating,
                         ),
@@ -114,7 +116,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     }
                   },
                   child: Text(
-                    'Tout marquer lu',
+                    l10n.markAllRead,
                     style: TextStyle(
                       color: isDark ? Colors.white : Colors.black87,
                     ),
@@ -126,12 +128,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ],
       ),
-      body: _buildBody(isDark),
+      body: _buildBody(isDark, l10n),
     );
   }
 
   /// Construit le contenu principal de l'écran.
-  Widget _buildBody(bool isDark) {
+  Widget _buildBody(bool isDark, AppLocalizations l10n) {
     return Consumer<NotificationProvider>(
       builder: (context, provider, _) {
         if (provider.isLoading && provider.notifications.isEmpty) {
@@ -143,11 +145,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         }
 
         if (provider.error != null && provider.notifications.isEmpty) {
-          return _buildErrorState(provider, isDark);
+          return _buildErrorState(provider, isDark, l10n);
         }
 
         if (provider.notifications.isEmpty) {
-          return _buildEmptyState(isDark);
+          return _buildEmptyState(isDark, l10n);
         }
 
         return RefreshIndicator(
@@ -160,7 +162,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             separatorBuilder: (context, index) => const SizedBox(height: 8),
             itemBuilder: (context, index) {
               final notification = provider.notifications[index];
-              return _buildNotificationCard(notification, provider, isDark);
+              return _buildNotificationCard(notification, provider, isDark, l10n);
             },
           ),
         );
@@ -173,6 +175,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       Map<String, dynamic> notification,
       NotificationProvider provider,
       bool isDark,
+      AppLocalizations l10n,
       ) {
     final isRead = notification['read'] as bool;
     final type = notification['type'] as String;
@@ -214,8 +217,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         final success = await provider.deleteNotification(notification['id']);
         if (success && context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Notification supprimée'),
+            SnackBar(
+              content: Text(l10n.notificationDeleted),
               backgroundColor: AppTheme.successColor,
               behavior: SnackBarBehavior.floating,
             ),
@@ -226,8 +229,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         // Vérifier la connexion avant de supprimer
         if (!provider.canPerformOnlineAction()) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Connexion internet requise pour supprimer une notification'),
+            SnackBar(
+              content: Text(l10n.offlineDeleteNotif),
               backgroundColor: Colors.orange,
               behavior: SnackBarBehavior.floating,
             ),
@@ -242,13 +245,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           builder: (context) => AlertDialog(
             backgroundColor: isDarkConfirm ? const Color(0xFF1E1E1E) : Colors.white,
             title: Text(
-              'Supprimer',
+              l10n.delete,
               style: TextStyle(
                 color: isDarkConfirm ? Colors.white : Colors.black87,
               ),
             ),
             content: Text(
-              'Voulez-vous vraiment supprimer cette notification ?',
+              l10n.deleteNotificationConfirm,
               style: TextStyle(
                 color: isDarkConfirm ? Colors.grey.shade300 : Colors.grey[700],
               ),
@@ -257,7 +260,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
                 child: Text(
-                  'Annuler',
+                  l10n.cancel,
                   style: TextStyle(
                     color: isDarkConfirm ? Colors.grey.shade400 : Colors.grey[700],
                   ),
@@ -265,9 +268,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: const Text(
-                  'Supprimer',
-                  style: TextStyle(color: Colors.red),
+                child: Text(
+                  l10n.delete,
+                  style: const TextStyle(color: Colors.red),
                 ),
               ),
             ],
@@ -292,12 +295,12 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             if (provider.canPerformOnlineAction()) {
               final success = await provider.markAsRead(notification['id']);
               if (success && context.mounted) {
-                _navigateToNotification(notification);
+                _navigateToNotification(notification, l10n);
               }
             } else {
               await provider.markAsReadLocally(notification['id']);
               if (context.mounted) {
-                _navigateToNotification(notification);
+                _navigateToNotification(notification, l10n);
               }
             }
           },
@@ -339,7 +342,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        _formatDate(notification['createdAt']),
+                        _formatDate(notification['createdAt'], l10n),
                         style: TextStyle(
                           fontSize: 12,
                           color: isDark ? Colors.grey.shade500 : Colors.grey[500],
@@ -366,7 +369,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   /// Navigue vers l'écran approprié en fonction du type de notification.
-  void _navigateToNotification(Map<String, dynamic> notification) {
+  void _navigateToNotification(Map<String, dynamic> notification, AppLocalizations l10n) {
     final type = notification['type'];
     final data = notification['data'] as Map<String, dynamic>? ?? {};
 
@@ -390,8 +393,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         break;
       default:
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Détails non disponibles'),
+          SnackBar(
+            content: Text(l10n.detailsNotAvailable),
             backgroundColor: AppTheme.warningColor,
             behavior: SnackBarBehavior.floating,
           ),
@@ -400,7 +403,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   /// Affiche un message lorsque la liste est vide.
-  Widget _buildEmptyState(bool isDark) {
+  Widget _buildEmptyState(bool isDark, AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -412,7 +415,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Aucune notification',
+            l10n.noNotifications,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -421,7 +424,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Vous serez notifié des événements importants',
+            l10n.noNotificationsSub,
             textAlign: TextAlign.center,
             style: TextStyle(
               color: isDark ? Colors.grey.shade400 : Colors.grey[500],
@@ -436,7 +439,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text('Rafraîchir'),
+                child: Text(l10n.refresh),
               );
             },
           ),
@@ -446,7 +449,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   /// Affiche un message en cas d'erreur de chargement.
-  Widget _buildErrorState(NotificationProvider provider, bool isDark) {
+  Widget _buildErrorState(NotificationProvider provider, bool isDark, AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -458,7 +461,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Erreur de chargement',
+            l10n.loadingError,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -469,7 +472,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(
-              provider.error ?? 'Impossible de charger les notifications',
+              provider.error ?? l10n.cannotLoadNotifications,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: isDark ? Colors.grey.shade400 : Colors.grey[600],
@@ -483,7 +486,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Réessayer'),
+            child: Text(l10n.retry),
           ),
         ],
       ),
@@ -491,16 +494,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   }
 
   /// Formate la date pour l'affichage (ex: "Il y a 5 min", "Il y a 2h", "dd/MM/yyyy").
-  String _formatDate(DateTime date) {
+  String _formatDate(DateTime date, AppLocalizations l10n) {
     final now = DateTime.now();
     final difference = now.difference(date);
 
     if (difference.inMinutes < 60) {
-      return 'Il y a ${difference.inMinutes} min';
+      return l10n.timeMinutesAgo(difference.inMinutes);
     } else if (difference.inHours < 24) {
-      return 'Il y a ${difference.inHours}h';
+      return l10n.timeHoursAgo(difference.inHours);
     } else if (difference.inDays < 7) {
-      return 'Il y a ${difference.inDays}j';
+      return l10n.timeDaysAgo(difference.inDays);
     } else {
       return DateFormat('dd/MM/yyyy').format(date);
     }

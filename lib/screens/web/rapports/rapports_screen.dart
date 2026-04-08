@@ -7,6 +7,7 @@ import '../../../providers/web/rapport_provider.dart';
 import '../../../models/admin/centre.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../../../config/theme.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Écran de génération des rapports (financier et occupation).
 class RapportsScreen extends StatefulWidget {
@@ -42,7 +43,7 @@ class _RapportsScreenState extends State<RapportsScreen> {
   }
 
   /// Génère le rapport financier dans le format demandé.
-  Future<void> _generateFinancialReport(String format) async {
+  Future<void> _generateFinancialReport(String format, AppLocalizations l10n) async {
     setState(() => _isLoadingFinancial = true);
 
     try {
@@ -75,16 +76,16 @@ class _RapportsScreenState extends State<RapportsScreen> {
         dateFin: _endDate,
       );
 
-      _showSuccessSnackBar('Rapport financier généré avec succès');
+      _showSuccessSnackBar(l10n.financialReportGenerated);
     } catch (error) {
-      _showErrorSnackBar('Erreur lors de la génération: ${error.toString()}');
+      _showErrorSnackBar(l10n.generationError(error.toString()));
     } finally {
       setState(() => _isLoadingFinancial = false);
     }
   }
 
   /// Génère le rapport d'occupation dans le format demandé.
-  Future<void> _generateOccupancyReport(String format) async {
+  Future<void> _generateOccupancyReport(String format, AppLocalizations l10n) async {
     setState(() => _isLoadingOccupancy = true);
 
     try {
@@ -94,36 +95,36 @@ class _RapportsScreenState extends State<RapportsScreen> {
         centreId: _selectedCentreId,
       );
 
-      _showSuccessSnackBar("Rapport d'occupation généré avec succès");
+      _showSuccessSnackBar(l10n.occupancyReportGenerated);
     } catch (error) {
-      _showErrorSnackBar('Erreur lors de la génération: ${error.toString()}');
+      _showErrorSnackBar(l10n.generationError(error.toString()));
     } finally {
       setState(() => _isLoadingOccupancy = false);
     }
   }
 
   /// Affiche la feuille de sélection du format (PDF/Excel).
-  Future<void> _showFormatSelection(String reportType) async {
+  Future<void> _showFormatSelection(String reportType, AppLocalizations l10n) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final format = await showModalBottomSheet<String>(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => _buildFormatBottomSheet(reportType, isDark),
+      builder: (context) => _buildFormatBottomSheet(reportType, isDark, l10n),
     );
 
     if (format != null && mounted) {
       if (reportType == 'Financier') {
-        await _generateFinancialReport(format);
+        await _generateFinancialReport(format, l10n);
       } else {
-        await _generateOccupancyReport(format);
+        await _generateOccupancyReport(format, l10n);
       }
     }
   }
 
   /// Construit la feuille inférieure de choix du format.
-  Widget _buildFormatBottomSheet(String reportType, bool isDark) {
+  Widget _buildFormatBottomSheet(String reportType, bool isDark, AppLocalizations l10n) {
     return Container(
       decoration: BoxDecoration(
         color: AppTheme.getCardBackground(context),
@@ -147,7 +148,7 @@ class _RapportsScreenState extends State<RapportsScreen> {
           Padding(
             padding: const EdgeInsets.all(20),
             child: Text(
-              'Format du rapport $reportType',
+              l10n.reportFormatTitle(reportType),
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
@@ -159,7 +160,7 @@ class _RapportsScreenState extends State<RapportsScreen> {
             icon: Icons.picture_as_pdf,
             color: Colors.red,
             title: 'PDF',
-            subtitle: 'Format optimisé pour l\'impression',
+            subtitle: l10n.pdfFormatDescription,
             value: 'pdf',
             onTap: () => Navigator.pop(context, 'pdf'),
           ),
@@ -167,7 +168,7 @@ class _RapportsScreenState extends State<RapportsScreen> {
             icon: Icons.table_chart,
             color: Colors.green,
             title: 'Excel',
-            subtitle: 'Format modifiable avec données brutes',
+            subtitle: l10n.excelFormatDescription,
             value: 'excel',
             onTap: () => Navigator.pop(context, 'excel'),
           ),
@@ -319,6 +320,7 @@ class _RapportsScreenState extends State<RapportsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return DashboardLayout(
@@ -341,7 +343,7 @@ class _RapportsScreenState extends State<RapportsScreen> {
                     Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
                     const SizedBox(height: 16),
                     Text(
-                      'Erreur de chargement',
+                      l10n.loadingError,
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -361,7 +363,7 @@ class _RapportsScreenState extends State<RapportsScreen> {
                         backgroundColor: Colors.red.shade400,
                         foregroundColor: Colors.white,
                       ),
-                      child: const Text('Réessayer'),
+                      child: Text(l10n.retry),
                     ),
                   ],
                 ),
@@ -376,17 +378,17 @@ class _RapportsScreenState extends State<RapportsScreen> {
               children: [
                 // Carte rapport financier
                 _buildReportCard(
-                  title: 'Rapport Financier',
+                  title: l10n.financialReport,
                   icon: Icons.attach_money_rounded,
                   iconColor: AppTheme.successColor,
                   buttonColor: AppTheme.successColor,
                   isLoading: _isLoadingFinancial,
-                  onGenerate: () => _showFormatSelection('Financier'),
+                  onGenerate: () => _showFormatSelection('Financier', l10n),
                   content: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Période d\'analyse',
+                        l10n.analysisPeriod,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -398,10 +400,10 @@ class _RapportsScreenState extends State<RapportsScreen> {
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          _buildPeriodChip('Mois en cours', 'current_month'),
-                          _buildPeriodChip('Mois dernier', 'last_month'),
-                          _buildPeriodChip('Trimestre', 'quarter'),
-                          _buildPeriodChip('Personnalisée', 'custom'),
+                          _buildPeriodChip(l10n.currentMonth, 'current_month', l10n),
+                          _buildPeriodChip(l10n.lastMonth, 'last_month', l10n),
+                          _buildPeriodChip(l10n.quarter, 'quarter', l10n),
+                          _buildPeriodChip(l10n.custom, 'custom', l10n),
                         ],
                       ),
                       if (_selectedPeriod == 'custom') ...[
@@ -410,56 +412,60 @@ class _RapportsScreenState extends State<RapportsScreen> {
                           children: [
                             Expanded(
                               child: _buildDateField(
-                                label: 'Date de début',
+                                label: l10n.startDate,
                                 date: _startDate,
                                 onTap: _selectStartDate,
+                                l10n: l10n,
                               ),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: _buildDateField(
-                                label: 'Date de fin',
+                                label: l10n.endDate,
                                 date: _endDate,
                                 onTap: _selectEndDate,
+                                l10n: l10n,
                               ),
                             ),
                           ],
                         ),
                       ],
                       const SizedBox(height: 20),
-                      _buildCentreDropdown(provider.centres),
+                      _buildCentreDropdown(provider.centres, l10n),
                     ],
                   ),
+                  l10n: l10n,
                 ),
                 const SizedBox(height: 24),
 
                 // Carte rapport d'occupation
                 _buildReportCard(
-                  title: "Rapport d'Occupation",
+                  title: l10n.occupancyReport,
                   icon: Icons.hotel_rounded,
                   iconColor: AppTheme.infoColor,
                   buttonColor: AppTheme.infoColor,
                   isLoading: _isLoadingOccupancy,
-                  onGenerate: () => _showFormatSelection('Occupation'),
+                  onGenerate: () => _showFormatSelection('Occupation', l10n),
                   content: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "Analysez le taux d'occupation, les logements disponibles et les attributions en cours.",
+                        l10n.occupancyReportDescription,
                         style: TextStyle(
                           color: AppTheme.getTextSecondary(context),
                           fontSize: 15,
                         ),
                       ),
                       const SizedBox(height: 20),
-                      _buildCentreDropdown(provider.centres),
+                      _buildCentreDropdown(provider.centres, l10n),
                     ],
                   ),
+                  l10n: l10n,
                 ),
                 const SizedBox(height: 32),
 
                 // Panneau d'information
-                _buildInfoPanel(),
+                _buildInfoPanel(l10n),
               ],
             ),
           );
@@ -477,6 +483,7 @@ class _RapportsScreenState extends State<RapportsScreen> {
     required bool isLoading,
     required VoidCallback onGenerate,
     required Widget content,
+    required AppLocalizations l10n,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -558,7 +565,7 @@ class _RapportsScreenState extends State<RapportsScreen> {
                     const Icon(Icons.assessment_outlined, size: 20),
                     const SizedBox(width: 8),
                     Text(
-                      'Générer le rapport',
+                      l10n.generateReport,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
@@ -575,7 +582,7 @@ class _RapportsScreenState extends State<RapportsScreen> {
   }
 
   /// Construit un chip de période sélectionnable.
-  Widget _buildPeriodChip(String label, String value) {
+  Widget _buildPeriodChip(String label, String value, AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isSelected = _selectedPeriod == value;
     final selectedColor = Theme.of(context).colorScheme.primary;
@@ -617,6 +624,7 @@ class _RapportsScreenState extends State<RapportsScreen> {
     required String label,
     required DateTime? date,
     required VoidCallback onTap,
+    required AppLocalizations l10n,
   }) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -656,8 +664,8 @@ class _RapportsScreenState extends State<RapportsScreen> {
                 Expanded(
                   child: Text(
                     date != null
-                        ? DateFormat('dd/MM/yyyy').format(date)
-                        : 'Sélectionner une date',
+                        ? DateFormat('dd/MM/yyyy', l10n.locale.languageCode).format(date)
+                        : l10n.selectDate,
                     style: TextStyle(
                       fontSize: 15,
                       color: date != null
@@ -675,14 +683,14 @@ class _RapportsScreenState extends State<RapportsScreen> {
   }
 
   /// Construit le menu déroulant de sélection du centre.
-  Widget _buildCentreDropdown(List<Centre> centres) {
+  Widget _buildCentreDropdown(List<Centre> centres, AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Centre (optionnel)',
+          l10n.centerOptional,
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -716,7 +724,7 @@ class _RapportsScreenState extends State<RapportsScreen> {
             DropdownMenuItem(
               value: null,
               child: Text(
-                'Tous les centres',
+                l10n.allCenters,
                 style: TextStyle(color: AppTheme.getTextSecondary(context)),
               ),
             ),
@@ -741,7 +749,7 @@ class _RapportsScreenState extends State<RapportsScreen> {
   }
 
   /// Construit le panneau d'information explicative.
-  Widget _buildInfoPanel() {
+  Widget _buildInfoPanel(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -761,7 +769,7 @@ class _RapportsScreenState extends State<RapportsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Informations importantes',
+                  l10n.importantInformation,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -770,9 +778,7 @@ class _RapportsScreenState extends State<RapportsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Les rapports sont générés en temps réel avec les données actualisées. '
-                      'Les fichiers PDF sont optimisés pour l\'impression, '
-                      'tandis que les fichiers Excel contiennent les données brutes pour analyse approfondie.',
+                  l10n.reportInfoMessage,
                   style: TextStyle(
                     fontSize: 14,
                     color: AppTheme.getTextSecondary(context),

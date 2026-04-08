@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:universal_platform/universal_platform.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'l10n/app_localizations.dart';
 import 'services/api_service.dart';
 import 'widgets/admin_guard.dart';
 
@@ -166,6 +167,7 @@ class _CenouAppState extends State<CenouApp> {
               Locale('en', 'US'),
             ],
             localizationsDelegates: const [
+              AppLocalizations.delegate,
               GlobalMaterialLocalizations.delegate,
               GlobalWidgetsLocalizations.delegate,
               GlobalCupertinoLocalizations.delegate,

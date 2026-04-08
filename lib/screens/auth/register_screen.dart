@@ -7,6 +7,7 @@ import '../../utils/mobile_responsive.dart';
 import '../../utils/validators.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../l10n/app_localizations.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -99,6 +100,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // Soumission du formulaire
   Future<void> _handleRegister() async {
+    final l10n = AppLocalizations.of(context);
     if (!_formKey.currentState!.validate()) return;
 
     setState(() {
@@ -122,11 +124,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Compte créé avec succès'),
-            backgroundColor: Color(0xFF10B981),
+          SnackBar(
+            content: Text(l10n.accountCreatedSuccess),
+            backgroundColor: const Color(0xFF10B981),
             behavior: SnackBarBehavior.floating,
-            duration: Duration(seconds: 2),
+            duration: const Duration(seconds: 2),
           ),
         );
         Navigator.pushReplacementNamed(context, '/home');
@@ -144,8 +146,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           }
           setState(() => _backendErrors = errors);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Veuillez corriger les erreurs dans le formulaire'),
+            SnackBar(
+              content: Text(l10n.correctFormErrors),
               backgroundColor: Colors.orange,
               behavior: SnackBarBehavior.floating,
             ),
@@ -234,7 +236,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // ==================== HEADER ====================
 
-  Widget _buildHeader(bool isDark, ResponsiveConfig config) {
+  Widget _buildHeader(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     final titleSize = config.responsive(small: 24, medium: 28, large: 32);
     final subtitleSize = config.responsive(small: 14, medium: 15, large: 16);
 
@@ -242,7 +244,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Créer un compte',
+          l10n.createAccountTitle,
           style: TextStyle(
             fontSize: titleSize,
             fontWeight: FontWeight.bold,
@@ -253,7 +255,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         const SizedBox(height: 8),
         Text(
-          'Remplissez vos informations pour vous inscrire',
+          l10n.fillInfoToRegister,
           style: TextStyle(
             fontSize: subtitleSize,
             color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
@@ -266,7 +268,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // ==================== FORMULAIRE MOBILE ====================
 
-  Widget _buildMobileForm(bool isDark, ResponsiveConfig config) {
+  Widget _buildMobileForm(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     final fieldSpacing = config.responsive(small: 12, medium: 14, large: 16);
     final sectionSpacing = config.responsive(small: 24, medium: 28, large: 32);
 
@@ -276,8 +278,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           fieldKey: 'matricule',
           controller: _matriculeController,
           focusNode: _matriculeFocus,
-          label: 'Matricule',
-          hint: 'Entrez votre matricule',
+          label: l10n.matricule,
+          hint: l10n.enterMatricule,
           icon: Icons.badge_outlined,
           validator: Validators.validateMatricule,
           nextFocus: _nomFocus,
@@ -290,8 +292,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           fieldKey: 'nom',
           controller: _nomController,
           focusNode: _nomFocus,
-          label: 'Nom',
-          hint: 'Nom',
+          label: l10n.lastName,
+          hint: l10n.lastNameHint,
           icon: Icons.person_outline,
           validator: Validators.validateNom,
           nextFocus: _prenomFocus,
@@ -303,8 +305,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           fieldKey: 'prenom',
           controller: _prenomController,
           focusNode: _prenomFocus,
-          label: 'Prénom',
-          hint: 'Prénom',
+          label: l10n.firstName,
+          hint: l10n.firstNameHint,
           icon: Icons.person_outline,
           validator: Validators.validateNom,
           nextFocus: _emailFocus,
@@ -316,8 +318,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           fieldKey: 'email',
           controller: _emailController,
           focusNode: _emailFocus,
-          label: 'Email',
-          hint: 'exemple@cenou.bf',
+          label: l10n.email,
+          hint: l10n.emailHint,
           icon: Icons.email_outlined,
           keyboardType: TextInputType.emailAddress,
           validator: Validators.validateEmail,
@@ -330,8 +332,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           fieldKey: 'telephone',
           controller: _telephoneController,
           focusNode: _telephoneFocus,
-          label: 'Téléphone (optionnel)',
-          hint: '+226 70 XX XX XX',
+          label: l10n.phoneOptional,
+          hint: l10n.phoneHint,
           icon: Icons.phone_outlined,
           keyboardType: TextInputType.phone,
           validator: Validators.validatePhone,
@@ -348,8 +350,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               fieldKey: 'mot_de_passe',
               controller: _passwordController,
               focusNode: _passwordFocus,
-              label: 'Mot de passe',
-              hint: 'Minimum 6 caractères',
+              label: l10n.password,
+              hint: l10n.passwordHint,
               icon: Icons.lock_outline,
               obscure: !_isPasswordVisible,
               suffix: IconButton(
@@ -368,10 +370,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               spacing: 12,
               runSpacing: 4,
               children: [
-                _buildRule('6+ caractères', _hasMinLength),
-                _buildRule('1 majuscule', _hasUppercase),
-                _buildRule('1 minuscule', _hasLowercase),
-                _buildRule('1 chiffre', _hasDigit),
+                _buildRule(l10n.pwdMin6, _hasMinLength),
+                _buildRule(l10n.pwdUppercase, _hasUppercase),
+                _buildRule(l10n.pwdLowercase, _hasLowercase),
+                _buildRule(l10n.pwdDigit, _hasDigit),
               ],
             ),
           ],
@@ -382,8 +384,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           fieldKey: 'confirmation_mot_de_passe',
           controller: _confirmPasswordController,
           focusNode: _confirmPasswordFocus,
-          label: 'Confirmer le mot de passe',
-          hint: 'Retapez votre mot de passe',
+          label: l10n.confirmPassword,
+          hint: l10n.confirmPasswordHint,
           icon: Icons.lock_outline,
           obscure: !_isConfirmPasswordVisible,
           suffix: IconButton(
@@ -404,7 +406,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // ==================== FORMULAIRE TABLETTE (2 colonnes) ====================
 
-  Widget _buildTabletForm(bool isDark, ResponsiveConfig config) {
+  Widget _buildTabletForm(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     final fieldSpacing = config.responsive(small: 12, medium: 14, large: 16);
     final sectionSpacing = config.responsive(small: 24, medium: 28, large: 32);
     final rowGap = config.responsive(small: 12, medium: 16, large: 20);
@@ -420,8 +422,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 fieldKey: 'matricule',
                 controller: _matriculeController,
                 focusNode: _matriculeFocus,
-                label: 'Matricule',
-                hint: 'Entrez votre matricule',
+                label: l10n.matricule,
+                hint: l10n.enterMatricule,
                 icon: Icons.badge_outlined,
                 validator: Validators.validateMatricule,
                 nextFocus: _nomFocus,
@@ -435,8 +437,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 fieldKey: 'email',
                 controller: _emailController,
                 focusNode: _emailFocus,
-                label: 'Email',
-                hint: 'exemple@cenou.bf',
+                label: l10n.email,
+                hint: l10n.emailHint,
                 icon: Icons.email_outlined,
                 keyboardType: TextInputType.emailAddress,
                 validator: Validators.validateEmail,
@@ -457,8 +459,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 fieldKey: 'nom',
                 controller: _nomController,
                 focusNode: _nomFocus,
-                label: 'Nom',
-                hint: 'Nom',
+                label: l10n.lastName,
+                hint: l10n.lastNameHint,
                 icon: Icons.person_outline,
                 validator: Validators.validateNom,
                 nextFocus: _prenomFocus,
@@ -471,8 +473,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 fieldKey: 'prenom',
                 controller: _prenomController,
                 focusNode: _prenomFocus,
-                label: 'Prénom',
-                hint: 'Prénom',
+                label: l10n.firstName,
+                hint: l10n.firstNameHint,
                 icon: Icons.person_outline,
                 validator: Validators.validateNom,
                 nextFocus: _telephoneFocus,
@@ -492,8 +494,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 fieldKey: 'telephone',
                 controller: _telephoneController,
                 focusNode: _telephoneFocus,
-                label: 'Téléphone (optionnel)',
-                hint: '+226 70 XX XX XX',
+                label: l10n.phoneOptional,
+                hint: l10n.phoneHint,
                 icon: Icons.phone_outlined,
                 keyboardType: TextInputType.phone,
                 validator: Validators.validatePhone,
@@ -510,8 +512,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     fieldKey: 'mot_de_passe',
                     controller: _passwordController,
                     focusNode: _passwordFocus,
-                    label: 'Mot de passe',
-                    hint: 'Minimum 6 caractères',
+                    label: l10n.password,
+                    hint: l10n.passwordHint,
                     icon: Icons.lock_outline,
                     obscure: !_isPasswordVisible,
                     suffix: IconButton(
@@ -530,10 +532,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     spacing: 12,
                     runSpacing: 4,
                     children: [
-                      _buildRule('6+ caractères', _hasMinLength),
-                      _buildRule('1 majuscule', _hasUppercase),
-                      _buildRule('1 minuscule', _hasLowercase),
-                      _buildRule('1 chiffre', _hasDigit),
+                      _buildRule(l10n.pwdMin6, _hasMinLength),
+                      _buildRule(l10n.pwdUppercase, _hasUppercase),
+                      _buildRule(l10n.pwdLowercase, _hasLowercase),
+                      _buildRule(l10n.pwdDigit, _hasDigit),
                     ],
                   ),
                 ],
@@ -548,8 +550,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           fieldKey: 'confirmation_mot_de_passe',
           controller: _confirmPasswordController,
           focusNode: _confirmPasswordFocus,
-          label: 'Confirmer le mot de passe',
-          hint: 'Retapez votre mot de passe',
+          label: l10n.confirmPassword,
+          hint: l10n.confirmPasswordHint,
           icon: Icons.lock_outline,
           obscure: !_isConfirmPasswordVisible,
           suffix: IconButton(
@@ -570,11 +572,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // ==================== FOOTER ====================
 
-  Widget _buildFooter(bool isDark, ResponsiveConfig config) {
+  Widget _buildFooter(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     return Column(
       children: [
         CustomButton(
-          text: "S'INSCRIRE",
+          text: l10n.registerButton,
           onPressed: _isLoading ? null : _handleRegister,
           isLoading: _isLoading,
         ),
@@ -583,7 +585,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              'Déjà un compte ? ',
+              l10n.alreadyHaveAccount,
               style: TextStyle(
                 color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
               ),
@@ -591,7 +593,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(
-                'Se connecter',
+                l10n.loginHere,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.primary,
                   fontWeight: FontWeight.bold,
@@ -608,6 +610,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : Colors.white,
@@ -639,21 +642,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildHeader(isDark, config),
+                    _buildHeader(isDark, config, l10n),
                     const SizedBox(height: 8),
-                    _buildTabletForm(isDark, config),
+                    _buildTabletForm(isDark, config, l10n),
                     const SizedBox(height: 24),
-                    _buildFooter(isDark, config),
+                    _buildFooter(isDark, config, l10n),
                   ],
                 )
                     : Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildHeader(isDark, config),
+                    _buildHeader(isDark, config, l10n),
                     const SizedBox(height: 8),
-                    _buildMobileForm(isDark, config),
+                    _buildMobileForm(isDark, config, l10n),
                     const SizedBox(height: 24),
-                    _buildFooter(isDark, config),
+                    _buildFooter(isDark, config, l10n),
                   ],
                 ),
               ),

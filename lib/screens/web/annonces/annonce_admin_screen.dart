@@ -6,6 +6,7 @@ import 'package:cenou_mobile/models/admin/annonce.dart';
 import 'package:intl/intl.dart';
 import 'package:cenou_mobile/config/theme.dart';
 import '../dashboard/dashboard_screen.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Écran d'administration des annonces.
 class AnnonceAdminScreen extends StatefulWidget {
@@ -32,21 +33,22 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return DashboardLayout(
       selectedIndex: 4,
       child: Column(
         children: [
-          _buildActionBar(isDark),
-          Expanded(child: _buildMainContent(isDark)),
+          _buildActionBar(isDark, l10n),
+          Expanded(child: _buildMainContent(isDark, l10n)),
         ],
       ),
     );
   }
 
   /// Construit le contenu principal.
-  Widget _buildMainContent(bool isDark) {
+  Widget _buildMainContent(bool isDark, AppLocalizations l10n) {
     return Consumer<AnnonceAdminProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading && provider.annonces.isEmpty) {
@@ -56,16 +58,16 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
         }
 
         if (provider.error != null && provider.annonces.isEmpty) {
-          return _buildErrorWidget(provider.error!, isDark);
+          return _buildErrorWidget(provider.error!, isDark, l10n);
         }
 
-        return _buildContentLayout(provider, isDark);
+        return _buildContentLayout(provider, isDark, l10n);
       },
     );
   }
 
   /// Barre d'actions supérieure.
-  Widget _buildActionBar(bool isDark) {
+  Widget _buildActionBar(bool isDark, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
       decoration: BoxDecoration(
@@ -86,7 +88,7 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Annonces & Notifications',
+                  l10n.announcementsAndNotifications,
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -95,7 +97,7 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Envoyez des notifications importantes aux étudiants',
+                  l10n.sendImportantNotificationsToStudents,
                   style: TextStyle(color: AppTheme.getTextSecondary(context)),
                 ),
               ],
@@ -104,13 +106,13 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
           IconButton(
             onPressed: _loadData,
             icon: Icon(Icons.refresh, color: AppTheme.getTextSecondary(context)),
-            tooltip: 'Actualiser',
+            tooltip: l10n.refresh,
           ),
           const SizedBox(width: 12),
           ElevatedButton.icon(
-            onPressed: () => _showSendAnnonceDialog(),
+            onPressed: () => _showSendAnnonceDialog(l10n),
             icon: Icon(Icons.send, size: 18, color: Colors.white),
-            label: const Text('Nouvelle annonce', style: TextStyle(color: Colors.white)),
+            label: Text(l10n.newAnnouncement, style: const TextStyle(color: Colors.white)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.primary,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -125,19 +127,19 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
   }
 
   /// Disposition principale avec les statistiques et la liste.
-  Widget _buildContentLayout(AnnonceAdminProvider provider, bool isDark) {
+  Widget _buildContentLayout(AnnonceAdminProvider provider, bool isDark, AppLocalizations l10n) {
     return Column(
       children: [
-        _buildStatsSection(provider, isDark),
+        _buildStatsSection(provider, isDark, l10n),
         Expanded(
-          child: _buildContentSection(provider, isDark),
+          child: _buildContentSection(provider, isDark, l10n),
         ),
       ],
     );
   }
 
   /// Section des statistiques.
-  Widget _buildStatsSection(AnnonceAdminProvider provider, bool isDark) {
+  Widget _buildStatsSection(AnnonceAdminProvider provider, bool isDark, AppLocalizations l10n) {
     final stats = {
       'total': provider.annonces.length,
       'generale': provider.annonces.where((a) => a.cible == 'TOUS').length,
@@ -161,10 +163,10 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
-          _buildStatItem('Total', '${stats['total']}', Colors.blue, isDark),
-          _buildStatItem('Générale', '${stats['generale']}', Colors.green, isDark),
-          _buildStatItem('Par centre', '${stats['centre']}', Colors.orange, isDark),
-          _buildStatItem('Étudiants', '${stats['etudiants']}', Colors.purple, isDark),
+          _buildStatItem(l10n.total, '${stats['total']}', Colors.blue, isDark),
+          _buildStatItem(l10n.generalAnnouncement, '${stats['generale']}', Colors.green, isDark),
+          _buildStatItem(l10n.byCenter, '${stats['centre']}', Colors.orange, isDark),
+          _buildStatItem(l10n.students, '${stats['etudiants']}', Colors.purple, isDark),
         ],
       ),
     );
@@ -202,16 +204,16 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
   }
 
   /// Contenu principal (liste ou état vide).
-  Widget _buildContentSection(AnnonceAdminProvider provider, bool isDark) {
+  Widget _buildContentSection(AnnonceAdminProvider provider, bool isDark, AppLocalizations l10n) {
     if (provider.annonces.isEmpty) {
-      return _buildEmptyState(isDark);
+      return _buildEmptyState(isDark, l10n);
     }
 
-    return _buildAnnoncesList(provider, isDark);
+    return _buildAnnoncesList(provider, isDark, l10n);
   }
 
   /// Liste des annonces.
-  Widget _buildAnnoncesList(AnnonceAdminProvider provider, bool isDark) {
+  Widget _buildAnnoncesList(AnnonceAdminProvider provider, bool isDark, AppLocalizations l10n) {
     return RefreshIndicator(
       onRefresh: _loadData,
       child: ListView.separated(
@@ -221,14 +223,14 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
         separatorBuilder: (context, index) => const SizedBox(height: 16),
         itemBuilder: (context, index) {
           final annonce = provider.annonces[index];
-          return _buildAnnonceCard(annonce, provider, isDark);
+          return _buildAnnonceCard(annonce, provider, isDark, l10n);
         },
       ),
     );
   }
 
   /// Carte d'une annonce.
-  Widget _buildAnnonceCard(Annonce annonce, AnnonceAdminProvider provider, bool isDark) {
+  Widget _buildAnnonceCard(Annonce annonce, AnnonceAdminProvider provider, bool isDark, AppLocalizations l10n) {
     return Card(
       elevation: isDark ? 4 : 2,
       color: AppTheme.getCardBackground(context),
@@ -262,7 +264,7 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
                 ),
                 const Spacer(),
                 Text(
-                  DateFormat('dd/MM/yyyy HH:mm').format(annonce.createdAt),
+                  DateFormat('dd/MM/yyyy HH:mm', l10n.locale.languageCode).format(annonce.createdAt),
                   style: TextStyle(
                     color: AppTheme.getTextTertiary(context),
                     fontSize: 12,
@@ -301,15 +303,15 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
                 Icon(Icons.person, size: 16, color: AppTheme.getTextTertiary(context)),
                 const SizedBox(width: 4),
                 Text(
-                  '${annonce.totalDestinataires} destinataire(s)',
+                  l10n.destinatairesCount(annonce.totalDestinataires),
                   style: TextStyle(color: AppTheme.getTextTertiary(context), fontSize: 13),
                 ),
                 const Spacer(),
                 IconButton(
-                  onPressed: () => _showDeleteDialog(annonce.id, provider, isDark),
+                  onPressed: () => _showDeleteDialog(annonce.id, provider, isDark, l10n),
                   icon: Icon(Icons.delete_outline, size: 20),
                   color: Colors.red.shade400,
-                  tooltip: 'Supprimer',
+                  tooltip: l10n.delete,
                 ),
               ],
             ),
@@ -320,7 +322,7 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
   }
 
   /// État lorsque la liste est vide.
-  Widget _buildEmptyState(bool isDark) {
+  Widget _buildEmptyState(bool isDark, AppLocalizations l10n) {
     return Center(
       child: SingleChildScrollView(
         child: Padding(
@@ -335,7 +337,7 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Aucune annonce envoyée',
+                l10n.noAnnouncementsSent,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -344,14 +346,14 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Envoyez votre première annonce aux étudiants',
+                l10n.sendFirstAnnouncement,
                 style: TextStyle(color: AppTheme.getTextTertiary(context)),
               ),
               const SizedBox(height: 24),
               ElevatedButton.icon(
-                onPressed: () => _showSendAnnonceDialog(),
+                onPressed: () => _showSendAnnonceDialog(l10n),
                 icon: Icon(Icons.send, color: Colors.white),
-                label: const Text('Créer une annonce', style: TextStyle(color: Colors.white)),
+                label: Text(l10n.createAnnouncement, style: const TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
                 ),
@@ -364,7 +366,7 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
   }
 
   /// Affichage en cas d'erreur de chargement.
-  Widget _buildErrorWidget(String error, bool isDark) {
+  Widget _buildErrorWidget(String error, bool isDark, AppLocalizations l10n) {
     return Center(
       child: SingleChildScrollView(
         child: Padding(
@@ -375,7 +377,7 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
               Icon(Icons.error_outline, size: 64, color: Colors.red.shade400),
               const SizedBox(height: 16),
               Text(
-                'Erreur de chargement',
+                l10n.loadingError,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -397,7 +399,7 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
                   backgroundColor: Colors.red.shade400,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text('Réessayer'),
+                child: Text(l10n.retry),
               ),
             ],
           ),
@@ -407,16 +409,16 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
   }
 
   /// Affiche le dialogue d'envoi d'annonce.
-  void _showSendAnnonceDialog() {
+  void _showSendAnnonceDialog(AppLocalizations l10n) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => const SendAnnonceDialog(),
+      builder: (context) => SendAnnonceDialog(l10n: l10n),
     );
   }
 
   /// Affiche la boîte de dialogue de confirmation de suppression.
-  void _showDeleteDialog(int annonceId, AnnonceAdminProvider provider, bool isDark) {
+  void _showDeleteDialog(int annonceId, AnnonceAdminProvider provider, bool isDark, AppLocalizations l10n) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
@@ -431,7 +433,7 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Supprimer l\'annonce',
+                l10n.deleteAnnouncement,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -440,7 +442,7 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Voulez-vous vraiment supprimer cette annonce ?',
+                l10n.confirmDeleteAnnouncement,
                 style: TextStyle(color: AppTheme.getTextSecondary(context)),
               ),
               const SizedBox(height: 24),
@@ -450,7 +452,7 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
                   TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: Text(
-                      'Annuler',
+                      l10n.cancel,
                       style: TextStyle(color: AppTheme.getTextSecondary(context)),
                     ),
                   ),
@@ -461,8 +463,8 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
                       try {
                         await provider.deleteAnnonce(annonceId);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Annonce supprimée avec succès'),
+                          SnackBar(
+                            content: Text(l10n.announcementDeletedSuccess),
                             backgroundColor: Colors.green,
                             behavior: SnackBarBehavior.floating,
                           ),
@@ -470,7 +472,7 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Erreur: $e'),
+                            content: Text('${l10n.error}: $e'),
                             backgroundColor: Colors.red,
                             behavior: SnackBarBehavior.floating,
                           ),
@@ -481,7 +483,7 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
                       backgroundColor: Colors.red,
                       foregroundColor: Colors.white,
                     ),
-                    child: const Text('Supprimer'),
+                    child: Text(l10n.delete),
                   ),
                 ],
               ),
@@ -497,7 +499,8 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
 
 /// Dialogue d'envoi d'une nouvelle annonce.
 class SendAnnonceDialog extends StatefulWidget {
-  const SendAnnonceDialog({Key? key}) : super(key: key);
+  final AppLocalizations l10n;
+  const SendAnnonceDialog({Key? key, required this.l10n}) : super(key: key);
 
   @override
   State<SendAnnonceDialog> createState() => _SendAnnonceDialogProState();
@@ -530,6 +533,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
   Widget build(BuildContext context) {
     final provider = Provider.of<AnnonceAdminProvider>(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final l10n = widget.l10n;
 
     return Dialog(
       backgroundColor: AppTheme.getCardBackground(context),
@@ -541,10 +545,10 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
         ),
         child: Column(
           children: [
-            _buildHeader(),
-            _buildStepIndicator(isDark),
-            Expanded(child: _buildStepContent(provider, isDark)),
-            _buildFooter(provider, isDark),
+            _buildHeader(l10n),
+            _buildStepIndicator(isDark, l10n),
+            Expanded(child: _buildStepContent(provider, isDark, l10n)),
+            _buildFooter(provider, isDark, l10n),
           ],
         ),
       ),
@@ -552,7 +556,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
   }
 
   /// En‑tête du dialogue.
-  Widget _buildHeader() {
+  Widget _buildHeader(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -578,22 +582,22 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
             child: const Icon(Icons.campaign, color: Colors.white, size: 24),
           ),
           const SizedBox(width: 16),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Nouvelle annonce',
-                  style: TextStyle(
+                  l10n.newAnnouncement,
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
-                  'Envoyez une notification aux étudiants',
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                  l10n.sendNotificationToStudents,
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ],
             ),
@@ -601,7 +605,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
           IconButton(
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.close, color: Colors.white),
-            tooltip: 'Fermer',
+            tooltip: l10n.close,
           ),
         ],
       ),
@@ -609,7 +613,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
   }
 
   /// Indicateur de progression.
-  Widget _buildStepIndicator(bool isDark) {
+  Widget _buildStepIndicator(bool isDark, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
       decoration: BoxDecoration(
@@ -618,11 +622,11 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
       ),
       child: Row(
         children: [
-          _buildStepItem(0, 'Message', Icons.edit_note, isDark),
+          _buildStepItem(0, l10n.message, Icons.edit_note, isDark),
           _buildStepConnector(0, isDark),
-          _buildStepItem(1, 'Destinataires', Icons.people, isDark),
+          _buildStepItem(1, l10n.recipients, Icons.people, isDark),
           _buildStepConnector(1, isDark),
-          _buildStepItem(2, 'Résumé', Icons.check_circle_outline, isDark),
+          _buildStepItem(2, l10n.summary, Icons.check_circle_outline, isDark),
         ],
       ),
     );
@@ -692,22 +696,22 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
   }
 
   /// Contenu de l'étape courante.
-  Widget _buildStepContent(AnnonceAdminProvider provider, bool isDark) {
+  Widget _buildStepContent(AnnonceAdminProvider provider, bool isDark, AppLocalizations l10n) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(32),
       child: Form(
         key: _formKey,
         child: _currentStep == 0
-            ? _buildStep1Message(isDark)
+            ? _buildStep1Message(isDark, l10n)
             : _currentStep == 1
-            ? _buildStep2Destinataires(provider, isDark)
-            : _buildStep3Resume(provider, isDark),
+            ? _buildStep2Destinataires(provider, isDark, l10n)
+            : _buildStep3Resume(provider, isDark, l10n),
       ),
     );
   }
 
   /// Étape 1 : Saisie du message.
-  Widget _buildStep1Message(bool isDark) {
+  Widget _buildStep1Message(bool isDark, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -727,7 +731,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Rédigez votre message',
+                    l10n.writeYourMessage,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -736,7 +740,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Soyez clair et concis pour une meilleure lecture',
+                    l10n.beClearAndConcise,
                     style: TextStyle(color: AppTheme.getTextSecondary(context), fontSize: 14),
                   ),
                 ],
@@ -748,9 +752,9 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
         TextFormField(
           controller: _titreController,
           decoration: InputDecoration(
-            labelText: 'Titre de l\'annonce *',
+            labelText: l10n.announcementTitle,
             labelStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
-            hintText: 'Ex: Coupure d\'eau programmée ce soir',
+            hintText: l10n.titleExample,
             hintStyle: TextStyle(color: AppTheme.getTextTertiary(context)),
             prefixIcon: Icon(Icons.title, color: Theme.of(context).colorScheme.primary),
             border: OutlineInputBorder(
@@ -772,10 +776,10 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
           style: TextStyle(color: AppTheme.getTextPrimary(context), fontSize: 16),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
-              return 'Le titre est requis';
+              return l10n.titleRequired;
             }
             if (value.trim().length < 5) {
-              return 'Le titre doit contenir au moins 5 caractères';
+              return l10n.titleMinLength;
             }
             return null;
           },
@@ -784,9 +788,9 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
         TextFormField(
           controller: _contenuController,
           decoration: InputDecoration(
-            labelText: 'Contenu du message *',
+            labelText: l10n.messageContent,
             labelStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
-            hintText: 'Rédigez le contenu détaillé de votre annonce...',
+            hintText: l10n.writeDetailedContent,
             hintStyle: TextStyle(color: AppTheme.getTextTertiary(context)),
             alignLabelWithHint: true,
             border: OutlineInputBorder(
@@ -810,10 +814,10 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
           style: TextStyle(color: AppTheme.getTextPrimary(context), fontSize: 15, height: 1.5),
           validator: (value) {
             if (value == null || value.trim().isEmpty) {
-              return 'Le contenu est requis';
+              return l10n.contentRequired;
             }
             if (value.trim().length < 10) {
-              return 'Le contenu doit contenir au moins 10 caractères';
+              return l10n.contentMinLength;
             }
             return null;
           },
@@ -832,7 +836,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Conseil : Rédigez un titre accrocheur et un message clair pour maximiser l\'engagement',
+                  l10n.writingTip,
                   style: TextStyle(color: Colors.blue.shade700, fontSize: 13),
                 ),
               ),
@@ -844,7 +848,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
   }
 
   /// Étape 2 : Sélection des destinataires.
-  Widget _buildStep2Destinataires(AnnonceAdminProvider provider, bool isDark) {
+  Widget _buildStep2Destinataires(AnnonceAdminProvider provider, bool isDark, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -864,7 +868,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Choisissez les destinataires',
+                    l10n.chooseRecipients,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -873,7 +877,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Sélectionnez qui recevra cette annonce',
+                    l10n.selectWhoWillReceive,
                     style: TextStyle(color: AppTheme.getTextSecondary(context), fontSize: 14),
                   ),
                 ],
@@ -882,18 +886,18 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
           ],
         ),
         const SizedBox(height: 32),
-        _buildTypeSelector(isDark),
+        _buildTypeSelector(isDark, l10n),
         const SizedBox(height: 24),
-        if (_selectedType == 'CENTRE_SPECIFIQUE') _buildCentreSelector(provider, isDark),
-        if (_selectedType == 'ETUDIANTS') _buildAdvancedUserSelector(provider, isDark),
+        if (_selectedType == 'CENTRE_SPECIFIQUE') _buildCentreSelector(provider, isDark, l10n),
+        if (_selectedType == 'ETUDIANTS') _buildAdvancedUserSelector(provider, isDark, l10n),
         const SizedBox(height: 24),
-        _buildDestinatairesPreview(provider, isDark),
+        _buildDestinatairesPreview(provider, isDark, l10n),
       ],
     );
   }
 
   /// Étape 3 : Résumé avant envoi.
-  Widget _buildStep3Resume(AnnonceAdminProvider provider, bool isDark) {
+  Widget _buildStep3Resume(AnnonceAdminProvider provider, bool isDark, AppLocalizations l10n) {
     final destinataireCount = _getDestinataireCount(provider);
 
     return Column(
@@ -915,7 +919,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Vérifiez et envoyez',
+                    l10n.verifyAndSend,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -924,7 +928,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Vérifiez les informations avant l\'envoi',
+                    l10n.verifyInfoBeforeSending,
                     style: TextStyle(color: AppTheme.getTextSecondary(context), fontSize: 14),
                   ),
                 ],
@@ -949,7 +953,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
                   Icon(Icons.message, color: Theme.of(context).colorScheme.primary, size: 20),
                   const SizedBox(width: 8),
                   Text(
-                    'Aperçu du message',
+                    l10n.messagePreview,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: AppTheme.getTextPrimary(context),
@@ -995,7 +999,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
                   Icon(Icons.people, color: Colors.blue, size: 20),
                   const SizedBox(width: 8),
                   Text(
-                    'Destinataires',
+                    l10n.recipients,
                     style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade700),
                   ),
                 ],
@@ -1017,7 +1021,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      _getDestinataireDescription(provider),
+                      _getDestinataireDescription(provider, l10n),
                       style: TextStyle(color: Colors.blue.shade700, fontSize: 14),
                     ),
                   ),
@@ -1041,7 +1045,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Vous allez envoyer $destinataireCount notifications. Cette action est irréversible.',
+                    l10n.massNotificationWarning(destinataireCount),
                     style: TextStyle(color: Colors.orange.shade700, fontSize: 13),
                   ),
                 ),
@@ -1053,7 +1057,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
   }
 
   /// Pied de dialogue (boutons).
-  Widget _buildFooter(AnnonceAdminProvider provider, bool isDark) {
+  Widget _buildFooter(AnnonceAdminProvider provider, bool isDark, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -1066,7 +1070,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
             OutlinedButton.icon(
               onPressed: _isSending ? null : () => setState(() => _currentStep--),
               icon: const Icon(Icons.arrow_back, size: 18),
-              label: const Text('Retour'),
+              label: Text(l10n.back),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
               ),
@@ -1074,7 +1078,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
           const Spacer(),
           OutlinedButton(
             onPressed: _isSending ? null : () => Navigator.pop(context),
-            child: const Text('Annuler'),
+            child: Text(l10n.cancel),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             ),
@@ -1085,11 +1089,11 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
                 ? null
                 : () {
               if (_currentStep < 2) {
-                if (_validateCurrentStep()) {
+                if (_validateCurrentStep(l10n)) {
                   setState(() => _currentStep++);
                 }
               } else {
-                _sendAnnonce();
+                _sendAnnonce(l10n);
               }
             },
             icon: _isSending
@@ -1105,10 +1109,10 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
             ),
             label: Text(
               _isSending
-                  ? 'Envoi en cours...'
+                  ? l10n.sendingInProgress
                   : _currentStep < 2
-                  ? 'Suivant'
-                  : 'Envoyer l\'annonce',
+                  ? l10n.next
+                  : l10n.sendAnnouncement,
               style: const TextStyle(color: Colors.white, fontSize: 15),
             ),
             style: ElevatedButton.styleFrom(
@@ -1122,12 +1126,12 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
   }
 
   /// Sélecteur de type d'annonce.
-  Widget _buildTypeSelector(bool isDark) {
+  Widget _buildTypeSelector(bool isDark, AppLocalizations l10n) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Type d\'annonce',
+          l10n.announcementType,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
@@ -1152,21 +1156,21 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
             selectedBackgroundColor: Theme.of(context).colorScheme.primary,
             selectedForegroundColor: Colors.white,
           ),
-          segments: const [
+          segments: [
             ButtonSegment<String>(
               value: 'TOUS',
-              label: Text('Générale'),
-              icon: Icon(Icons.public),
+              label: Text(l10n.generalAnnouncement),
+              icon: const Icon(Icons.public),
             ),
             ButtonSegment<String>(
               value: 'CENTRE_SPECIFIQUE',
-              label: Text('Par centre'),
-              icon: Icon(Icons.location_city),
+              label: Text(l10n.byCenter),
+              icon: const Icon(Icons.location_city),
             ),
             ButtonSegment<String>(
               value: 'ETUDIANTS',
-              label: Text('Personnalisée'),
-              icon: Icon(Icons.person),
+              label: Text(l10n.custom),
+              icon: const Icon(Icons.person),
             ),
           ],
         ),
@@ -1175,7 +1179,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
   }
 
   /// Sélecteur de centre.
-  Widget _buildCentreSelector(AnnonceAdminProvider provider, bool isDark) {
+  Widget _buildCentreSelector(AnnonceAdminProvider provider, bool isDark, AppLocalizations l10n) {
     if (provider.centres.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(12),
@@ -1190,7 +1194,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Aucun centre disponible. Vérifiez la connexion.',
+                l10n.noCentersAvailable,
                 style: TextStyle(color: Colors.orange),
               ),
             ),
@@ -1203,7 +1207,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Sélectionner un centre',
+          l10n.selectCenter,
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: 16,
@@ -1222,7 +1226,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
               borderRadius: BorderRadius.circular(8),
               borderSide: BorderSide(color: AppTheme.getBorderColor(context)),
             ),
-            hintText: 'Choisissez un centre',
+            hintText: l10n.chooseCenter,
             hintStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
             prefixIcon: Icon(Icons.location_city, color: AppTheme.getTextSecondary(context)),
             filled: true,
@@ -1246,7 +1250,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
           style: TextStyle(color: AppTheme.getTextPrimary(context)),
           validator: (value) {
             if (_selectedType == 'CENTRE_SPECIFIQUE' && value == null) {
-              return 'Veuillez sélectionner un centre';
+              return l10n.pleaseSelectCenter;
             }
             return null;
           },
@@ -1266,7 +1270,8 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Centre: ${provider.centres.firstWhere((c) => c.id == _selectedCentreId).nom}',
+                    l10n.selectedCenter(
+                        provider.centres.firstWhere((c) => c.id == _selectedCentreId).nom),
                     style: TextStyle(
                       color: Colors.green,
                       fontWeight: FontWeight.w500,
@@ -1283,7 +1288,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
   }
 
   /// Sélecteur avancé d'étudiants.
-  Widget _buildAdvancedUserSelector(AnnonceAdminProvider provider, bool isDark) {
+  Widget _buildAdvancedUserSelector(AnnonceAdminProvider provider, bool isDark, AppLocalizations l10n) {
     final filteredEtudiants = _getFilteredEtudiants(provider);
 
     return Column(
@@ -1292,7 +1297,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
         Row(
           children: [
             Text(
-              'Sélectionner les destinataires',
+              l10n.selectRecipients,
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -1316,7 +1321,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
           ],
         ),
         const SizedBox(height: 12),
-        _buildSearchAndFilters(provider, isDark),
+        _buildSearchAndFilters(provider, isDark, l10n),
         const SizedBox(height: 12),
         Container(
           height: 250,
@@ -1334,8 +1339,8 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
                 const SizedBox(height: 12),
                 Text(
                   _searchQuery.isNotEmpty
-                      ? 'Aucun étudiant ne correspond à votre recherche'
-                      : 'Aucun étudiant disponible',
+                      ? l10n.noStudentMatchesSearch
+                      : l10n.noStudentsAvailable,
                   style: TextStyle(color: AppTheme.getTextSecondary(context)),
                 ),
               ],
@@ -1366,7 +1371,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
                   ),
                 ),
                 subtitle: Text(
-                  '${etudiant['matricule']} • ${etudiant['centre']}',
+                  l10n.studentInfo(etudiant['matricule'], etudiant['centre']),
                   style: TextStyle(
                       fontSize: 12, color: AppTheme.getTextSecondary(context)),
                 ),
@@ -1381,7 +1386,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
   }
 
   /// Barre de recherche et filtres.
-  Widget _buildSearchAndFilters(AnnonceAdminProvider provider, bool isDark) {
+  Widget _buildSearchAndFilters(AnnonceAdminProvider provider, bool isDark, AppLocalizations l10n) {
     final filteredEtudiants = _getFilteredEtudiants(provider);
 
     return Column(
@@ -1389,7 +1394,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
         TextField(
           controller: _searchController,
           decoration: InputDecoration(
-            hintText: 'Rechercher par nom ou matricule...',
+            hintText: l10n.searchByNameOrMatricule,
             hintStyle: TextStyle(color: AppTheme.getTextTertiary(context)),
             prefixIcon: Icon(Icons.search, color: AppTheme.getTextSecondary(context)),
             border: OutlineInputBorder(
@@ -1428,7 +1433,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
               child: DropdownButtonFormField<String>(
                 value: _centreFilter,
                 decoration: InputDecoration(
-                  labelText: 'Filtrer par centre',
+                  labelText: l10n.filterByCenter,
                   labelStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -1447,7 +1452,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
                   DropdownMenuItem<String>(
                     value: null,
                     child: Text(
-                      'Tous les centres',
+                      l10n.allCenters,
                       style: TextStyle(color: AppTheme.getTextPrimary(context)),
                     ),
                   ),
@@ -1476,7 +1481,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
               },
               icon: Icon(Icons.select_all,
                   size: 18, color: Theme.of(context).colorScheme.primary),
-              label: Text('Tout',
+              label: Text(l10n.all,
                   style: TextStyle(color: Theme.of(context).colorScheme.primary)),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(
@@ -1487,7 +1492,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
             OutlinedButton.icon(
               onPressed: () => setState(() => _selectedUserIds.clear()),
               icon: Icon(Icons.clear_all, size: 18, color: Colors.red),
-              label: Text('Aucun', style: TextStyle(color: Colors.red)),
+              label: Text(l10n.none, style: TextStyle(color: Colors.red)),
               style: OutlinedButton.styleFrom(
                 side: BorderSide(color: Colors.red.withOpacity(0.3)),
               ),
@@ -1499,7 +1504,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
   }
 
   /// Aperçu des destinataires.
-  Widget _buildDestinatairesPreview(AnnonceAdminProvider provider, bool isDark) {
+  Widget _buildDestinatairesPreview(AnnonceAdminProvider provider, bool isDark, AppLocalizations l10n) {
     String message = '';
     Color color = Colors.grey;
     IconData icon = Icons.info_outline;
@@ -1507,22 +1512,22 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
 
     if (_selectedType == 'TOUS') {
       count = provider.etudiants.length;
-      message = 'Envoi à tous les étudiants ($count)';
+      message = l10n.sendToAllStudents(count);
       color = Colors.blue;
       icon = Icons.public;
     } else if (_selectedType == 'CENTRE_SPECIFIQUE' && _selectedCentreId != null) {
       final centre = provider.centres.firstWhere((c) => c.id == _selectedCentreId);
       count = provider.etudiants.where((e) => e['centre'] == centre.nom).length;
-      message = 'Envoi au centre: ${centre.nom} ($count étudiant(s))';
+      message = l10n.sendToCenter(centre.nom, count);
       color = Colors.green;
       icon = Icons.location_city;
     } else if (_selectedType == 'ETUDIANTS') {
       count = _selectedUserIds.length;
-      message = 'Envoi à $count étudiant(s) sélectionné(s)';
+      message = l10n.sendToSelectedStudents(count);
       color = count > 0 ? Colors.purple : Colors.grey;
       icon = Icons.people;
     } else {
-      message = 'Sélectionnez les destinataires';
+      message = l10n.selectRecipients;
     }
 
     return Container(
@@ -1551,7 +1556,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
                 if (count > 0) ...[
                   const SizedBox(height: 4),
                   Text(
-                    '$count notification(s) seront envoyées',
+                    l10n.notificationsWillBeSent(count),
                     style: TextStyle(color: color.withOpacity(0.7), fontSize: 12),
                   ),
                 ],
@@ -1577,14 +1582,14 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
   }
 
   /// Valide l'étape courante.
-  bool _validateCurrentStep() {
+  bool _validateCurrentStep(AppLocalizations l10n) {
     if (_currentStep == 0) {
       return _formKey.currentState!.validate();
     } else if (_currentStep == 1) {
       if (_selectedType == 'CENTRE_SPECIFIQUE' && _selectedCentreId == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Veuillez sélectionner un centre'),
+          SnackBar(
+            content: Text(l10n.pleaseSelectCenter),
             backgroundColor: Colors.red,
           ),
         );
@@ -1592,8 +1597,8 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
       }
       if (_selectedType == 'ETUDIANTS' && _selectedUserIds.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Veuillez sélectionner au moins un étudiant'),
+          SnackBar(
+            content: Text(l10n.pleaseSelectAtLeastOneStudent),
             backgroundColor: Colors.red,
           ),
         );
@@ -1617,20 +1622,20 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
   }
 
   /// Description des destinataires.
-  String _getDestinataireDescription(AnnonceAdminProvider provider) {
+  String _getDestinataireDescription(AnnonceAdminProvider provider, AppLocalizations l10n) {
     if (_selectedType == 'TOUS') {
-      return 'Tous les étudiants';
+      return l10n.allStudents;
     } else if (_selectedType == 'CENTRE_SPECIFIQUE' && _selectedCentreId != null) {
       final centre = provider.centres.firstWhere((c) => c.id == _selectedCentreId);
-      return 'Centre : ${centre.nom}';
+      return l10n.centerColon(centre.nom);
     } else if (_selectedType == 'ETUDIANTS') {
-      return '${_selectedUserIds.length} étudiant(s) sélectionné(s)';
+      return l10n.selectedStudentsCount(_selectedUserIds.length);
     }
     return '';
   }
 
   /// Envoie l'annonce via le provider.
-  Future<void> _sendAnnonce() async {
+  Future<void> _sendAnnonce(AppLocalizations l10n) async {
     final provider = Provider.of<AnnonceAdminProvider>(context, listen: false);
 
     setState(() => _isSending = true);
@@ -1655,7 +1660,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'Annonce envoyée à ${_getDestinataireCount(provider)} destinataire(s)',
+                  l10n.announcementSentTo(_getDestinataireCount(provider)),
                 ),
               ),
             ],
@@ -1667,7 +1672,7 @@ class _SendAnnonceDialogProState extends State<SendAnnonceDialog> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Erreur: ${e.toString()}'),
+          content: Text('${l10n.error}: ${e.toString()}'),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
         ),

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Écran de connexion pour l'administration web.
 class AdminLoginScreen extends StatefulWidget {
@@ -54,6 +55,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final authProvider = Provider.of<AuthProvider>(context);
     final size = MediaQuery.of(context).size;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -90,7 +92,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                 opacity: _fadeAnimation,
                 child: SlideTransition(
                   position: _slideAnimation,
-                  child: _buildLoginCard(authProvider, size, isDark),
+                  child: _buildLoginCard(authProvider, size, isDark, l10n),
                 ),
               ),
             ),
@@ -146,7 +148,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
   }
 
   /// Construit la carte de connexion.
-  Widget _buildLoginCard(AuthProvider authProvider, Size size, bool isDark) {
+  Widget _buildLoginCard(AuthProvider authProvider, Size size, bool isDark, AppLocalizations l10n) {
     final isMobile = size.width < 600;
     final cardWidth = isMobile ? size.width * 0.9 : 450.0;
 
@@ -219,7 +221,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
 
               /// Titre
               Text(
-                'Connexion Administrateur',
+                l10n.adminLoginTitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 24,
@@ -231,7 +233,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
               const SizedBox(height: 8),
 
               Text(
-                'Accédez au tableau de bord',
+                l10n.accessDashboard,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
@@ -293,7 +295,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                   color: isDark ? Colors.white : Colors.black87,
                 ),
                 decoration: InputDecoration(
-                  labelText: 'Identifiant ou Email',
+                  labelText: l10n.usernameOrEmail,
                   labelStyle: TextStyle(
                     color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
                   ),
@@ -338,7 +340,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Identifiant requis';
+                    return l10n.usernameRequired;
                   }
                   return null;
                 },
@@ -355,7 +357,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                   color: isDark ? Colors.white : Colors.black87,
                 ),
                 decoration: InputDecoration(
-                  labelText: 'Mot de passe',
+                  labelText: l10n.password,
                   labelStyle: TextStyle(
                     color: isDark ? Colors.grey.shade400 : Colors.grey.shade700,
                   ),
@@ -410,10 +412,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Mot de passe requis';
+                    return l10n.passwordRequired;
                   }
                   if (value.length < 6) {
-                    return 'Minimum 6 caractères';
+                    return l10n.passwordMinLength;
                   }
                   return null;
                 },
@@ -441,7 +443,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Se souvenir de moi',
+                    l10n.rememberMe,
                     style: TextStyle(
                       fontSize: 13,
                       color: isDark ? Colors.grey.shade300 : Colors.grey[700],
@@ -449,13 +451,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                   ),
                   const Spacer(),
                   TextButton(
-                    onPressed: _showForgotPasswordDialog,
+                    onPressed: () => _showForgotPasswordDialog(l10n),
                     style: TextButton.styleFrom(
                       padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     ),
                     child: Text(
-                      'Mot de passe oublié ?',
+                      l10n.forgotPassword,
                       style: TextStyle(
                         fontSize: 13,
                         color:
@@ -510,7 +512,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                     ),
                   )
                       : Text(
-                    'SE CONNECTER',
+                    l10n.loginButton,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
@@ -524,7 +526,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
 
               /// Copyright.
               Text(
-                '© ${DateTime.now().year} CENOU - Tous droits réservés',
+                l10n.copyrightText(DateTime.now().year),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: isDark ? Colors.grey.shade600 : Colors.grey[500],
@@ -539,7 +541,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
   }
 
   /// Affiche une boîte de dialogue pour le mot de passe oublié.
-  void _showForgotPasswordDialog() {
+  void _showForgotPasswordDialog(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
@@ -556,7 +558,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
             ),
             const SizedBox(width: 12),
             Text(
-              'Mot de passe oublié',
+              l10n.forgotPasswordTitle,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -570,7 +572,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Contactez le support technique :',
+              l10n.contactTechSupport,
               style: TextStyle(
                 color: isDark ? Colors.grey.shade400 : Colors.grey[700],
               ),
@@ -585,7 +587,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  '70382983b@gmail.com',
+                  l10n.contactEmail,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: isDark ? Colors.white : Colors.black87,
@@ -603,7 +605,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                 ),
                 const SizedBox(width: 12),
                 Text(
-                  '+226 70 38 29 83',
+                  l10n.contactPhone,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: isDark ? Colors.white : Colors.black87,
@@ -617,7 +619,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Fermer',
+              l10n.close,
               style: TextStyle(
                 color: isDark ? Colors.blue.shade300 : const Color(0xFF1a237e),
                 fontWeight: FontWeight.w600,

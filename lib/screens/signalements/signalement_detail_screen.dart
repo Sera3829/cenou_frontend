@@ -12,6 +12,7 @@ import '../../services/connectivity_service.dart';
 import '../../services/signalement_service.dart';
 import '../../services/storage_service.dart';
 import '../../utils/mobile_responsive.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Écran détail d'un signalement — responsive mobile/tablette.
 class SignalementDetailScreen extends StatefulWidget {
@@ -76,6 +77,7 @@ class _SignalementDetailScreenState extends State<SignalementDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final conn = Provider.of<ConnectivityService>(context);
 
@@ -83,8 +85,8 @@ class _SignalementDetailScreenState extends State<SignalementDetailScreen> {
       backgroundColor:
       isDark ? const Color(0xFF121212) : AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Détails du signalement',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
+        title: Text(l10n.reportDetails,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
         actions: [
           if (_isFromCache)
             Container(
@@ -94,11 +96,11 @@ class _SignalementDetailScreenState extends State<SignalementDetailScreen> {
               decoration: BoxDecoration(
                   color: Colors.amber,
                   borderRadius: BorderRadius.circular(12)),
-              child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.history, size: 13, color: Colors.white),
-                SizedBox(width: 3),
-                Text('Hors ligne',
-                    style: TextStyle(
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.history, size: 13, color: Colors.white),
+                const SizedBox(width: 3),
+                Text(l10n.offline,
+                    style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                         color: Colors.white)),
@@ -107,25 +109,25 @@ class _SignalementDetailScreenState extends State<SignalementDetailScreen> {
           if (_signalement != null)
             IconButton(
                 icon: const Icon(Icons.share), onPressed: () {},
-                tooltip: 'Partager'),
+                tooltip: l10n.share),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: conn.isOnline ? _loadSignalement : null,
-            tooltip: conn.isOffline ? 'Hors ligne' : 'Rafraîchir',
+            tooltip: conn.isOffline ? l10n.offline : l10n.refresh,
           ),
         ],
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final config = ResponsiveConfig.fromConstraints(constraints);
-          return _buildBody(isDark, conn, config);
+          return _buildBody(isDark, conn, config, l10n);
         },
       ),
     );
   }
 
   Widget _buildBody(
-      bool isDark, ConnectivityService conn, ResponsiveConfig config) {
+      bool isDark, ConnectivityService conn, ResponsiveConfig config, AppLocalizations l10n) {
     if (_isLoading) {
       return Center(
           child: CircularProgressIndicator(
@@ -133,15 +135,17 @@ class _SignalementDetailScreenState extends State<SignalementDetailScreen> {
     }
     if (_error != null) {
       return _ErrorView(
-          error: _error!,
-          isDark: isDark,
-          isOffline: conn.isOffline,
-          config: config,
-          onRetry: conn.isOnline ? _loadSignalement : null);
+        error: _error!,
+        isDark: isDark,
+        isOffline: conn.isOffline,
+        config: config,
+        onRetry: conn.isOnline ? _loadSignalement : null,
+        l10n: l10n,
+      );
     }
     if (_signalement == null) {
       return Center(
-          child: Text('Signalement introuvable',
+          child: Text(l10n.reportNotFound,
               style: TextStyle(
                   color: isDark ? Colors.white : Colors.black87)));
     }
@@ -151,18 +155,18 @@ class _SignalementDetailScreenState extends State<SignalementDetailScreen> {
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(hPad, hPad, hPad, 24),
       child: config.isTablet
-          ? _buildTabletLayout(isDark, config)
-          : _buildMobileLayout(isDark, config),
+          ? _buildTabletLayout(isDark, config, l10n)
+          : _buildMobileLayout(isDark, config, l10n),
     );
   }
 
   // ── Layout mobile ────────────────────────────────────────────────────────
-  Widget _buildMobileLayout(bool isDark, ResponsiveConfig config) {
+  Widget _buildMobileLayout(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      if (_isFromCache) ...[_CacheBanner(), const SizedBox(height: 12)],
-      _StatusCard(signalement: _signalement!, isDark: isDark, config: config),
+      if (_isFromCache) ...[_CacheBanner(l10n: l10n), const SizedBox(height: 12)],
+      _StatusCard(signalement: _signalement!, isDark: isDark, config: config, l10n: l10n),
       SizedBox(height: config.isSmall ? 10 : 14),
-      _DetailsCard(signalement: _signalement!, isDark: isDark, config: config),
+      _DetailsCard(signalement: _signalement!, isDark: isDark, config: config, l10n: l10n),
       SizedBox(height: config.isSmall ? 10 : 14),
       _PhotosSection(
           signalement: _signalement!,
@@ -171,27 +175,28 @@ class _SignalementDetailScreenState extends State<SignalementDetailScreen> {
           authToken: _authToken,
           isFromCache: _isFromCache,
           onSnack: _showSnack,
-          onPhotoTap: _showPhotoGallery),
+          onPhotoTap: _showPhotoGallery,
+          l10n: l10n),
       if (_signalement!.isResolu) ...[
         SizedBox(height: config.isSmall ? 10 : 14),
         _ResolutionCard(
-            signalement: _signalement!, isDark: isDark, config: config),
+            signalement: _signalement!, isDark: isDark, config: config, l10n: l10n),
       ],
     ]);
   }
 
   // ── Layout tablette ──────────────────────────────────────────────────────
-  Widget _buildTabletLayout(bool isDark, ResponsiveConfig config) {
+  Widget _buildTabletLayout(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      if (_isFromCache) ...[_CacheBanner(), const SizedBox(height: 12)],
+      if (_isFromCache) ...[_CacheBanner(l10n: l10n), const SizedBox(height: 12)],
       Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Expanded(
             child: _StatusCard(
-                signalement: _signalement!, isDark: isDark, config: config)),
+                signalement: _signalement!, isDark: isDark, config: config, l10n: l10n)),
         const SizedBox(width: 16),
         Expanded(
             child: _DetailsCard(
-                signalement: _signalement!, isDark: isDark, config: config)),
+                signalement: _signalement!, isDark: isDark, config: config, l10n: l10n)),
       ]),
       const SizedBox(height: 16),
       _PhotosSection(
@@ -201,11 +206,12 @@ class _SignalementDetailScreenState extends State<SignalementDetailScreen> {
           authToken: _authToken,
           isFromCache: _isFromCache,
           onSnack: _showSnack,
-          onPhotoTap: _showPhotoGallery),
+          onPhotoTap: _showPhotoGallery,
+          l10n: l10n),
       if (_signalement!.isResolu) ...[
         const SizedBox(height: 16),
         _ResolutionCard(
-            signalement: _signalement!, isDark: isDark, config: config),
+            signalement: _signalement!, isDark: isDark, config: config, l10n: l10n),
       ],
     ]);
   }
@@ -233,6 +239,9 @@ class _SignalementDetailScreenState extends State<SignalementDetailScreen> {
 // ─────────────────────────────────────────────────────────────────
 
 class _CacheBanner extends StatelessWidget {
+  final AppLocalizations l10n;
+  const _CacheBanner({required this.l10n});
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -243,11 +252,11 @@ class _CacheBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.amber.withOpacity(0.4)),
       ),
-      child: const Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.history, size: 14, color: Colors.amber),
-        SizedBox(width: 4),
-        Text('Données hors ligne',
-            style: TextStyle(
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.history, size: 14, color: Colors.amber),
+        const SizedBox(width: 4),
+        Text(l10n.offlineData,
+            style: const TextStyle(
                 color: Colors.amber,
                 fontSize: 12,
                 fontWeight: FontWeight.w600)),
@@ -260,10 +269,12 @@ class _StatusCard extends StatelessWidget {
   final Signalement signalement;
   final bool isDark;
   final ResponsiveConfig config;
+  final AppLocalizations l10n;
   const _StatusCard(
       {required this.signalement,
         required this.isDark,
-        required this.config});
+        required this.config,
+        required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -274,19 +285,19 @@ class _StatusCard extends StatelessWidget {
     if (signalement.isResolu) {
       color = AppTheme.successColor;
       icon = Icons.check_circle;
-      text = 'Problème résolu';
+      text = l10n.problemResolved;
     } else if (signalement.isEnCours) {
       color = AppTheme.infoColor;
       icon = Icons.build;
-      text = 'En cours de traitement';
+      text = l10n.inProgressStatus;
     } else if (signalement.isAnnule) {
       color = Colors.grey;
       icon = Icons.cancel;
-      text = 'Signalement annulé';
+      text = l10n.reportCancelled;
     } else {
       color = AppTheme.warningColor;
       icon = Icons.pending;
-      text = 'En attente de traitement';
+      text = l10n.pendingProcessing;
     }
 
     final iconSize  = config.responsive(small: 44, medium: 54, large: 64);
@@ -332,8 +343,8 @@ class _StatusCard extends StatelessWidget {
             const SizedBox(height: 5),
             Text(
               config.isSmall
-                  ? DateFormat('dd/MM/yyyy').format(signalement.createdAt)
-                  : DateFormat('dd MMMM yyyy à HH:mm', 'fr_FR')
+                  ? DateFormat('dd/MM/yyyy', l10n.locale.languageCode).format(signalement.createdAt)
+                  : DateFormat('dd MMMM yyyy à HH:mm', l10n.locale.languageCode)
                   .format(signalement.createdAt),
               textAlign: TextAlign.center,
               style: TextStyle(
@@ -351,10 +362,12 @@ class _DetailsCard extends StatelessWidget {
   final Signalement signalement;
   final bool isDark;
   final ResponsiveConfig config;
+  final AppLocalizations l10n;
   const _DetailsCard(
       {required this.signalement,
         required this.isDark,
-        required this.config});
+        required this.config,
+        required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -369,21 +382,21 @@ class _DetailsCard extends StatelessWidget {
 
     final rows = <_DetailRowData>[
       _DetailRowData(
-          'Type',
+          l10n.type,
           signalement.typeProbleme.replaceAll('_', ' '),
           Icons.category),
       _DetailRowData(
-          config.isSmall ? 'Signalé le' : 'Date de signalement',
+          config.isSmall ? l10n.reportedOnShort : l10n.reportedOn,
           config.isSmall
-              ? DateFormat('dd/MM/yyyy HH:mm').format(signalement.createdAt)
-              : DateFormat('dd MMMM yyyy à HH:mm', 'fr_FR')
+              ? DateFormat('dd/MM/yyyy HH:mm', l10n.locale.languageCode).format(signalement.createdAt)
+              : DateFormat('dd MMMM yyyy à HH:mm', l10n.locale.languageCode)
               .format(signalement.createdAt),
           Icons.calendar_today),
       if ((signalement.numeroChambre ?? '').isNotEmpty)
-        _DetailRowData('Chambre', 'Ch. ${signalement.numeroChambre}', Icons.home),
+        _DetailRowData(l10n.room, l10n.roomAbbr(signalement.numeroChambre!), Icons.home),
       if (displayCentre.isNotEmpty)
-        _DetailRowData('Centre', displayCentre, Icons.business),
-      _DetailRowData('Statut', signalement.statut, Icons.info),
+        _DetailRowData(l10n.center, displayCentre, Icons.business),
+      _DetailRowData(l10n.status, signalement.statut, Icons.info),
     ];
 
     return Card(
@@ -394,7 +407,7 @@ class _DetailsCard extends StatelessWidget {
       child: Padding(
         padding: EdgeInsets.all(pad),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Détails du problème',
+          Text(l10n.problemDetails,
               style: TextStyle(
                   fontSize: titleSize,
                   fontWeight: FontWeight.bold,
@@ -408,7 +421,7 @@ class _DetailsCard extends StatelessWidget {
           Divider(
               height: 20,
               color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
-          Text('Description',
+          Text(l10n.description,
               style: TextStyle(
                   fontSize: config.responsive(small: 13, medium: 14, large: 15),
                   fontWeight: FontWeight.w500,
@@ -529,6 +542,7 @@ class _PhotosSection extends StatelessWidget {
   final bool isFromCache;
   final void Function(String, {Color bg}) onSnack;
   final void Function(int, bool) onPhotoTap;
+  final AppLocalizations l10n;
 
   const _PhotosSection({
     required this.signalement,
@@ -538,6 +552,7 @@ class _PhotosSection extends StatelessWidget {
     required this.isFromCache,
     required this.onSnack,
     required this.onPhotoTap,
+    required this.l10n,
   });
 
   @override
@@ -548,7 +563,7 @@ class _PhotosSection extends StatelessWidget {
     final crossAxis = config.isTablet ? 4 : 3;
 
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Photos (${signalement.photos.length})',
+      Text(l10n.photosCount(signalement.photos.length),
           style: TextStyle(
               fontSize: titleSize,
               fontWeight: FontWeight.bold,
@@ -575,7 +590,7 @@ class _PhotosSection extends StatelessWidget {
               if (authToken != null) {
                 onPhotoTap(index, isDark);
               } else {
-                onSnack('Impossible d\'afficher les photos');
+                onSnack(l10n.cannotDisplayPhotos);
               }
             },
             child: ClipRRect(
@@ -598,7 +613,7 @@ class _PhotosSection extends StatelessWidget {
                       children: [
                         const Icon(Icons.error, color: Colors.red, size: 28),
                         const SizedBox(height: 4),
-                        Text('Erreur',
+                        Text(l10n.error,
                             style: TextStyle(
                                 fontSize: 10, color: Colors.red.shade300)),
                       ]),
@@ -618,10 +633,12 @@ class _ResolutionCard extends StatelessWidget {
   final Signalement signalement;
   final bool isDark;
   final ResponsiveConfig config;
+  final AppLocalizations l10n;
   const _ResolutionCard(
       {required this.signalement,
         required this.isDark,
-        required this.config});
+        required this.config,
+        required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -641,7 +658,7 @@ class _ResolutionCard extends StatelessWidget {
             Icon(Icons.check_circle, color: AppTheme.successColor,
                 size: config.responsive(small: 20, medium: 22, large: 24)),
             const SizedBox(width: 10),
-            Text('Résolution',
+            Text(l10n.resolution,
                 style: TextStyle(
                     fontSize: titleSize,
                     fontWeight: FontWeight.bold,
@@ -652,7 +669,11 @@ class _ResolutionCard extends StatelessWidget {
               color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
           if (signalement.dateResolution != null) ...[
             Text(
-              'Résolu le ${config.isSmall ? DateFormat('dd/MM/yyyy').format(signalement.dateResolution!) : DateFormat('dd MMMM yyyy à HH:mm', 'fr_FR').format(signalement.dateResolution!)}',
+              l10n.resolvedOn(
+                  config.isSmall
+                      ? DateFormat('dd/MM/yyyy', l10n.locale.languageCode).format(signalement.dateResolution!)
+                      : DateFormat('dd MMMM yyyy à HH:mm', l10n.locale.languageCode).format(signalement.dateResolution!)
+              ),
               style: TextStyle(
                   fontSize: textSize,
                   color: isDark ? Colors.grey.shade400 : Colors.grey[600]),
@@ -660,7 +681,7 @@ class _ResolutionCard extends StatelessWidget {
             const SizedBox(height: 10),
           ],
           if (signalement.commentaireResolution != null) ...[
-            Text('Commentaire :',
+            Text(l10n.commentLabel,
                 style: TextStyle(
                     fontSize: textSize,
                     fontWeight: FontWeight.w500,
@@ -685,12 +706,14 @@ class _ErrorView extends StatelessWidget {
   final bool isDark, isOffline;
   final ResponsiveConfig config;
   final VoidCallback? onRetry;
+  final AppLocalizations l10n;
   const _ErrorView(
       {required this.error,
         required this.isDark,
         required this.isOffline,
         required this.config,
-        required this.onRetry});
+        required this.onRetry,
+        required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -710,7 +733,7 @@ class _ErrorView extends StatelessWidget {
               size: iconSize,
               color: isDark ? Colors.grey.shade600 : Colors.grey[400]),
           const SizedBox(height: 14),
-          Text(isOffline ? 'Hors ligne' : 'Erreur de chargement',
+          Text(isOffline ? l10n.offline : l10n.loadingError,
               style: TextStyle(
                   fontSize: titleSize,
                   fontWeight: FontWeight.w600,
@@ -727,7 +750,7 @@ class _ErrorView extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: onRetry,
               icon: const Icon(Icons.refresh, size: 18),
-              label: const Text('Réessayer'),
+              label: Text(l10n.retry),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,

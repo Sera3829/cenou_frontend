@@ -6,6 +6,7 @@ import 'package:cenou_mobile/models/signalement.dart';
 import 'package:cenou_mobile/config/theme.dart';
 import '../../../config/app_config.dart';
 import '../dashboard/dashboard_screen.dart';
+import '../../../l10n/app_localizations.dart';
 
 class SignalementAdminScreen extends StatefulWidget {
   const SignalementAdminScreen({Key? key}) : super(key: key);
@@ -41,30 +42,31 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     await Future.wait([provider.loadSignalements(), provider.loadStatistiques()]);
   }
 
-  String _formatDate(DateTime d) => DateFormat('dd/MM/yy HH:mm').format(d);
-  String _formatDateOnly(DateTime d) => DateFormat('dd/MM/yyyy').format(d);
+  String _formatDate(DateTime d, AppLocalizations l10n) => DateFormat('dd/MM/yy HH:mm', l10n.locale.languageCode).format(d);
+  String _formatDateOnly(DateTime d, AppLocalizations l10n) => DateFormat('dd/MM/yyyy', l10n.locale.languageCode).format(d);
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return DashboardLayout(
       selectedIndex: 2,
       child: Column(
         children: [
-          _buildFloatingFiltersBar(isDark),
+          _buildFloatingFiltersBar(isDark, l10n),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  _buildQuickStats(isDark),
+                  _buildQuickStats(isDark, l10n),
                   AnimatedContainer(
                     duration: const Duration(milliseconds: 300),
                     height: _showFilters ? null : 0,
                     child: _showFilters
-                        ? _buildFiltersCard(isDark)
+                        ? _buildFiltersCard(isDark, l10n)
                         : const SizedBox.shrink(),
                   ),
-                  _buildSignalementsList(isDark),
+                  _buildSignalementsList(isDark, l10n),
                 ],
               ),
             ),
@@ -76,7 +78,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
 
   // ==================== BARRE DE FILTRES ====================
 
-  Widget _buildFloatingFiltersBar(bool isDark) {
+  Widget _buildFloatingFiltersBar(bool isDark, AppLocalizations l10n) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth > 1100;
 
@@ -91,26 +93,26 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
       child: isWide
           ? Row(
         children: [
-          Expanded(flex: 3, child: _buildSearchField(isDark)),
+          Expanded(flex: 3, child: _buildSearchField(isDark, l10n)),
           const SizedBox(width: 12),
-          SizedBox(width: 160, child: _buildStatutDropdown(isDark)),
+          SizedBox(width: 160, child: _buildStatutDropdown(isDark, l10n)),
           const SizedBox(width: 12),
-          SizedBox(width: 160, child: _buildTypeDropdown(isDark)),
+          SizedBox(width: 160, child: _buildTypeDropdown(isDark, l10n)),
           const SizedBox(width: 12),
-          _buildFilterButtons(),
+          _buildFilterButtons(l10n),
         ],
       )
           : Column(
         children: [
-          _buildSearchField(isDark),
+          _buildSearchField(isDark, l10n),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: _buildStatutDropdown(isDark)),
+              Expanded(child: _buildStatutDropdown(isDark, l10n)),
               const SizedBox(width: 8),
-              Expanded(child: _buildTypeDropdown(isDark)),
+              Expanded(child: _buildTypeDropdown(isDark, l10n)),
               const SizedBox(width: 8),
-              _buildFilterButtons(),
+              _buildFilterButtons(l10n),
             ],
           ),
         ],
@@ -118,11 +120,11 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     );
   }
 
-  Widget _buildSearchField(bool isDark) {
+  Widget _buildSearchField(bool isDark, AppLocalizations l10n) {
     return TextField(
       controller: _searchController,
       decoration: InputDecoration(
-        hintText: 'Rechercher étudiant, numéro de suivi, description...',
+        hintText: l10n.searchReportHint,
         prefixIcon: Icon(
           Icons.search,
           size: 20,
@@ -169,11 +171,11 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     );
   }
 
-  Widget _buildStatutDropdown(bool isDark) {
+  Widget _buildStatutDropdown(bool isDark, AppLocalizations l10n) {
     return DropdownButtonFormField<String>(
       value: _selectedStatut,
       decoration: InputDecoration(
-        labelText: 'Statut',
+        labelText: l10n.status,
         labelStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -196,7 +198,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
             (v) => DropdownMenuItem(
           value: v,
           child: Text(
-            _getStatutLabel(v),
+            _getStatutLabel(v, l10n),
             style: TextStyle(
               fontSize: 14,
               color: AppTheme.getTextPrimary(context),
@@ -213,11 +215,11 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     );
   }
 
-  Widget _buildTypeDropdown(bool isDark) {
+  Widget _buildTypeDropdown(bool isDark, AppLocalizations l10n) {
     return DropdownButtonFormField<String>(
       value: _selectedType,
       decoration: InputDecoration(
-        labelText: 'Type',
+        labelText: l10n.type,
         labelStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -247,7 +249,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
             (v) => DropdownMenuItem(
           value: v,
           child: Text(
-            _getTypeLabel(v),
+            _getTypeLabel(v, l10n),
             style: TextStyle(
               fontSize: 14,
               color: AppTheme.getTextPrimary(context),
@@ -263,7 +265,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     );
   }
 
-  Widget _buildFilterButtons() {
+  Widget _buildFilterButtons(AppLocalizations l10n) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -273,7 +275,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
             _showFilters ? Icons.filter_list_off : Icons.filter_list,
             color: Theme.of(context).colorScheme.primary,
           ),
-          tooltip: _showFilters ? 'Masquer filtres' : 'Plus de filtres',
+          tooltip: _showFilters ? l10n.hideFilters : l10n.moreFilters,
         ),
         IconButton(
           onPressed: _resetFilters,
@@ -281,7 +283,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
             Icons.refresh,
             color: AppTheme.getTextSecondary(context),
           ),
-          tooltip: 'Réinitialiser',
+          tooltip: l10n.reset,
         ),
         ElevatedButton(
           onPressed: _isRefreshing ? null : _refreshData,
@@ -301,9 +303,9 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           )
-              : const Text(
-            'Actualiser',
-            style: TextStyle(color: Colors.white),
+              : Text(
+            l10n.refresh,
+            style: const TextStyle(color: Colors.white),
           ),
         ),
       ],
@@ -312,7 +314,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
 
   // ==================== STATISTIQUES ====================
 
-  Widget _buildQuickStats(bool isDark) {
+  Widget _buildQuickStats(bool isDark, AppLocalizations l10n) {
     return Consumer<SignalementAdminProvider>(
       builder: (context, provider, child) {
         final stats = provider.statistiques ?? {};
@@ -330,7 +332,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
             children: [
               Expanded(
                 child: _buildStatCard(
-                  label: 'Total Signalements',
+                  label: l10n.totalReports,
                   value: '${stats['total'] ?? 0}',
                   color: const Color(0xFF3B82F6),
                   icon: Icons.warning,
@@ -340,7 +342,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
               const SizedBox(width: 16),
               Expanded(
                 child: _buildStatCard(
-                  label: 'En Attente',
+                  label: l10n.pending,
                   value: '${stats['en_attente'] ?? 0}',
                   color: const Color(0xFFF59E0B),
                   icon: Icons.hourglass_empty,
@@ -350,7 +352,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
               const SizedBox(width: 16),
               Expanded(
                 child: _buildStatCard(
-                  label: 'En Cours',
+                  label: l10n.inProgress,
                   value: '${stats['en_cours'] ?? 0}',
                   color: const Color(0xFF3B82F6),
                   icon: Icons.build,
@@ -360,7 +362,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
               const SizedBox(width: 16),
               Expanded(
                 child: _buildStatCard(
-                  label: 'Taux Résolution',
+                  label: l10n.resolutionRate,
                   value:
                   '${(stats['taux_resolution'] ?? 0).toStringAsFixed(1)}%',
                   color: const Color(0xFF10B981),
@@ -376,7 +378,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                 children: [
                   Expanded(
                     child: _buildStatCard(
-                      label: 'Total',
+                      label: l10n.total,
                       value: '${stats['total'] ?? 0}',
                       color: const Color(0xFF3B82F6),
                       icon: Icons.warning,
@@ -386,7 +388,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildStatCard(
-                      label: 'En Attente',
+                      label: l10n.pending,
                       value: '${stats['en_attente'] ?? 0}',
                       color: const Color(0xFFF59E0B),
                       icon: Icons.hourglass_empty,
@@ -400,7 +402,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                 children: [
                   Expanded(
                     child: _buildStatCard(
-                      label: 'En Cours',
+                      label: l10n.inProgress,
                       value: '${stats['en_cours'] ?? 0}',
                       color: const Color(0xFF3B82F6),
                       icon: Icons.build,
@@ -410,7 +412,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildStatCard(
-                      label: 'Taux',
+                      label: l10n.rate,
                       value:
                       '${(stats['taux_resolution'] ?? 0).toStringAsFixed(1)}%',
                       color: const Color(0xFF10B981),
@@ -487,7 +489,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
 
   // ==================== FILTRES AVANCÉS ====================
 
-  Widget _buildFiltersCard(bool isDark) {
+  Widget _buildFiltersCard(bool isDark, AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
       padding: const EdgeInsets.all(20),
@@ -507,7 +509,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
           Row(
             children: [
               Text(
-                'Filtres avancés',
+                l10n.advancedFilters,
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -523,7 +525,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                   color: AppTheme.getTextSecondary(context),
                 ),
                 label: Text(
-                  'Fermer',
+                  l10n.close,
                   style: TextStyle(color: AppTheme.getTextSecondary(context)),
                 ),
               ),
@@ -534,28 +536,30 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
             children: [
               Expanded(
                 child: _buildDatePicker(
-                  label: 'Date début',
+                  label: l10n.startDate,
                   selectedDate: _selectedDateFrom,
                   onDateSelected: (d) => setState(() => _selectedDateFrom = d),
                   isDark: isDark,
+                  l10n: l10n,
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: _buildDatePicker(
-                  label: 'Date fin',
+                  label: l10n.endDate,
                   selectedDate: _selectedDateTo,
                   onDateSelected: (d) => setState(() => _selectedDateTo = d),
                   isDark: isDark,
+                  l10n: l10n,
                 ),
               ),
               const SizedBox(width: 16),
               ElevatedButton.icon(
                 onPressed: _applyAllFilters,
                 icon: const Icon(Icons.check, size: 18, color: Colors.white),
-                label: const Text(
-                  'Appliquer',
-                  style: TextStyle(color: Colors.white),
+                label: Text(
+                  l10n.apply,
+                  style: const TextStyle(color: Colors.white),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Theme.of(context).colorScheme.primary,
@@ -577,6 +581,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     required DateTime? selectedDate,
     required ValueChanged<DateTime> onDateSelected,
     required bool isDark,
+    required AppLocalizations l10n,
   }) {
     return InkWell(
       onTap: () async {
@@ -623,7 +628,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
           ),
         ),
         child: Text(
-          selectedDate != null ? _formatDateOnly(selectedDate) : 'Sélectionner',
+          selectedDate != null ? _formatDateOnly(selectedDate, l10n) : l10n.select,
           style: TextStyle(
             color: selectedDate != null
                 ? AppTheme.getTextPrimary(context)
@@ -636,7 +641,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
 
   // ==================== TABLEAU ====================
 
-  Widget _buildSignalementsList(bool isDark) {
+  Widget _buildSignalementsList(bool isDark, AppLocalizations l10n) {
     return Consumer<SignalementAdminProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading && provider.signalements.isEmpty) {
@@ -648,10 +653,10 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
           );
         }
         if (provider.error != null && provider.signalements.isEmpty) {
-          return _buildErrorWidget(provider.error!, isDark);
+          return _buildErrorWidget(provider.error!, isDark, l10n);
         }
         if (provider.signalements.isEmpty) {
-          return _buildEmptyState(isDark);
+          return _buildEmptyState(isDark, l10n);
         }
 
         final screenWidth = MediaQuery.of(context).size.width;
@@ -709,18 +714,18 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                           children: [
                             SizedBox(
                                 width: colEtudiant,
-                                child: _headerText('Étudiant')),
+                                child: _headerText(l10n.student)),
                             SizedBox(
                                 width: colDescription,
-                                child: _headerText('Description')),
-                            SizedBox(width: colType, child: _headerText('Type')),
+                                child: _headerText(l10n.description)),
+                            SizedBox(width: colType, child: _headerText(l10n.type)),
                             SizedBox(
                                 width: colStatut,
-                                child: _headerText('Statut')),
-                            SizedBox(width: colDate, child: _headerText('Date')),
+                                child: _headerText(l10n.status)),
+                            SizedBox(width: colDate, child: _headerText(l10n.date)),
                             SizedBox(
                                 width: colActions,
-                                child: _headerText('Actions')),
+                                child: _headerText(l10n.actions)),
                           ],
                         ),
                       ),
@@ -734,6 +739,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                           provider,
                           index,
                           isDark,
+                          l10n,
                           colEtudiant: colEtudiant,
                           colDescription: colDescription,
                           colType: colType,
@@ -746,7 +752,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                   ),
                 ),
               ),
-              _buildPagination(provider, isDark),
+              _buildPagination(provider, isDark, l10n),
             ],
           ),
         );
@@ -769,7 +775,8 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
       Signalement s,
       SignalementAdminProvider provider,
       int index,
-      bool isDark, {
+      bool isDark,
+      AppLocalizations l10n, {
         required double colEtudiant,
         required double colDescription,
         required double colType,
@@ -829,7 +836,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                 if (s.numeroChambre != null && s.nomCentre != null) ...[
                   const SizedBox(height: 2),
                   Text(
-                    '${s.nomCentre} - Ch. ${s.numeroChambre}',
+                    l10n.centerRoom(s.nomCentre!, s.numeroChambre!),
                     style: TextStyle(
                       fontSize: 11,
                       color: AppTheme.getTextTertiary(context),
@@ -873,7 +880,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                   ),
                 ),
                 child: Text(
-                  _getTypeLabel(s.typeProbleme),
+                  _getTypeLabel(s.typeProbleme, l10n),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -900,7 +907,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                   ),
                 ),
                 child: Text(
-                  _getStatutLabel(s.statut),
+                  _getStatutLabel(s.statut, l10n),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -914,7 +921,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
           SizedBox(
             width: colDate,
             child: Text(
-              _formatDate(s.createdAt),
+              _formatDate(s.createdAt, l10n),
               style: TextStyle(
                 color: AppTheme.getTextSecondary(context),
                 fontSize: 13,
@@ -928,13 +935,13 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 IconButton(
-                  onPressed: () => _showSignalementDetails(s, provider),
+                  onPressed: () => _showSignalementDetails(s, provider, l10n),
                   icon: Icon(
                     Icons.visibility_outlined,
                     size: 20,
                     color: AppTheme.getTextSecondary(context),
                   ),
-                  tooltip: 'Voir détails',
+                  tooltip: l10n.viewDetails,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
@@ -947,8 +954,8 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                   ),
                   color: AppTheme.getCardBackground(context),
                   surfaceTintColor: AppTheme.getCardBackground(context),
-                  itemBuilder: (context) => _buildActionMenu(s, isDark),
-                  onSelected: (value) => _handleAction(value, s, provider),
+                  itemBuilder: (context) => _buildActionMenu(s, isDark, l10n),
+                  onSelected: (value) => _handleAction(value, s, provider, l10n),
                   padding: EdgeInsets.zero,
                 ),
               ],
@@ -961,7 +968,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
 
   // ==================== PAGINATION ====================
 
-  Widget _buildPagination(SignalementAdminProvider provider, bool isDark) {
+  Widget _buildPagination(SignalementAdminProvider provider, bool isDark, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -977,7 +984,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
-            'Total: ${provider.totalItems} signalements',
+            l10n.totalReportsCount(provider.totalItems),
             style: TextStyle(
               color: AppTheme.getTextSecondary(context),
               fontSize: 13,
@@ -1001,7 +1008,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                   border: Border.all(color: AppTheme.getBorderColor(context)),
                 ),
                 child: Text(
-                  'Page ${provider.currentPage} / ${provider.totalPages}',
+                  l10n.pageOf(provider.currentPage, provider.totalPages),
                   style: TextStyle(
                     color: AppTheme.getTextPrimary(context),
                     fontWeight: FontWeight.w500,
@@ -1026,7 +1033,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
 
   // ==================== ÉTATS VIDE / ERREUR ====================
 
-  Widget _buildEmptyState(bool isDark) {
+  Widget _buildEmptyState(bool isDark, AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.all(24),
       padding: const EdgeInsets.all(48),
@@ -1050,7 +1057,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Aucun signalement trouvé',
+              l10n.noReportsFound,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -1059,7 +1066,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Ajustez vos filtres ou attendez de nouveaux signalements',
+              l10n.adjustFiltersOrWait,
               style: TextStyle(color: AppTheme.getTextTertiary(context)),
             ),
             const SizedBox(height: 24),
@@ -1069,7 +1076,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Réinitialiser les filtres'),
+              child: Text(l10n.resetFilters),
             ),
           ],
         ),
@@ -1077,7 +1084,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     );
   }
 
-  Widget _buildErrorWidget(String error, bool isDark) {
+  Widget _buildErrorWidget(String error, bool isDark, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(24),
       margin: const EdgeInsets.all(24),
@@ -1101,7 +1108,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Erreur de chargement',
+              l10n.loadingError,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -1123,7 +1130,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                 backgroundColor: Colors.red.shade400,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Réessayer'),
+              child: Text(l10n.retry),
             ),
           ],
         ),
@@ -1133,7 +1140,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
 
   // ==================== MENU CONTEXTUEL ====================
 
-  List<PopupMenuEntry<String>> _buildActionMenu(Signalement s, bool isDark) {
+  List<PopupMenuEntry<String>> _buildActionMenu(Signalement s, bool isDark, AppLocalizations l10n) {
     final items = <PopupMenuEntry<String>>[
       PopupMenuItem(
         value: 'details',
@@ -1146,7 +1153,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
             ),
             const SizedBox(width: 8),
             Text(
-              'Détails complets',
+              l10n.fullDetails,
               style: TextStyle(color: AppTheme.getTextPrimary(context)),
             ),
           ],
@@ -1162,7 +1169,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
               const Icon(Icons.build, size: 18, color: Color(0xFF3B82F6)),
               const SizedBox(width: 8),
               Text(
-                'Prendre en charge',
+                l10n.takeCharge,
                 style: TextStyle(color: AppTheme.getTextPrimary(context)),
               ),
             ],
@@ -1175,7 +1182,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
               const Icon(Icons.cancel, size: 18, color: Color(0xFFEF4444)),
               const SizedBox(width: 8),
               Text(
-                'Annuler le signalement',
+                l10n.cancelReport,
                 style: TextStyle(color: AppTheme.getTextPrimary(context)),
               ),
             ],
@@ -1192,7 +1199,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
               const Icon(Icons.check_circle, size: 18, color: Color(0xFF10B981)),
               const SizedBox(width: 8),
               Text(
-                'Marquer comme résolu',
+                l10n.markAsResolved,
                 style: TextStyle(color: AppTheme.getTextPrimary(context)),
               ),
             ],
@@ -1213,7 +1220,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
             ),
             const SizedBox(width: 8),
             Text(
-              'Voir les photos',
+              l10n.viewPhotos,
               style: TextStyle(color: AppTheme.getTextPrimary(context)),
             ),
           ],
@@ -1225,7 +1232,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
 
   // ==================== DIALOGUE DÉTAILS ====================
 
-  void _showSignalementDetails(Signalement s, SignalementAdminProvider provider) {
+  void _showSignalementDetails(Signalement s, SignalementAdminProvider provider, AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
@@ -1275,7 +1282,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Détails du signalement',
+                            l10n.reportDetails,
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -1310,37 +1317,37 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _dlgSection('Étudiant', Icons.person),
+                      _dlgSection(l10n.student, Icons.person),
                       const SizedBox(height: 10),
-                      _dlgItem('Nom complet', s.displayEtudiantNomComplet),
-                      if (s.matricule != null) _dlgItem('Matricule', s.matricule!),
-                      if (s.telephone != null) _dlgItem('Téléphone', s.telephone!),
-                      if (s.email != null) _dlgItem('Email', s.email!),
+                      _dlgItem(l10n.fullName, s.displayEtudiantNomComplet),
+                      if (s.matricule != null) _dlgItem(l10n.matricule, s.matricule!),
+                      if (s.telephone != null) _dlgItem(l10n.phone, s.telephone!),
+                      if (s.email != null) _dlgItem(l10n.email, s.email!),
                       const SizedBox(height: 16),
-                      _dlgSection('Localisation', Icons.location_on),
+                      _dlgSection(l10n.localization, Icons.location_on),
                       const SizedBox(height: 10),
                       _dlgItem(
-                        'Centre',
+                        l10n.center,
                         '${s.nomCentre ?? "N/A"}${s.ville != null ? " (${s.ville})" : ""}',
                       ),
                       _dlgItem(
-                        'Chambre',
+                        l10n.room,
                         '${s.numeroChambre ?? "N/A"} (${s.typeChambre ?? "Type inconnu"})',
                       ),
                       const SizedBox(height: 16),
-                      _dlgSection('Problème', Icons.warning_amber),
+                      _dlgSection(l10n.problem, Icons.warning_amber),
                       const SizedBox(height: 10),
-                      _dlgItem('Type', _getTypeLabel(s.typeProbleme)),
-                      _dlgItem('Description', s.description),
-                      _dlgItem('Statut', _getStatutLabel(s.statut)),
-                      _dlgItem('Date création', _formatDate(s.createdAt)),
+                      _dlgItem(l10n.type, _getTypeLabel(s.typeProbleme, l10n)),
+                      _dlgItem(l10n.descriptionLabel, s.description),
+                      _dlgItem(l10n.statusLabel, _getStatutLabel(s.statut, l10n)),
+                      _dlgItem(l10n.creationDate, _formatDate(s.createdAt, l10n)),
                       if (s.dateResolution != null)
-                        _dlgItem('Date résolution', _formatDate(s.dateResolution!)),
+                        _dlgItem(l10n.resolutionDate, _formatDate(s.dateResolution!, l10n)),
                       if (s.commentaireResolution != null)
-                        _dlgItem('Commentaire', s.commentaireResolution!),
+                        _dlgItem(l10n.comment, s.commentaireResolution!),
                       if (s.photos.isNotEmpty) ...[
                         const SizedBox(height: 16),
-                        _dlgSection('Photos (${s.photos.length})', Icons.photo_library),
+                        _dlgSection('${l10n.photosCount} (${s.photos.length})', Icons.photo_library),
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 12,
@@ -1395,7 +1402,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: Text(
-                        'Fermer',
+                        l10n.close,
                         style: TextStyle(color: AppTheme.getTextSecondary(context)),
                       ),
                     ),
@@ -1404,12 +1411,12 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                       ElevatedButton.icon(
                         onPressed: () {
                           Navigator.pop(context);
-                          _updateStatus(s, 'EN_COURS', provider);
+                          _updateStatus(s, 'EN_COURS', provider, l10n);
                         },
                         icon: const Icon(Icons.build, size: 18, color: Colors.white),
-                        label: const Text(
-                          'Prendre en charge',
-                          style: TextStyle(color: Colors.white),
+                        label: Text(
+                          l10n.takeCharge,
+                          style: const TextStyle(color: Colors.white),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Theme.of(context).colorScheme.primary,
@@ -1473,7 +1480,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
 
   // ==================== DIALOGUE PHOTOS ====================
 
-  void _showPhotos(Signalement s) {
+  void _showPhotos(Signalement s, AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
@@ -1501,7 +1508,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Photos du signalement',
+                        l10n.viewPhotos,
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -1534,7 +1541,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Aucune photo disponible',
+                        l10n.noPhotosAvailable,
                         style: TextStyle(
                           fontSize: 16,
                           color: AppTheme.getTextSecondary(context),
@@ -1586,7 +1593,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '${s.photos.length} photo${s.photos.length > 1 ? "s" : ""}',
+                      l10n.photoCount(s.photos.length),
                       style: TextStyle(
                         color: AppTheme.getTextSecondary(context),
                         fontSize: 14,
@@ -1595,7 +1602,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: Text(
-                        'Fermer',
+                        l10n.close,
                         style: TextStyle(color: AppTheme.getTextSecondary(context)),
                       ),
                     ),
@@ -1615,22 +1622,23 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
       String action,
       Signalement s,
       SignalementAdminProvider provider,
+      AppLocalizations l10n,
       ) async {
     switch (action) {
       case 'details':
-        _showSignalementDetails(s, provider);
+        _showSignalementDetails(s, provider, l10n);
         break;
       case 'prendre_en_charge':
-        await _updateStatus(s, 'EN_COURS', provider);
+        await _updateStatus(s, 'EN_COURS', provider, l10n);
         break;
       case 'resoudre':
-        await _updateStatus(s, 'RESOLU', provider);
+        await _updateStatus(s, 'RESOLU', provider, l10n);
         break;
       case 'annuler':
-        await _updateStatus(s, 'ANNULE', provider);
+        await _updateStatus(s, 'ANNULE', provider, l10n);
         break;
       case 'photos':
-        _showPhotos(s);
+        _showPhotos(s, l10n);
         break;
     }
   }
@@ -1639,6 +1647,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
       Signalement s,
       String nouveauStatut,
       SignalementAdminProvider provider,
+      AppLocalizations l10n,
       ) async {
     try {
       String? commentaire;
@@ -1646,6 +1655,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
         commentaire = await _askForComment(
           nouveauStatut,
           Theme.of(context).brightness == Brightness.dark,
+          l10n,
         );
         if (commentaire == null) return;
       }
@@ -1658,7 +1668,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Signalement ${_getStatutLabel(nouveauStatut).toLowerCase()} avec succès',
+              l10n.reportStatusUpdated(_getStatutLabel(nouveauStatut, l10n)),
             ),
             backgroundColor: _getStatutColor(nouveauStatut),
             behavior: SnackBarBehavior.floating,
@@ -1669,7 +1679,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: ${e.toString()}'),
+            content: Text('${l10n.error}: ${e.toString()}'),
             backgroundColor: const Color(0xFFEF4444),
             behavior: SnackBarBehavior.floating,
           ),
@@ -1678,7 +1688,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     }
   }
 
-  Future<String?> _askForComment(String statut, bool isDark) async {
+  Future<String?> _askForComment(String statut, bool isDark, AppLocalizations l10n) async {
     final ctrl = TextEditingController();
     final result = await showDialog<String>(
       context: context,
@@ -1696,8 +1706,8 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
               children: [
                 Text(
                   statut == 'RESOLU'
-                      ? 'Commentaire de résolution'
-                      : 'Raison de l\'annulation',
+                      ? l10n.resolutionComment
+                      : l10n.cancellationReason,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -1709,8 +1719,8 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                   controller: ctrl,
                   decoration: InputDecoration(
                     hintText: statut == 'RESOLU'
-                        ? 'Décrivez comment le problème a été résolu...'
-                        : 'Indiquez la raison de l\'annulation...',
+                        ? l10n.describeResolution
+                        : l10n.indicateCancellationReason,
                     hintStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -1742,7 +1752,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                     TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: Text(
-                        'Annuler',
+                        l10n.cancel,
                         style: TextStyle(color: AppTheme.getTextSecondary(context)),
                       ),
                     ),
@@ -1757,7 +1767,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                         backgroundColor: Theme.of(context).colorScheme.primary,
                         foregroundColor: Colors.white,
                       ),
-                      child: const Text('Valider'),
+                      child: Text(l10n.validate),
                     ),
                   ],
                 ),
@@ -1804,23 +1814,25 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     if (_isRefreshing) return;
     setState(() => _isRefreshing = true);
     try {
+      final l10n = AppLocalizations.of(context); // ← AJOUTER
       final provider = Provider.of<SignalementAdminProvider>(context, listen: false);
       await Future.wait([provider.loadSignalements(), provider.loadStatistiques()]);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Données actualisées avec succès'),
-            backgroundColor: Color(0xFF10B981),
-            duration: Duration(seconds: 2),
+          SnackBar(
+            content: Text(l10n.dataRefreshed),
+            backgroundColor: const Color(0xFF10B981),
+            duration: const Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,
           ),
         );
       }
     } catch (e) {
+      final l10n = AppLocalizations.of(context); // ← AJOUTER aussi ici
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur: $e'),
+            content: Text('${l10n.error}: $e'),
             backgroundColor: const Color(0xFFEF4444),
             behavior: SnackBarBehavior.floating,
           ),
@@ -1833,15 +1845,15 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
 
   // ==================== LIBELLÉS & COULEURS ====================
 
-  String _getStatutLabel(String s) {
-    const map = {
-      'EN_ATTENTE': 'En attente',
-      'EN_COURS': 'En cours',
-      'RESOLU': 'Résolu',
-      'ANNULE': 'Annulé',
-      'TOUS': 'Tous',
-    };
-    return map[s] ?? s;
+  String _getStatutLabel(String s, AppLocalizations l10n) {
+    switch (s) {
+      case 'EN_ATTENTE': return l10n.pendingStatus;
+      case 'EN_COURS': return l10n.inProgressStatus;
+      case 'RESOLU': return l10n.resolvedStatus;
+      case 'ANNULE': return l10n.cancelledStatus;
+      case 'TOUS': return l10n.all;
+      default: return s;
+    }
   }
 
   Color _getStatutColor(String s) {
@@ -1854,17 +1866,17 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     return map[s] ?? const Color(0xFF64748B);
   }
 
-  String _getTypeLabel(String t) {
-    const map = {
-      'PLOMBERIE': 'Plomberie',
-      'ELECTRICITE': 'Électricité',
-      'TOITURE': 'Toiture',
-      'SERRURE': 'Serrure',
-      'MOBILIER': 'Mobilier',
-      'AUTRE': 'Autre',
-      'TOUS': 'Tous',
-    };
-    return map[t] ?? t;
+  String _getTypeLabel(String t, AppLocalizations l10n) {
+    switch (t) {
+      case 'PLOMBERIE': return l10n.plumbing;
+      case 'ELECTRICITE': return l10n.electricity;
+      case 'TOITURE': return l10n.roofing;
+      case 'SERRURE': return l10n.locks;
+      case 'MOBILIER': return l10n.furniture;
+      case 'AUTRE': return l10n.other;
+      case 'TOUS': return l10n.all;
+      default: return t;
+    }
   }
 
   Color _getTypeColor(String t) {

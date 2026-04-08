@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../../services/preference_service.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../../../config/theme.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Écran des paramètres pour l'administration.
 ///
@@ -48,6 +49,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return DashboardLayout(
       selectedIndex: 6,
       child: _isLoading
@@ -70,10 +72,10 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
                   mainAxisSpacing: 20,
                   childAspectRatio: constraints.maxWidth > 1200 ? 1.8 : 1.5,
                   children: [
-                    _buildPreferencesCard(),
-                    _buildNotificationsCard(),
-                    _buildAccountCard(),
-                    _buildAppInfoCard(),
+                    _buildPreferencesCard(l10n),
+                    _buildNotificationsCard(l10n),
+                    _buildAccountCard(l10n),
+                    _buildAppInfoCard(l10n),
                   ],
                 );
               },
@@ -85,7 +87,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
   }
 
   /// Construit la carte des préférences (thème, langue).
-  Widget _buildPreferencesCard() {
+  Widget _buildPreferencesCard(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Card(
@@ -116,7 +118,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    'Préférences',
+                    l10n.preferences,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -130,18 +132,18 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
 
             _buildSettingRow(
               icon: Icons.palette_rounded,
-              title: 'Thème de l\'interface',
-              subtitle: _getThemeName(_selectedTheme),
-              onTap: _showThemeDialog,
+              title: l10n.interfaceTheme,
+              subtitle: _getThemeName(_selectedTheme, l10n),
+              onTap: () => _showThemeDialog(l10n),
             ),
 
             const SizedBox(height: 16),
 
             _buildSettingRow(
               icon: Icons.language_rounded,
-              title: 'Langue',
-              subtitle: _selectedLanguage == 'fr' ? 'Français' : 'English',
-              onTap: _showLanguageDialog,
+              title: l10n.language,
+              subtitle: _selectedLanguage == 'fr' ? l10n.french : l10n.english,
+              onTap: () => _showLanguageDialog(l10n),
             ),
           ],
         ),
@@ -150,7 +152,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
   }
 
   /// Construit la carte des notifications.
-  Widget _buildNotificationsCard() {
+  Widget _buildNotificationsCard(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Card(
@@ -181,7 +183,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    'Notifications',
+                    l10n.notifications,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -200,14 +202,14 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
                 await _preferenceService.setNotificationsEnabled(value);
               },
               title: Text(
-                'Notifications push',
+                l10n.pushNotif,
                 style: TextStyle(
                   fontWeight: FontWeight.w500,
                   color: AppTheme.getTextPrimary(context),
                 ),
               ),
               subtitle: Text(
-                'Recevoir les alertes importantes',
+                l10n.receiveImportantAlerts,
                 style: TextStyle(
                   color: AppTheme.getTextSecondary(context),
                 ),
@@ -222,7 +224,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
   }
 
   /// Construit la carte du compte et de la sécurité.
-  Widget _buildAccountCard() {
+  Widget _buildAccountCard(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Card(
@@ -253,7 +255,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    'Compte & Sécurité',
+                    l10n.accountSecurity,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -267,9 +269,9 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
 
             _buildSettingRow(
               icon: Icons.lock_reset_rounded,
-              title: 'Changer le mot de passe',
-              subtitle: 'Dernière modification: il y a 30 jours',
-              onTap: _showChangePasswordDialog,
+              title: l10n.changePassword,
+              subtitle: l10n.lastChangeDaysAgo(30),
+              onTap: () => _showChangePasswordDialog(l10n),
             ),
           ],
         ),
@@ -278,7 +280,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
   }
 
   /// Construit la carte des informations sur l'application.
-  Widget _buildAppInfoCard() {
+  Widget _buildAppInfoCard(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Card(
@@ -309,7 +311,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    'Informations',
+                    l10n.information,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -324,13 +326,13 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow('Version', '1.0.0'),
+                _buildInfoRow(l10n.version, '1.0.0'),
                 const SizedBox(height: 12),
-                _buildInfoRow('Dernière mise à jour', '07/01/2026'),
+                _buildInfoRow(l10n.lastUpdate, '07/01/2026'),
                 const SizedBox(height: 12),
-                _buildInfoRow('Mode', 'Web'),
+                _buildInfoRow(l10n.mode, l10n.web),
                 const SizedBox(height: 12),
-                _buildInfoRow('© 2026', 'CENOU'),
+                _buildInfoRow(l10n.copyright, 'CENOU'),
               ],
             ),
           ],
@@ -420,23 +422,23 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
   }
 
   /// Retourne le libellé du thème à partir du code.
-  String _getThemeName(String theme) {
+  String _getThemeName(String theme, AppLocalizations l10n) {
     return switch (theme) {
-      'light' => 'Clair',
-      'dark' => 'Sombre',
-      'system' => 'Système',
-      _ => 'Système',
+      'light' => l10n.themeLight,
+      'dark' => l10n.themeDark,
+      'system' => l10n.themeSystem,
+      _ => l10n.themeSystem,
     };
   }
 
   /// Affiche la boîte de dialogue de sélection du thème.
-  void _showThemeDialog() {
+  void _showThemeDialog(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final themes = [
-      {'code': 'system', 'name': 'Système', 'icon': Icons.brightness_auto_rounded},
-      {'code': 'light', 'name': 'Clair', 'icon': Icons.light_mode_rounded},
-      {'code': 'dark', 'name': 'Sombre', 'icon': Icons.dark_mode_rounded},
+      {'code': 'system', 'name': l10n.themeSystem, 'icon': Icons.brightness_auto_rounded},
+      {'code': 'light', 'name': l10n.themeLight, 'icon': Icons.light_mode_rounded},
+      {'code': 'dark', 'name': l10n.themeDark, 'icon': Icons.dark_mode_rounded},
     ];
 
     showDialog(
@@ -456,7 +458,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Choisir le thème',
+                    l10n.chooseTheme,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -465,7 +467,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Sélectionnez le thème de l\'interface administrateur',
+                    l10n.selectInterfaceTheme,
                     style: TextStyle(
                       color: AppTheme.getTextSecondary(context),
                     ),
@@ -503,7 +505,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Thème changé en ${theme['name']}'),
+                                content: Text(l10n.themeChanged(theme['name'] as String)),
                                 backgroundColor: Theme.of(context).colorScheme.primary,
                               ),
                             );
@@ -523,12 +525,12 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
   }
 
   /// Affiche la boîte de dialogue de sélection de la langue.
-  void _showLanguageDialog() {
+  void _showLanguageDialog(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     final languages = [
-      {'code': 'fr', 'name': 'Français', 'flag': '🇫🇷'},
-      {'code': 'en', 'name': 'English', 'flag': '🇺🇸'},
+      {'code': 'fr', 'name': l10n.french, 'flag': '🇫🇷'},
+      {'code': 'en', 'name': l10n.english, 'flag': '🇺🇸'},
     ];
 
     showDialog(
@@ -548,7 +550,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Choisir la langue',
+                    l10n.chooseLanguage,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -557,7 +559,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Sélectionnez la langue de l\'interface',
+                    l10n.selectInterfaceLanguage,
                     style: TextStyle(
                       color: AppTheme.getTextSecondary(context),
                     ),
@@ -590,7 +592,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
 
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Langue changée en ${lang['name']}'),
+                                content: Text(l10n.languageChanged(lang['name'] as String)),
                                 backgroundColor: Theme.of(context).colorScheme.primary,
                               ),
                             );
@@ -610,7 +612,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
   }
 
   /// Affiche la boîte de dialogue de changement de mot de passe (à venir).
-  void _showChangePasswordDialog() {
+  void _showChangePasswordDialog(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
@@ -630,7 +632,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Changer le mot de passe',
+                    l10n.changePassword,
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -639,7 +641,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Cette fonctionnalité sera disponible prochainement.',
+                    l10n.featureComingSoon,
                     style: TextStyle(
                       color: AppTheme.getTextSecondary(context),
                     ),
@@ -650,7 +652,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
                     child: TextButton(
                       onPressed: () => Navigator.pop(context),
                       child: Text(
-                        'OK',
+                        l10n.ok,
                         style: TextStyle(
                           color: Theme.of(context).colorScheme.primary,
                         ),

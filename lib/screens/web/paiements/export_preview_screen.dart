@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:cenou_mobile/config/theme.dart';
 import '../../../utils/html_utils.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Écran de prévisualisation avant l’export d’un rapport de paiements.
 ///
@@ -33,13 +34,14 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: AppTheme.getDashboardBackground(context),
       appBar: AppBar(
         title: Text(
-          'Aperçu Export ${widget.format.toUpperCase()}',
+          l10n.exportPreviewTitle(widget.format.toUpperCase()),
           style: TextStyle(color: AppTheme.getTextPrimary(context)),
         ),
         backgroundColor: AppTheme.getTopBarBackground(context),
@@ -48,23 +50,23 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
           if (!_isGenerating) ...[
             IconButton(
               icon: Icon(Icons.download, color: AppTheme.getTextPrimary(context)),
-              onPressed: _generateAndDownload,
-              tooltip: 'Générer et télécharger',
+              onPressed: () => _generateAndDownload(l10n),
+              tooltip: l10n.generateAndDownload,
             ),
             IconButton(
               icon: Icon(Icons.share, color: AppTheme.getTextPrimary(context)),
-              onPressed: _sharePreview,
-              tooltip: 'Partager',
+              onPressed: () => _sharePreview(l10n),
+              tooltip: l10n.share,
             ),
           ],
         ],
       ),
-      body: _buildContent(isDark),
+      body: _buildContent(isDark, l10n),
     );
   }
 
   /// Construit le contenu principal de l’écran.
-  Widget _buildContent(bool isDark) {
+  Widget _buildContent(bool isDark, AppLocalizations l10n) {
     if (_isGenerating) {
       return Center(
         child: Column(
@@ -73,11 +75,11 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
             CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
             const SizedBox(height: 20),
             Text(
-              'Génération en cours...',
+              l10n.generatingInProgress,
               style: TextStyle(color: AppTheme.getTextPrimary(context)),
             ),
             Text(
-              'Veuillez patienter',
+              l10n.pleaseWait,
               style: TextStyle(color: AppTheme.getTextSecondary(context)),
             ),
           ],
@@ -93,7 +95,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
             Icon(Icons.error, size: 64, color: Colors.red.shade400),
             const SizedBox(height: 20),
             Text(
-              'Erreur',
+              l10n.error,
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
@@ -116,7 +118,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Retour'),
+              child: Text(l10n.back),
             ),
           ],
         ),
@@ -128,20 +130,20 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildHeader(isDark),
+          _buildHeader(isDark, l10n),
           const SizedBox(height: 20),
-          _buildStats(isDark),
+          _buildStats(isDark, l10n),
           const SizedBox(height: 20),
-          _buildPreview(isDark),
+          _buildPreview(isDark, l10n),
           const SizedBox(height: 30),
-          _buildActionButtons(),
+          _buildActionButtons(l10n),
         ],
       ),
     );
   }
 
   /// Section d’en‑tête du rapport (titre, format, date, filtres).
-  Widget _buildHeader(bool isDark) {
+  Widget _buildHeader(bool isDark, AppLocalizations l10n) {
     return Card(
       color: AppTheme.getCardBackground(context),
       elevation: isDark ? 4 : 2,
@@ -163,7 +165,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Rapport des Paiements CENOU',
+                        l10n.paymentReportTitle,
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -172,14 +174,14 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                       ),
                       const SizedBox(height: 5),
                       Text(
-                        'Format: ${widget.format.toUpperCase()}',
+                        l10n.formatLabel(widget.format.toUpperCase()),
                         style: TextStyle(
                           color: _getFormatColor(widget.format),
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                       Text(
-                        'Généré le ${DateFormat('dd/MM/yyyy à HH:mm').format(DateTime.now())}',
+                        l10n.generatedOn(DateFormat('dd/MM/yyyy à HH:mm', l10n.locale.languageCode).format(DateTime.now())),
                         style: TextStyle(color: AppTheme.getTextSecondary(context)),
                       ),
                     ],
@@ -191,7 +193,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
             if (widget.filters != null && widget.filters!.isNotEmpty) ...[
               Divider(color: AppTheme.getBorderColor(context)),
               Text(
-                'Filtres appliqués:',
+                l10n.appliedFilters,
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: AppTheme.getTextPrimary(context),
@@ -199,7 +201,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
               ),
               const SizedBox(height: 5),
               Text(
-                _formatFilters(widget.filters!),
+                _formatFilters(widget.filters!, l10n),
                 style: TextStyle(color: AppTheme.getTextSecondary(context)),
               ),
             ],
@@ -210,7 +212,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
   }
 
   /// Affichage des indicateurs statistiques du rapport.
-  Widget _buildStats(bool isDark) {
+  Widget _buildStats(bool isDark, AppLocalizations l10n) {
     final total = widget.paiements.length;
     final confirmes = widget.paiements.where((p) => p.isConfirme).length;
     final enAttente = widget.paiements.where((p) => p.statut == 'EN_ATTENTE').length;
@@ -225,12 +227,12 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
       crossAxisSpacing: 15,
       mainAxisSpacing: 15,
       children: [
-        _buildStatCard('Total Paiements', '$total', Colors.blue, isDark),
-        _buildStatCard('Confirmés', '$confirmes', Colors.green, isDark),
-        _buildStatCard('En Attente', '$enAttente', Colors.orange, isDark),
+        _buildStatCard(l10n.totalPayments, '$total', Colors.blue, isDark),
+        _buildStatCard(l10n.confirmed, '$confirmes', Colors.green, isDark),
+        _buildStatCard(l10n.pending, '$enAttente', Colors.orange, isDark),
         _buildStatCard(
-          'Montant Total',
-          '${NumberFormat('#,##0').format(montantTotal)} FCFA',
+          l10n.totalAmount,
+          '${NumberFormat('#,##0', l10n.locale.languageCode).format(montantTotal)} FCFA',
           Colors.purple,
           isDark,
         ),
@@ -272,7 +274,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
   }
 
   /// Tableau de prévisualisation des données (10 premiers paiements).
-  Widget _buildPreview(bool isDark) {
+  Widget _buildPreview(bool isDark, AppLocalizations l10n) {
     return Card(
       color: AppTheme.getCardBackground(context),
       elevation: isDark ? 4 : 2,
@@ -282,7 +284,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Aperçu des données',
+              l10n.dataPreview,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -291,7 +293,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              '${widget.paiements.length} paiements trouvés',
+              l10n.paymentsFound(widget.paiements.length),
               style: TextStyle(color: AppTheme.getTextSecondary(context)),
             ),
             const SizedBox(height: 20),
@@ -307,7 +309,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                 columns: [
                   DataColumn(
                     label: Text(
-                      'Étudiant',
+                      l10n.student,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.getTextPrimary(context),
@@ -316,7 +318,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                   ),
                   DataColumn(
                     label: Text(
-                      'Montant',
+                      l10n.amount,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.getTextPrimary(context),
@@ -326,7 +328,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                   ),
                   DataColumn(
                     label: Text(
-                      'Statut',
+                      l10n.status,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.getTextPrimary(context),
@@ -335,7 +337,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                   ),
                   DataColumn(
                     label: Text(
-                      'Mode',
+                      l10n.mode,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.getTextPrimary(context),
@@ -344,7 +346,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                   ),
                   DataColumn(
                     label: Text(
-                      'Date',
+                      l10n.date,
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
                         color: AppTheme.getTextPrimary(context),
@@ -359,7 +361,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                       style: TextStyle(color: AppTheme.getTextPrimary(context)),
                     )),
                     DataCell(Text(
-                      '${NumberFormat('#,##0').format(paiement.montant)} FCFA',
+                      '${NumberFormat('#,##0', l10n.locale.languageCode).format(paiement.montant)} FCFA',
                       style: TextStyle(color: AppTheme.getTextPrimary(context)),
                     )),
                     DataCell(
@@ -373,7 +375,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                           ),
                         ),
                         child: Text(
-                          _getStatutLabel(paiement.statut),
+                          _getStatutLabel(paiement.statut, l10n),
                           style: TextStyle(
                             color: _getStatusColor(paiement.statut),
                             fontSize: 12,
@@ -383,12 +385,12 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                       ),
                     ),
                     DataCell(Text(
-                      _getModeLabel(paiement.modePaiement),
+                      _getModeLabel(paiement.modePaiement, l10n),
                       style: TextStyle(color: AppTheme.getTextPrimary(context)),
                     )),
                     DataCell(Text(
                       paiement.datePaiement != null
-                          ? DateFormat('dd/MM/yy HH:mm').format(paiement.datePaiement!)
+                          ? DateFormat('dd/MM/yy HH:mm', l10n.locale.languageCode).format(paiement.datePaiement!)
                           : '',
                       style: TextStyle(color: AppTheme.getTextPrimary(context)),
                     )),
@@ -400,7 +402,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 20),
                 child: Text(
-                  '... et ${widget.paiements.length - 10} autres paiements',
+                  l10n.andMorePayments(widget.paiements.length - 10),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontStyle: FontStyle.italic,
@@ -415,14 +417,14 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
   }
 
   /// Boutons d’action : retour, génération, aperçu complet.
-  Widget _buildActionButtons() {
+  Widget _buildActionButtons(AppLocalizations l10n) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         ElevatedButton.icon(
           onPressed: () => Navigator.pop(context),
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          label: const Text('Retour', style: TextStyle(color: Colors.white)),
+          label: Text(l10n.back, style: const TextStyle(color: Colors.white)),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.grey[600],
             padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
@@ -433,10 +435,10 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
         ),
         const SizedBox(width: 20),
         ElevatedButton.icon(
-          onPressed: _generateAndDownload,
+          onPressed: () => _generateAndDownload(l10n),
           icon: Icon(Icons.download, color: Colors.white),
           label: Text(
-            'Générer et télécharger',
+            l10n.generateAndDownload,
             style: const TextStyle(color: Colors.white),
           ),
           style: ElevatedButton.styleFrom(
@@ -449,9 +451,9 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
         ),
         const SizedBox(width: 20),
         ElevatedButton.icon(
-          onPressed: _openPreviewInBrowser,
+          onPressed: () => _openPreviewInBrowser(l10n),
           icon: const Icon(Icons.visibility, color: Colors.white),
-          label: const Text('Voir l\'aperçu complet', style: TextStyle(color: Colors.white)),
+          label: Text(l10n.viewFullPreview, style: const TextStyle(color: Colors.white)),
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.primary,
             padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
@@ -465,9 +467,9 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
   }
 
   /// Lance la génération et le téléchargement du fichier.
-  Future<void> _generateAndDownload() async {
+  Future<void> _generateAndDownload(AppLocalizations l10n) async {
     if (!kIsWeb) {
-      _showError('Export disponible uniquement sur web');
+      _showError(l10n.exportWebOnly, l10n);
       return;
     }
 
@@ -490,18 +492,18 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
 
         case 'excel':
         case 'word':
-          _showError('Format ${widget.format} pas encore disponible.\nVeuillez utiliser PDF ou CSV pour le moment.');
+          _showError(l10n.formatNotAvailable(widget.format), l10n);
           return;
 
         default:
-          _showError('Format non supporté: ${widget.format}');
+          _showError(l10n.unsupportedFormat(widget.format), l10n);
           return;
       }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ ${widget.format.toUpperCase()} généré avec succès'),
+            content: Text(l10n.generateSuccess(widget.format.toUpperCase())),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 3),
             behavior: SnackBarBehavior.floating,
@@ -516,7 +518,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
       }
     } catch (e) {
       print('❌ Erreur génération: $e');
-      _showError('Erreur lors de la génération: $e');
+      _showError(l10n.generationError(e.toString()), l10n);
     } finally {
       if (mounted) {
         setState(() {
@@ -527,7 +529,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
   }
 
   /// Affiche une boîte de dialogue de partage (fonctionnalité à venir).
-  void _sharePreview() {
+  void _sharePreview(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
@@ -544,7 +546,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Partager le rapport',
+                l10n.shareReport,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -553,7 +555,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
               ),
               const SizedBox(height: 16),
               Text(
-                'Cette fonctionnalité est en cours de développement.',
+                l10n.featureInDevelopment,
                 style: TextStyle(color: AppTheme.getTextSecondary(context)),
               ),
               const SizedBox(height: 24),
@@ -563,7 +565,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
                   TextButton(
                     onPressed: () => Navigator.pop(context),
                     child: Text(
-                      'OK',
+                      l10n.ok,
                       style: TextStyle(color: AppTheme.getTextSecondary(context)),
                     ),
                   ),
@@ -577,18 +579,18 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
   }
 
   /// Ouvre un aperçu complet dans un nouvel onglet du navigateur.
-  void _openPreviewInBrowser() {
+  void _openPreviewInBrowser(AppLocalizations l10n) {
     if (!kIsWeb) {
       print('⚠️ Prévisualisation non disponible sur mobile');
       return;
     }
 
-    final htmlContent = _generateHtmlPreview();
+    final htmlContent = _generateHtmlPreview(l10n);
     HtmlUtils.previewHtml(htmlContent);
   }
 
   /// Génère le code HTML de l’aperçu.
-  String _generateHtmlPreview() {
+  String _generateHtmlPreview(AppLocalizations l10n) {
     final buffer = StringBuffer();
 
     buffer.write('''
@@ -596,7 +598,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
       <html>
       <head>
         <meta charset="UTF-8">
-        <title>Aperçu Rapport Paiements</title>
+        <title>${l10n.paymentReportTitle}</title>
         <style>
           body {
             font-family: Arial, sans-serif;
@@ -647,26 +649,26 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
       </head>
       <body>
         <div class="container">
-          <h1>Rapport des Paiements CENOU</h1>
-          <p>Généré le ${DateFormat('dd/MM/yyyy à HH:mm').format(DateTime.now())}</p>
+          <h1>${l10n.paymentReportTitle}</h1>
+          <p>${l10n.generatedOn(DateFormat('dd/MM/yyyy à HH:mm', l10n.locale.languageCode).format(DateTime.now()))}</p>
           
           <div class="stats">
             <div class="stat">
-              <strong>Total:</strong> ${widget.paiements.length} paiements
+              <strong>${l10n.total}:</strong> ${widget.paiements.length} ${l10n.payments.toLowerCase()}
             </div>
             <div class="stat">
-              <strong>Montant Total:</strong> ${NumberFormat('#,##0').format(widget.paiements.fold(0.0, (sum, p) => sum + p.montant))} FCFA
+              <strong>${l10n.totalAmount}:</strong> ${NumberFormat('#,##0', l10n.locale.languageCode).format(widget.paiements.fold(0.0, (sum, p) => sum + p.montant))} FCFA
             </div>
           </div>
           
           <table>
             <thead>
               <tr>
-                <th>Étudiant</th>
-                <th>Montant</th>
-                <th>Statut</th>
-                <th>Mode</th>
-                <th>Date</th>
+                <th>${l10n.student}</th>
+                <th>${l10n.amount}</th>
+                <th>${l10n.status}</th>
+                <th>${l10n.mode}</th>
+                <th>${l10n.date}</th>
               </tr>
             </thead>
             <tbody>
@@ -676,10 +678,10 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
       buffer.write('''
          <tr>
            <td>${paiement.etudiantNomComplet}</td>
-           <td>${NumberFormat('#,##0').format(paiement.montant)} FCFA</td>
-          <td class="${paiement.statut.toLowerCase()}">${_getStatutLabel(paiement.statut)}</td>
-           <td>${_getModeLabel(paiement.modePaiement)}</td>
-           <td>${paiement.datePaiement != null ? DateFormat('dd/MM/yy HH:mm').format(paiement.datePaiement!) : ''}</td>
+           <td>${NumberFormat('#,##0', l10n.locale.languageCode).format(paiement.montant)} FCFA</td>
+          <td class="${paiement.statut.toLowerCase()}">${_getStatutLabel(paiement.statut, l10n)}</td>
+           <td>${_getModeLabel(paiement.modePaiement, l10n)}</td>
+           <td>${paiement.datePaiement != null ? DateFormat('dd/MM/yy HH:mm', l10n.locale.languageCode).format(paiement.datePaiement!) : ''}</td>
          </tr>
       ''');
     }
@@ -696,7 +698,7 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
   }
 
   /// Affiche un message d’erreur.
-  void _showError(String message) {
+  void _showError(String message, AppLocalizations l10n) {
     setState(() {
       _error = message;
     });
@@ -743,48 +745,48 @@ class _ExportPreviewScreenState extends State<ExportPreviewScreen> {
   }
 
   /// Retourne le libellé lisible d’un statut.
-  String _getStatutLabel(String statut) {
+  String _getStatutLabel(String statut, AppLocalizations l10n) {
     switch (statut) {
-      case 'EN_ATTENTE': return 'En attente';
-      case 'CONFIRME': return 'Confirmé';
-      case 'ECHEC': return 'Échec';
+      case 'EN_ATTENTE': return l10n.pendingStatus;
+      case 'CONFIRME': return l10n.confirmedStatus;
+      case 'ECHEC': return l10n.failedStatus;
       default: return statut;
     }
   }
 
   /// Retourne le libellé lisible d’un mode de paiement.
-  String _getModeLabel(String mode) {
+  String _getModeLabel(String mode, AppLocalizations l10n) {
     switch (mode) {
-      case 'ORANGE_MONEY': return 'Orange Money';
-      case 'MOOV_MONEY': return 'Moov Money';
-      case 'ESPECES': return 'Espèces';
-      case 'VIREMENT': return 'Virement';
+      case 'ORANGE_MONEY': return l10n.orangeMoney;
+      case 'MOOV_MONEY': return l10n.moovMoney;
+      case 'ESPECES': return l10n.cash;
+      case 'VIREMENT': return l10n.transfer;
       default: return mode;
     }
   }
 
   /// Formate les filtres pour l’affichage.
-  String _formatFilters(Map<String, dynamic> filters) {
+  String _formatFilters(Map<String, dynamic> filters, AppLocalizations l10n) {
     final List<String> filtersText = [];
 
     if (filters['statut'] != null && filters['statut'] != 'TOUS') {
-      filtersText.add('Statut: ${_getStatutLabel(filters['statut'])}');
+      filtersText.add('${l10n.status}: ${_getStatutLabel(filters['statut'], l10n)}');
     }
 
     if (filters['mode_paiement'] != null && filters['mode_paiement'] != 'TOUS') {
-      filtersText.add('Mode: ${_getModeLabel(filters['mode_paiement'])}');
+      filtersText.add('${l10n.mode}: ${_getModeLabel(filters['mode_paiement'], l10n)}');
     }
 
     if (filters['date_from'] != null) {
-      filtersText.add('À partir du: ${filters['date_from']}');
+      filtersText.add('${l10n.fromDate}: ${filters['date_from']}');
     }
 
     if (filters['date_to'] != null) {
-      filtersText.add('Jusqu\'au: ${filters['date_to']}');
+      filtersText.add('${l10n.toDate}: ${filters['date_to']}');
     }
 
     if (filters['search'] != null && filters['search'].toString().isNotEmpty) {
-      filtersText.add('Recherche: "${filters['search']}"');
+      filtersText.add('${l10n.search}: "${filters['search']}"');
     }
 
     return filtersText.join(', ');

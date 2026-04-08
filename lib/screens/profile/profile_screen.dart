@@ -3,9 +3,8 @@ import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/user.dart';
-import '../../providers/paiement_provider.dart';
-import '../../providers/signalement_provider.dart';
 import '../../utils/mobile_responsive.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Écran de profil — responsive mobile/tablette.
 class ProfileScreen extends StatelessWidget {
@@ -13,6 +12,7 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.user;
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -21,27 +21,27 @@ class ProfileScreen extends StatelessWidget {
       backgroundColor:
       isDark ? const Color(0xFF121212) : AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Mon Profil',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 19)),
+        title: Text(l10n.myProfile,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 19)),
         centerTitle: true,
         elevation: 1,
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            onPressed: () => _showEditProfileDialog(context, user, isDark),
-            tooltip: 'Modifier le profil',
+            onPressed: () => _showEditProfileDialog(context, user, isDark, l10n),
+            tooltip: l10n.editProfile,
           ),
         ],
       ),
       body: user == null
-          ? const _ProfileLoadingState()
+          ? _ProfileLoadingState(l10n: l10n)
           : LayoutBuilder(
         builder: (context, constraints) {
           final config = ResponsiveConfig.fromConstraints(constraints);
           return CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
-                  child: _ProfileHeader(user: user, config: config)),
+                  child: _ProfileHeader(user: user, config: config, l10n: l10n)),
               SliverPadding(
                 padding: EdgeInsets.symmetric(
                   horizontal: config.isSmall ? 12 : 16,
@@ -51,11 +51,11 @@ class ProfileScreen extends StatelessWidget {
                   delegate: SliverChildListDelegate([
                     SizedBox(height: config.isSmall ? 12 : 16),
                     config.isTablet
-                        ? _buildTabletInfo(user, isDark, config)
-                        : _buildInfoSection(user, isDark, config),
+                        ? _buildTabletInfo(user, isDark, config, l10n)
+                        : _buildInfoSection(user, isDark, config, l10n),
                     SizedBox(height: config.isSmall ? 20 : 28),
                     _buildActionsSection(
-                        context, authProvider, isDark, config),
+                        context, authProvider, isDark, config, l10n),
                     const SizedBox(height: 32),
                   ]),
                 ),
@@ -68,19 +68,18 @@ class ProfileScreen extends StatelessWidget {
   }
 
   // ── Layout tablette : deux colonnes côte à côte ──────────────────────────
-  Widget _buildTabletInfo(User user, bool isDark, ResponsiveConfig config) {
+  Widget _buildTabletInfo(User user, bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start, // ✅ AJOUTÉ
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Expanded(child: _buildInfoSection(user, isDark, config)),
+        Expanded(child: _buildInfoSection(user, isDark, config, l10n)),
         const SizedBox(width: 16),
-        // Placeholder colonne droite (stats futures)
-        Expanded(child: _buildStatsPlaceholder(isDark, config)),
+        Expanded(child: _buildStatsPlaceholder(isDark, config, l10n)),
       ],
     );
   }
 
-  Widget _buildStatsPlaceholder(bool isDark, ResponsiveConfig config) {
+  Widget _buildStatsPlaceholder(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     return Card(
       elevation: isDark ? 4 : 2,
       color: isDark ? const Color(0xFF1E1E1E) : null,
@@ -90,7 +89,7 @@ class ProfileScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Activité',
+            Text(l10n.activity,
                 style: TextStyle(
                     fontSize: config.responsive(small: 15, medium: 17, large: 18),
                     fontWeight: FontWeight.w600,
@@ -98,14 +97,14 @@ class ProfileScreen extends StatelessWidget {
             const SizedBox(height: 16),
             _StatRow(
                 icon: Icons.payment_rounded,
-                label: 'Paiements effectués',
+                label: l10n.paymentsMade,
                 color: AppTheme.successColor,
                 isDark: isDark,
                 config: config),
             const SizedBox(height: 12),
             _StatRow(
                 icon: Icons.report_problem_rounded,
-                label: 'Signalements créés',
+                label: l10n.reportsCreated,
                 color: AppTheme.errorColor,
                 isDark: isDark,
                 config: config),
@@ -116,7 +115,7 @@ class ProfileScreen extends StatelessWidget {
   }
 
   // ── Section infos personnelles ───────────────────────────────────────────
-  Widget _buildInfoSection(User user, bool isDark, ResponsiveConfig config) {
+  Widget _buildInfoSection(User user, bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     return Card(
       elevation: isDark ? 4 : 2,
       color: isDark ? const Color(0xFF1E1E1E) : null,
@@ -126,7 +125,7 @@ class ProfileScreen extends StatelessWidget {
         children: [
           Padding(
             padding: EdgeInsets.fromLTRB(16, config.isSmall ? 14 : 18, 16, 10),
-            child: Text('Informations personnelles',
+            child: Text(l10n.personalInfo,
                 style: TextStyle(
                     fontSize: config.responsive(small: 15, medium: 17, large: 18),
                     fontWeight: FontWeight.w600,
@@ -138,14 +137,14 @@ class ProfileScreen extends StatelessWidget {
               color: isDark ? Colors.grey.shade800 : Colors.grey.shade300),
           _InfoTile(
               icon: Icons.badge_rounded,
-              title: 'Matricule',
+              title: l10n.matricule,
               value: user.matricule,
               color: AppTheme.primaryColor,
               isDark: isDark,
               config: config),
           _InfoTile(
               icon: Icons.email_rounded,
-              title: 'Adresse email',
+              title: l10n.email,
               value: user.email,
               color: Colors.blue,
               isDark: isDark,
@@ -153,15 +152,15 @@ class ProfileScreen extends StatelessWidget {
           if (user.telephone != null && user.telephone!.isNotEmpty)
             _InfoTile(
                 icon: Icons.phone_rounded,
-                title: 'Téléphone',
+                title: l10n.phone,
                 value: user.telephone!,
                 color: Colors.green,
                 isDark: isDark,
                 config: config),
           _InfoTile(
               icon: _getRoleIcon(user.role),
-              title: 'Rôle',
-              value: _formatRole(user.role),
+              title: l10n.role,
+              value: _formatRole(user.role, l10n),
               color: AppTheme.secondaryColor,
               isDark: isDark,
               config: config),
@@ -172,14 +171,14 @@ class ProfileScreen extends StatelessWidget {
 
   // ── Section actions ──────────────────────────────────────────────────────
   Widget _buildActionsSection(BuildContext context, AuthProvider authProvider,
-      bool isDark, ResponsiveConfig config) {
+      bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     return Column(
       children: [
         _ActionTile(
           icon: Icons.settings_rounded,
           iconColor: Colors.blue,
-          title: 'Paramètres',
-          subtitle: 'Personnaliser votre application',
+          title: l10n.settings,
+          subtitle: l10n.settingsSub,
           bgColor: isDark ? Colors.blue.shade700 : Colors.blue.shade50,
           tileBgColor: (isDark
               ? Colors.blue.shade900
@@ -193,13 +192,13 @@ class ProfileScreen extends StatelessWidget {
         _ActionTile(
           icon: Icons.logout_rounded,
           iconColor: isDark ? Colors.red.shade300 : AppTheme.errorColor,
-          title: 'Déconnexion',
+          title: l10n.logout,
           subtitle: null,
           bgColor: AppTheme.errorColor.withOpacity(isDark ? 0.2 : 0.1),
           tileBgColor: AppTheme.errorColor.withOpacity(isDark ? 0.1 : 0.05),
           isDark: isDark,
           config: config,
-          onTap: () => _showLogoutDialog(context, authProvider, isDark),
+          onTap: () => _showLogoutDialog(context, authProvider, isDark, l10n),
         ),
       ],
     );
@@ -207,7 +206,7 @@ class ProfileScreen extends StatelessWidget {
 
   // ── Dialogues ────────────────────────────────────────────────────────────
 
-  void _showEditProfileDialog(BuildContext context, User? user, bool isDark) {
+  void _showEditProfileDialog(BuildContext context, User? user, bool isDark, AppLocalizations l10n) {
     if (user == null) return;
     final emailCtrl = TextEditingController(text: user.email);
     final telephoneCtrl = TextEditingController(text: user.telephone ?? '');
@@ -231,7 +230,7 @@ class ProfileScreen extends StatelessWidget {
                   Icon(Icons.edit_rounded,
                       color: isDark ? Colors.blue.shade300 : AppTheme.primaryColor),
                   const SizedBox(width: 12),
-                  Text('Modifier le profil',
+                  Text(l10n.editProfile,
                       style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -253,7 +252,7 @@ class ProfileScreen extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Le nom et le matricule ne peuvent pas être modifiés',
+                        l10n.nameNotEditable,
                         style: TextStyle(
                             fontSize: 12,
                             color: isDark
@@ -268,18 +267,18 @@ class ProfileScreen extends StatelessWidget {
                 Form(
                   key: formKey,
                   child: Column(children: [
-                    _buildDialogField(emailCtrl, 'Email', Icons.email_outlined,
+                    _buildDialogField(emailCtrl, l10n.email, Icons.email_outlined,
                         isDark, TextInputType.emailAddress, (v) {
-                          if (v == null || v.isEmpty) return 'L\'email est requis';
+                          if (v == null || v.isEmpty) return l10n.emailRequired;
                           if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                              .hasMatch(v)) return 'Email invalide';
+                              .hasMatch(v)) return l10n.emailInvalid;
                           return null;
                         }),
                     const SizedBox(height: 14),
-                    _buildDialogField(telephoneCtrl, 'Téléphone (optionnel)',
+                    _buildDialogField(telephoneCtrl, l10n.phoneOptional,
                         Icons.phone_outlined, isDark, TextInputType.phone, (v) {
                           if (v != null && v.isNotEmpty && v.length < 8) {
-                            return 'Au moins 8 chiffres';
+                            return l10n.phoneMin;
                           }
                           return null;
                         }),
@@ -294,7 +293,7 @@ class ProfileScreen extends StatelessWidget {
                       telephoneCtrl.dispose();
                       Navigator.pop(dialogCtx);
                     },
-                    child: Text('Annuler',
+                    child: Text(l10n.cancel,
                         style: TextStyle(
                             color: isDark
                                 ? Colors.grey.shade400
@@ -319,8 +318,8 @@ class ProfileScreen extends StatelessWidget {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                             content: Text(ok
-                                ? 'Profil mis à jour avec succès'
-                                : auth.errorMessage ?? 'Erreur'),
+                                ? l10n.profileUpdated
+                                : auth.errorMessage ?? l10n.error),
                             backgroundColor: ok ? Colors.green : Colors.red,
                             behavior: SnackBarBehavior.floating,
                           ));
@@ -334,7 +333,7 @@ class ProfileScreen extends StatelessWidget {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12)),
                     ),
-                    child: const Text('Enregistrer'),
+                    child: Text(l10n.save),
                   ),
                 ]),
               ],
@@ -384,6 +383,7 @@ class ProfileScreen extends StatelessWidget {
 
   Future<void> _runWithLoader(
       BuildContext context, bool isDark, Future<void> Function() task) async {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -398,7 +398,7 @@ class ProfileScreen extends StatelessWidget {
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               CircularProgressIndicator(color: AppTheme.primaryColor),
               const SizedBox(height: 16),
-              Text('Mise à jour en cours…',
+              Text(l10n.updatingProfile,
                   style: TextStyle(
                       color: isDark ? Colors.white : Colors.black87)),
             ]),
@@ -413,11 +413,12 @@ class ProfileScreen extends StatelessWidget {
     }
   }
 
-  // ── Dialogue déconnexion (déplacé dans la classe) ───────────────────────
+  // ── Dialogue déconnexion ────────────────────────────────────────────────
   Future<void> _showLogoutDialog(
       BuildContext context,
       AuthProvider authProvider,
       bool isDark,
+      AppLocalizations l10n,
       ) async {
     final result = await showDialog<bool>(
       context: context,
@@ -429,24 +430,24 @@ class ProfileScreen extends StatelessWidget {
           Icon(Icons.logout_rounded,
               color: isDark ? Colors.red.shade300 : Colors.red),
           const SizedBox(width: 12),
-          Text('Déconnexion',
+          Text(l10n.logoutTitle,
               style: TextStyle(color: isDark ? Colors.white : Colors.black87)),
         ]),
         content: Text(
-          'Voulez-vous vraiment vous déconnecter ?',
+          l10n.logoutConfirm,
           style: TextStyle(
               color: isDark ? Colors.grey.shade300 : Colors.grey.shade700),
         ),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('Annuler')),
+              child: Text(l10n.cancel)),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
                 backgroundColor: isDark ? Colors.red.shade700 : AppTheme.errorColor),
-            child: const Text('Se déconnecter',
-                style: TextStyle(color: Colors.white)),
+            child: Text(l10n.logoutButton,
+                style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -454,7 +455,7 @@ class ProfileScreen extends StatelessWidget {
 
     if (result != true || !context.mounted) return;
 
-    // Montrer loader AVEC rootNavigator
+    // Montrer loader
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -470,7 +471,7 @@ class ProfileScreen extends StatelessWidget {
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               CircularProgressIndicator(color: AppTheme.primaryColor),
               const SizedBox(height: 16),
-              Text('Déconnexion en cours…',
+              Text(l10n.loggingOut,
                   style: TextStyle(
                       color: isDark ? Colors.white : Colors.black87)),
             ]),
@@ -481,7 +482,6 @@ class ProfileScreen extends StatelessWidget {
 
     if (result != true || !context.mounted) return;
 
-// ← PAS de dialog loader (PopScope bloquait pushNamedAndRemoveUntil)
     try {
       await authProvider.logout();
     } catch (_) {}
@@ -494,13 +494,14 @@ class ProfileScreen extends StatelessWidget {
 }
 
 // ════════════════════════════════════════════════════════════════
-// Widgets internes (inchangés, sauf si besoin)
+// Widgets internes
 // ════════════════════════════════════════════════════════════════
 
 class _ProfileHeader extends StatelessWidget {
   final User user;
   final ResponsiveConfig config;
-  const _ProfileHeader({required this.user, required this.config});
+  final AppLocalizations l10n;
+  const _ProfileHeader({required this.user, required this.config, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -573,7 +574,7 @@ class _ProfileHeader extends StatelessWidget {
             color: Colors.white.withOpacity(0.2),
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Text(_formatStatus(user.statut),
+          child: Text(_formatStatus(user.statut, l10n),
               style: TextStyle(
                   fontSize: config.responsive(small: 11, medium: 12, large: 13),
                   fontWeight: FontWeight.w600,
@@ -601,11 +602,11 @@ class _ProfileHeader extends StatelessWidget {
     }
   }
 
-  String _formatStatus(String s) {
+  String _formatStatus(String s, AppLocalizations l10n) {
     switch (s.toUpperCase()) {
-      case 'ACTIF':    return 'Compte actif';
-      case 'INACTIF':  return 'Compte inactif';
-      case 'SUSPENDU': return 'Compte suspendu';
+      case 'ACTIF':    return l10n.statusActive;
+      case 'INACTIF':  return l10n.statusInactive;
+      case 'SUSPENDU': return l10n.statusSuspended;
       default:         return s;
     }
   }
@@ -733,7 +734,8 @@ class _StatRow extends StatelessWidget {
 }
 
 class _ProfileLoadingState extends StatelessWidget {
-  const _ProfileLoadingState();
+  final AppLocalizations l10n;
+  const _ProfileLoadingState({required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -744,7 +746,7 @@ class _ProfileLoadingState extends StatelessWidget {
               strokeWidth: 2,
               valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor)),
           const SizedBox(height: 20),
-          Text('Chargement du profil…',
+          Text(l10n.loadingProfile,
               style: TextStyle(fontSize: 15,
                   color: isDark ? Colors.grey.shade400 : Colors.grey[600])),
         ]));
@@ -762,11 +764,11 @@ IconData _getRoleIcon(String role) {
   }
 }
 
-String _formatRole(String role) {
+String _formatRole(String role, AppLocalizations l10n) {
   switch (role.toUpperCase()) {
-    case 'ETUDIANT':     return 'Étudiant';
-    case 'GESTIONNAIRE': return 'Gestionnaire';
-    case 'ADMIN':        return 'Administrateur';
+    case 'ETUDIANT':     return l10n.roleStudent;
+    case 'GESTIONNAIRE': return l10n.roleManager;
+    case 'ADMIN':        return l10n.roleAdmin;
     default:             return role;
   }
 }

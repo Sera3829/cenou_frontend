@@ -6,6 +6,7 @@ import '../../providers/paiement_provider.dart';
 import '../../services/connectivity_service.dart';
 import '../../models/paiement.dart';
 import '../../utils/mobile_responsive.dart';
+import '../../l10n/app_localizations.dart';
 import 'paiement_detail_screen.dart';
 import 'initier_paiement_screen.dart';
 
@@ -27,12 +28,12 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
   }
 
   // ── Navigation vers le paiement (avec vérif connexion) ──────────────────
-  void _goToPaiement(BuildContext context) {
+  void _goToPaiement(BuildContext context, AppLocalizations l10n) {
     final conn = Provider.of<ConnectivityService>(context, listen: false);
     if (conn.isOffline) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Connexion internet requise pour effectuer un paiement'),
+        SnackBar(
+          content: Text(l10n.offlinePaymentRequired),
           backgroundColor: Colors.orange,
           behavior: SnackBarBehavior.floating,
         ),
@@ -66,18 +67,19 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
   // ── Build ────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppTheme.backgroundColor,
-      appBar: _buildAppBar(isDark),
+      appBar: _buildAppBar(isDark, l10n),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final config = ResponsiveConfig.fromConstraints(constraints);
           return Consumer<PaiementProvider>(
             builder: (context, provider, _) {
               if (provider.isLoading && provider.paiements.isEmpty) {
-                return _LoadingState(config: config);
+                return _LoadingState(config: config, l10n: l10n);
               }
               if (provider.error != null) {
                 return _ErrorState(
@@ -85,6 +87,7 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
                   isDark: isDark,
                   config: config,
                   onRetry: provider.refresh,
+                  l10n: l10n,
                 );
               }
               return RefreshIndicator(
@@ -99,7 +102,8 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
                         provider: provider,
                         isDark: isDark,
                         config: config,
-                        onPay: () => _goToPaiement(context),
+                        onPay: () => _goToPaiement(context, l10n),
+                        l10n: l10n,
                       ),
                     ),
                     SliverPadding(
@@ -111,7 +115,7 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
                       ),
                       sliver: provider.paiements.isEmpty
                           ? SliverToBoxAdapter(
-                          child: _EmptyState(isDark: isDark, config: config))
+                          child: _EmptyState(isDark: isDark, config: config, l10n: l10n))
                           : SliverList(
                         delegate: SliverChildBuilderDelegate(
                               (_, i) => _PaiementCard(
@@ -127,6 +131,7 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
                                     paiementId: provider.paiements[i].id),
                               ),
                             ),
+                            l10n: l10n,
                           ),
                           childCount: provider.paiements.length,
                         ),
@@ -139,16 +144,16 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
           );
         },
       ),
-      floatingActionButton: _buildFab(context),
+      floatingActionButton: _buildFab(context, l10n),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
   }
 
-  PreferredSizeWidget _buildAppBar(bool isDark) {
+  PreferredSizeWidget _buildAppBar(bool isDark, AppLocalizations l10n) {
     return AppBar(
-      title: const Text(
-        'Mes Paiements',
-        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 19),
+      title: Text(
+        l10n.navPayments,
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 19),
       ),
       centerTitle: true,
       actions: [
@@ -162,14 +167,14 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
                 color: Colors.amber,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Row(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.history, size: 13, color: Colors.white),
-                  SizedBox(width: 3),
+                  const Icon(Icons.history, size: 13, color: Colors.white),
+                  const SizedBox(width: 3),
                   Text(
-                    'Cache',
-                    style: TextStyle(
+                    l10n.cacheBadge,
+                    style: const TextStyle(
                         fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white),
                   ),
                 ],
@@ -180,21 +185,21 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
         IconButton(
           icon: const Icon(Icons.history_rounded),
           onPressed: () {},
-          tooltip: 'Historique complet',
+          tooltip: l10n.fullHistory,
         ),
       ],
     );
   }
 
-  Widget _buildFab(BuildContext context) {
+  Widget _buildFab(BuildContext context, AppLocalizations l10n) {
     final config = ResponsiveConfig.fromConstraints(
       BoxConstraints(maxWidth: MediaQuery.of(context).size.width),
     );
     return FloatingActionButton.extended(
-      onPressed: () => _goToPaiement(context),
+      onPressed: () => _goToPaiement(context, l10n),
       icon: const Icon(Icons.add_rounded, size: 22),
       label: Text(
-        config.isSmall ? 'Paiement' : 'Nouveau paiement',
+        config.isSmall ? l10n.newPaymentShort : l10n.newPayment,
         style: const TextStyle(fontWeight: FontWeight.w600),
       ),
       backgroundColor: Theme.of(context).colorScheme.primary,
@@ -214,12 +219,14 @@ class _StatsCard extends StatelessWidget {
   final bool isDark;
   final ResponsiveConfig config;
   final VoidCallback onPay;
+  final AppLocalizations l10n;
 
   const _StatsCard({
     required this.provider,
     required this.isDark,
     required this.config,
     required this.onPay,
+    required this.l10n,
   });
 
   @override
@@ -260,7 +267,7 @@ class _StatsCard extends StatelessWidget {
                   color: Colors.white.withOpacity(0.9), size: 18),
               const SizedBox(width: 8),
               Text(
-                'Résumé financier',
+                l10n.financialSummary,
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.9),
                   fontSize: titleSize,
@@ -278,21 +285,21 @@ class _StatsCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _StatItem(
-                label: 'Total',
+                label: l10n.totalPayments,
                 value: provider.totalPaiements.toString(),
                 icon: Icons.receipt_long_rounded,
                 iconColor: Colors.white.withOpacity(0.9),
                 config: config,
               ),
               _StatItem(
-                label: 'Confirmés',
+                label: l10n.confirmedPayments,
                 value: provider.paiementsConfirmes.toString(),
                 icon: Icons.check_circle_rounded,
                 iconColor: Colors.green[300]!,
                 config: config,
               ),
               _StatItem(
-                label: 'En cours',
+                label: l10n.pendingPayments,
                 value: provider.pendingPaiementsCount.toString(),
                 icon: Icons.pending_actions_rounded,
                 iconColor: Colors.amber[300]!,
@@ -309,21 +316,21 @@ class _StatsCard extends StatelessWidget {
             mainAxisSpacing: 0,
             children: [
               _StatItem(
-                label: 'Total',
+                label: l10n.totalPayments,
                 value: provider.totalPaiements.toString(),
                 icon: Icons.receipt_long_rounded,
                 iconColor: Colors.white.withOpacity(0.9),
                 config: config,
               ),
               _StatItem(
-                label: 'Confirmés',
+                label: l10n.confirmedPayments,
                 value: provider.paiementsConfirmes.toString(),
                 icon: Icons.check_circle_rounded,
                 iconColor: Colors.green[300]!,
                 config: config,
               ),
               _StatItem(
-                label: 'En cours',
+                label: l10n.pendingPayments,
                 value: provider.pendingPaiementsCount.toString(),
                 icon: Icons.pending_actions_rounded,
                 iconColor: Colors.amber[300]!,
@@ -339,8 +346,7 @@ class _StatsCard extends StatelessWidget {
             icon: Icons.attach_money_rounded,
             iconColor: Colors.white.withOpacity(0.9),
             bgColor: Colors.white.withOpacity(0.1),
-            text:
-            'Total payé: ${NumberFormat('#,###').format(provider.montantTotal)} FCFA',
+            text: l10n.totalPaidAmount(NumberFormat('#,###').format(provider.montantTotal)),
             textColor: Colors.white,
             fontSize: amountSize,
             config: config,
@@ -352,8 +358,7 @@ class _StatsCard extends StatelessWidget {
             icon: Icons.warning_amber_rounded,
             iconColor: Colors.orange[300]!,
             bgColor: Colors.orange.withOpacity(0.2),
-            text:
-            'À régler: ${NumberFormat('#,###').format(provider.montantTotalAttendu)} FCFA',
+            text: l10n.amountDue(NumberFormat('#,###').format(provider.montantTotalAttendu)),
             textColor: Colors.orange[300]!,
             fontSize: config.responsive(small: 11, medium: 13, large: 14),
             config: config,
@@ -486,6 +491,7 @@ class _PaiementCard extends StatelessWidget {
   final _StatusInfo statusInfo;
   final IconData modeIcon;
   final VoidCallback onTap;
+  final AppLocalizations l10n;
 
   const _PaiementCard({
     required this.paiement,
@@ -494,6 +500,7 @@ class _PaiementCard extends StatelessWidget {
     required this.statusInfo,
     required this.modeIcon,
     required this.onTap,
+    required this.l10n,
   });
 
   @override
@@ -647,16 +654,16 @@ class _PaiementCard extends StatelessWidget {
                       text: paiement.datePaiement != null
                           ? (config.isSmall
                           ? DateFormat('dd/MM/yy').format(paiement.datePaiement!)
-                          : DateFormat('dd MMM yyyy · HH:mm')
+                          : DateFormat('dd MMM yyyy · HH:mm', l10n.locale.languageCode)
                           .format(paiement.datePaiement!))
-                          : 'En attente',
+                          : l10n.pendingPayment,
                       isDark: isDark,
                       fontSize: metaSize,
                     ),
                     if ((paiement.numeroChambre ?? '').isNotEmpty)
                       _MetaChip(
                         icon: Icons.room_rounded,
-                        text: 'Ch. ${paiement.numeroChambre!}',
+                        text: l10n.roomAbbr(paiement.numeroChambre!),
                         isDark: isDark,
                         fontSize: metaSize,
                       ),
@@ -718,7 +725,8 @@ class _MetaChip extends StatelessWidget {
 
 class _LoadingState extends StatelessWidget {
   final ResponsiveConfig config;
-  const _LoadingState({required this.config});
+  final AppLocalizations l10n;
+  const _LoadingState({required this.config, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -734,7 +742,7 @@ class _LoadingState extends StatelessWidget {
           ),
           const SizedBox(height: 18),
           Text(
-            'Chargement des paiements…',
+            l10n.loadingPayments,
             style: TextStyle(
               fontSize: textSize,
               color: isDark ? Colors.grey.shade300 : Colors.grey[600],
@@ -749,7 +757,8 @@ class _LoadingState extends StatelessWidget {
 class _EmptyState extends StatelessWidget {
   final bool isDark;
   final ResponsiveConfig config;
-  const _EmptyState({required this.isDark, required this.config});
+  final AppLocalizations l10n;
+  const _EmptyState({required this.isDark, required this.config, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -771,7 +780,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            'Aucun paiement',
+            l10n.noPayments,
             style: TextStyle(
               fontSize: titleSize,
               fontWeight: FontWeight.w700,
@@ -780,7 +789,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text(
-            'Vos paiements effectués apparaîtront ici',
+            l10n.noPaymentsSub,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: bodySize,
@@ -799,12 +808,14 @@ class _ErrorState extends StatelessWidget {
   final bool isDark;
   final ResponsiveConfig config;
   final VoidCallback onRetry;
+  final AppLocalizations l10n;
 
   const _ErrorState({
     required this.error,
     required this.isDark,
     required this.config,
     required this.onRetry,
+    required this.l10n,
   });
 
   @override
@@ -831,7 +842,7 @@ class _ErrorState extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(
-            'Erreur de chargement',
+            l10n.loadingError,
             style: TextStyle(
               fontSize: titleSize,
               fontWeight: FontWeight.w600,
@@ -852,7 +863,7 @@ class _ErrorState extends StatelessWidget {
           ElevatedButton.icon(
             onPressed: onRetry,
             icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: const Text('Réessayer'),
+            label: Text(l10n.retry),
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,

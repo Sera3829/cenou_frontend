@@ -6,6 +6,7 @@ import 'package:cenou_mobile/services/api_service.dart';
 import 'package:intl/intl.dart';
 import '../../../models/admin/activity.dart';
 import '../../../config/theme.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Disposition principale du tableau de bord avec une barre latérale et une barre supérieure.
 class DashboardLayout extends StatefulWidget {
@@ -25,6 +26,7 @@ class DashboardLayout extends StatefulWidget {
 class _DashboardLayoutState extends State<DashboardLayout> {
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final authProvider = Provider.of<AuthProvider>(context);
     final screenWidth = MediaQuery.of(context).size.width;
     final bool isDesktop = screenWidth > 900; // Seuil augmenté
@@ -33,15 +35,15 @@ class _DashboardLayoutState extends State<DashboardLayout> {
       backgroundColor: AppTheme.getDashboardBackground(context),
       //  Drawer pour petit écran
       drawer: !isDesktop ? Drawer(
-        child: _buildDesktopSidebar(authProvider),
+        child: _buildDesktopSidebar(authProvider, l10n),
       ) : null,
       body: Row(
         children: [
-          if (isDesktop) _buildDesktopSidebar(authProvider),
+          if (isDesktop) _buildDesktopSidebar(authProvider, l10n),
           Expanded(
             child: Column(
               children: [
-                _buildTopBar(isDesktop),
+                _buildTopBar(isDesktop, l10n),
                 Expanded(child: widget.child),
               ],
             ),
@@ -52,7 +54,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
   }
 
   /// Construit la barre latérale pour les écrans de bureau.
-  Widget _buildDesktopSidebar(AuthProvider authProvider) {
+  Widget _buildDesktopSidebar(AuthProvider authProvider, AppLocalizations l10n) {
     final screenWidth = MediaQuery.of(context).size.width;
     final sidebarWidth = screenWidth > 1200 ? 280.0 : 220.0;
     return Container(
@@ -73,8 +75,8 @@ class _DashboardLayoutState extends State<DashboardLayout> {
               color: AppTheme.getSidebarBackground(context),
               child: Column(
                 children: [
-                  _buildSidebarHeader(),
-                  _buildUserInfo(authProvider),
+                  _buildSidebarHeader(l10n),
+                  _buildUserInfo(authProvider, l10n),
                   Expanded(
                     child: SingleChildScrollView(
                       child: Padding(
@@ -84,32 +86,37 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                             _buildMenuItem(
                               index: 0,
                               icon: Icons.dashboard_rounded,
-                              label: 'Tableau de bord',
+                              label: l10n.dashboard,
                               route: '/admin/dashboard',
+                              l10n: l10n,
                             ),
                             _buildMenuItem(
                               index: 1,
                               icon: Icons.payment_rounded,
-                              label: 'Paiements',
+                              label: l10n.payments,
                               route: '/admin/paiements',
+                              l10n: l10n,
                             ),
                             _buildMenuItem(
                               index: 2,
                               icon: Icons.warning_rounded,
-                              label: 'Signalements',
+                              label: l10n.reports,
                               route: '/admin/signalements',
+                              l10n: l10n,
                             ),
                             _buildMenuItem(
                               index: 3,
                               icon: Icons.people_rounded,
-                              label: 'Utilisateurs',
+                              label: l10n.users,
                               route: '/admin/utilisateurs',
+                              l10n: l10n,
                             ),
                             _buildMenuItem(
                               index: 4,
                               icon: Icons.campaign_rounded,
-                              label: 'Annonces',
+                              label: l10n.announcements,
                               route: '/admin/annonces',
+                              l10n: l10n,
                             ),
                           ],
                         ),
@@ -128,18 +135,20 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                 _buildMenuItem(
                   index: 5,
                   icon: Icons.bar_chart_rounded,
-                  label: 'Rapports',
+                  label: l10n.reportsStats,
                   route: '/admin/rapports',
                   isDark: true,
+                  l10n: l10n,
                 ),
                 _buildMenuItem(
                   index: 6,
                   icon: Icons.settings_rounded,
-                  label: 'Paramètres',
+                  label: l10n.settings,
                   route: '/admin/settings',
                   isDark: true,
+                  l10n: l10n,
                 ),
-                _buildLogoutButton(),
+                _buildLogoutButton(l10n),
               ],
             ),
           ),
@@ -149,7 +158,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
   }
 
   /// Construit l'en-tête de la barre latérale.
-  Widget _buildSidebarHeader() {
+  Widget _buildSidebarHeader(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -206,7 +215,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                   ),
                 ),
                 Text(
-                  'Dashboard Admin',
+                  l10n.adminDashboard,
                   style: TextStyle(
                     fontSize: 11,
                     color: AppTheme.getTextSecondary(context),
@@ -222,7 +231,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
   }
 
   /// Affiche les informations de l'utilisateur connecté.
-  Widget _buildUserInfo(AuthProvider authProvider) {
+  Widget _buildUserInfo(AuthProvider authProvider, AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -282,7 +291,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    authProvider.isAdmin ? 'Admin' : 'Gestionnaire',
+                    authProvider.isAdmin ? l10n.admin : l10n.manager,
                     style: TextStyle(
                       fontSize: 10,
                       color: isDark ? Colors.blue.shade300 : const Color(0xFF1E3A8A),
@@ -305,6 +314,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
     required String label,
     required String route,
     bool isDark = false,
+    required AppLocalizations l10n,
   }) {
     final bool isSelected = widget.selectedIndex == index;
     final bool isContextDark = Theme.of(context).brightness == Brightness.dark;
@@ -377,13 +387,13 @@ class _DashboardLayoutState extends State<DashboardLayout> {
   }
 
   /// Construit le bouton de déconnexion.
-  Widget _buildLogoutButton() {
+  Widget _buildLogoutButton(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Padding(
       padding: const EdgeInsets.all(16),
       child: InkWell(
-        onTap: () => _showLogoutConfirmation(context),
+        onTap: () => _showLogoutConfirmation(context, l10n),
         borderRadius: BorderRadius.circular(10),
         child: Container(
           padding: const EdgeInsets.all(14),
@@ -402,7 +412,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
               ),
               const SizedBox(width: 12),
               Text(
-                'Déconnexion',
+                l10n.logout,
                 style: TextStyle(
                   color: isDark ? Colors.red.shade300 : Colors.red.shade400,
                   fontWeight: FontWeight.w600,
@@ -417,7 +427,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
   }
 
   /// Affiche une boîte de dialogue de confirmation avant déconnexion.
-  void _showLogoutConfirmation(BuildContext context) {
+  void _showLogoutConfirmation(BuildContext context, AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     showDialog(
@@ -463,7 +473,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                     const SizedBox(width: 16),
                     Expanded(
                       child: Text(
-                        'Déconnexion',
+                        l10n.logout,
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
@@ -477,7 +487,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                         Icons.close,
                         color: AppTheme.getTextSecondary(context),
                       ),
-                      tooltip: 'Fermer',
+                      tooltip: l10n.close,
                     ),
                   ],
                 ),
@@ -490,7 +500,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Êtes-vous sûr de vouloir vous déconnecter ?',
+                        l10n.logoutConfirm,
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
@@ -499,7 +509,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Vous devrez vous reconnecter pour accéder au dashboard.',
+                        l10n.mustReconnect,
                         style: TextStyle(
                           fontSize: 14,
                           color: AppTheme.getTextSecondary(context),
@@ -529,7 +539,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                     TextButton(
                       onPressed: () => Navigator.pop(dialogContext),
                       child: Text(
-                        'Annuler',
+                        l10n.cancel,
                         style: TextStyle(
                           color: AppTheme.getTextSecondary(context),
                           fontWeight: FontWeight.w600,
@@ -548,7 +558,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                       },
                       icon: Icon(Icons.logout_rounded, size: 18, color: Colors.white),
                       label: Text(
-                        'Se déconnecter',
+                        l10n.logoutButton,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
@@ -574,7 +584,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
   }
 
   /// Construit la barre supérieure (top bar).
-  Widget _buildTopBar(bool isDesktop) {
+  Widget _buildTopBar(bool isDesktop, AppLocalizations l10n) {
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: isDesktop ? 32 : 16,
@@ -606,7 +616,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
 
           Expanded(
             child: Text(
-              _getPageTitle(widget.selectedIndex),
+              _getPageTitle(widget.selectedIndex, l10n),
               style: TextStyle(
                 fontSize: isDesktop ? 20 : 16, // Taille adaptée
                 fontWeight: FontWeight.bold,
@@ -624,7 +634,7 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                _getFormattedDate(),
+                _getFormattedDate(l10n),
                 style: TextStyle(
                   fontSize: 13,
                   color: AppTheme.getTextSecondary(context),
@@ -648,28 +658,26 @@ class _DashboardLayoutState extends State<DashboardLayout> {
       ),
     );
   }
+
   /// Retourne le titre de la page en fonction de l'index sélectionné.
-  String _getPageTitle(int index) {
-    const titles = [
-      'Tableau de bord',
-      'Gestion des Paiements',
-      'Gestion des Signalements',
-      'Gestion des Utilisateurs',
-      'Gestion des Annonces',
-      'Rapports & Statistiques',
-      'Paramètres du Système',
+  String _getPageTitle(int index, AppLocalizations l10n) {
+    final titles = [
+      l10n.dashboard,
+      l10n.paymentManagement,
+      l10n.reportManagement,
+      l10n.userManagement,
+      l10n.announcementManagement,
+      l10n.reportsStatistics,
+      l10n.systemSettings,
     ];
     return titles[index];
   }
 
   /// Retourne la date actuelle formatée.
-  String _getFormattedDate() {
+  String _getFormattedDate(AppLocalizations l10n) {
     final now = DateTime.now();
-    final days = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-    final months = [
-      'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin',
-      'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'
-    ];
+    final days = l10n.weekdaysShort.split(',');
+    final months = l10n.monthsShort.split(',');
     return '${days[now.weekday - 1]}, ${now.day} ${months[now.month - 1]}';
   }
 }
@@ -721,27 +729,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// Formate un montant avec séparateur de milliers.
-  String _formatMontant(double montant) {
-    final formatter = NumberFormat('#,##0', 'fr_FR');
+  String _formatMontant(double montant, String locale) {
+    final formatter = NumberFormat('#,##0', locale);
     return formatter.format(montant);
   }
 
   /// Formate une période pour l'affichage sur les axes.
-  String _formatChartPeriod(String period) {
+  String _formatChartPeriod(String period, AppLocalizations l10n) {
     try {
       final date = DateTime.parse(period);
-      final months = [
-        'Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin',
-        'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'
-      ];
-      return '${months[date.month - 1]}';
+      final months = l10n.monthsShort.split(',');
+      return months[date.month - 1];
     } catch (e) {
       return period;
     }
   }
 
   /// Traite les données de graphiques brutes.
-  void _processChartData(Map<String, dynamic> chartsData) {
+  void _processChartData(Map<String, dynamic> chartsData, AppLocalizations l10n) {
     _revenueData = [];
     _signalementTypesData = [];
 
@@ -754,7 +759,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       for (var item in paiementsData) {
         final period = item['period']?.toString() ?? '';
         final total = _safeToDouble(item['total']);
-        final periodFormatted = _formatChartPeriod(period);
+        final periodFormatted = _formatChartPeriod(period, l10n);
         revenueByPeriod[periodFormatted] = (revenueByPeriod[periodFormatted] ?? 0) + total;
       }
 
@@ -768,7 +773,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (signalementsTypesData.isNotEmpty) {
       _signalementTypesData = signalementsTypesData
           .map((item) => PieData(
-        type: item['type_probleme']?.toString() ?? 'Autre',
+        type: item['type_probleme']?.toString() ?? l10n.other,
         value: _safeToDouble(item['count']),
       ))
           .toList();
@@ -789,6 +794,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return DashboardLayout(
       selectedIndex: 0,
       child: SingleChildScrollView(
@@ -799,7 +805,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildWelcomeSection(),
+            _buildWelcomeSection(l10n),
             const SizedBox(height: 32),
             FutureBuilder<Map<String, dynamic>>(
               future: _dashboardStatsFuture,
@@ -808,10 +814,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
-                  return _buildErrorWidget(snapshot.error.toString());
+                  return _buildErrorWidget(snapshot.error.toString(), l10n);
                 }
                 final stats = snapshot.data?['data'] ?? {};
-                return _buildStatsGrid(stats);
+                return _buildStatsGrid(stats, l10n);
               },
             ),
             const SizedBox(height: 32),
@@ -833,8 +839,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               return const Center(child: CircularProgressIndicator());
                             }
                             if (snapshot.hasData) {
-                              _processChartData(snapshot.data!);
-                              return _buildRevenueChart();
+                              _processChartData(snapshot.data!, l10n);
+                              return _buildRevenueChart(l10n);
                             }
                             return Container();
                           },
@@ -843,7 +849,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(width: 24),
                       Expanded(
                         flex: 1,
-                        child: _buildSignalementsChart(),
+                        child: _buildSignalementsChart(l10n),
                       ),
                     ],
                   );
@@ -858,21 +864,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             return const Center(child: CircularProgressIndicator());
                           }
                           if (snapshot.hasData) {
-                            _processChartData(snapshot.data!);
-                            return _buildRevenueChart();
+                            _processChartData(snapshot.data!, l10n);
+                            return _buildRevenueChart(l10n);
                           }
                           return Container();
                         },
                       ),
                       const SizedBox(height: 24),
-                      _buildSignalementsChart(),
+                      _buildSignalementsChart(l10n),
                     ],
                   );
                 }
               },
             ),
             const SizedBox(height: 32),
-            _buildRecentActivity(),
+            _buildRecentActivity(l10n),
           ],
         ),
       ),
@@ -880,7 +886,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// Section de bienvenue.
-  Widget _buildWelcomeSection() {
+  Widget _buildWelcomeSection(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth > 900;
@@ -902,7 +908,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Bienvenue sur le Dashboard',
+                  l10n.welcomeDashboard,
                   style: TextStyle(
                     fontSize: isWide ? 26 : 18,
                     fontWeight: FontWeight.bold,
@@ -911,7 +917,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Gérez vos résidences universitaires en temps réel.',
+                  l10n.manageResidencesRealtime,
                   style: TextStyle(
                     fontSize: isWide ? 15 : 13,
                     color: Colors.white.withOpacity(0.9),
@@ -922,7 +928,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   onPressed: _loadDashboardData,
                   icon: Icon(Icons.refresh_rounded, size: 18,
                       color: isDark ? const Color(0xFF1E3A8A) : Colors.white),
-                  label: Text('Actualiser',
+                  label: Text(l10n.refresh,
                       style: TextStyle(
                           color: isDark ? const Color(0xFF1E3A8A) : Colors.white)),
                   style: ElevatedButton.styleFrom(
@@ -945,7 +951,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// Grille des indicateurs de performance.
-  Widget _buildStatsGrid(Map<String, dynamic> stats) {
+  Widget _buildStatsGrid(Map<String, dynamic> stats, AppLocalizations l10n) {
     final general = stats['general'] as Map<String, dynamic>? ?? {};
     final paiements = stats['paiements'] as Map<String, dynamic>? ?? {};
     final signalements = stats['signalements'] as Map<String, dynamic>? ?? {};
@@ -974,32 +980,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final cards = [
       _buildStatCard(
-        title: 'Total Étudiants',
+        title: l10n.totalStudents,
         value: '${general['total_etudiants'] ?? '0'}',
         icon: Icons.people_rounded,
         color: const Color(0xFF3B82F6),
-        change: '${((int.tryParse(general['logements_occupes'] ?? '0') ?? 0) / (int.tryParse(general['total_logements'] ?? '1') ?? 1) * 100).toStringAsFixed(1)}% occ.',
+        change: l10n.occupancyRate(
+            ((int.tryParse(general['logements_occupes'] ?? '0') ?? 0) * 100 /
+                (int.tryParse(general['total_logements'] ?? '1') ?? 1)).toStringAsFixed(1)
+        ),
+        l10n: l10n,
       ),
       _buildStatCard(
-        title: 'Paiements Confirmés',
+        title: l10n.confirmedPayments,
         value: '${paiements['paiements_confirme'] ?? '0'}',
         icon: Icons.payment_rounded,
         color: const Color(0xFF10B981),
         change: '${((int.tryParse(paiements['paiements_confirme'] ?? '0') ?? 0) * 100 / (int.tryParse(paiements['total_paiements'] ?? '1') ?? 1)).toStringAsFixed(1)}%',
+        l10n: l10n,
       ),
       _buildStatCard(
-        title: 'Signalements Actifs',
+        title: l10n.activeReports,
         value: '${signalements['signalements_en_attente'] ?? '0'}',
         icon: Icons.warning_rounded,
         color: const Color(0xFFF59E0B),
-        change: '${signalements['signalements_resolus'] ?? '0'} résolus',
+        change: l10n.resolvedCount(signalements['signalements_resolus'] ?? '0'),
+        l10n: l10n,
       ),
       _buildStatCard(
-        title: 'Revenus 30j',
-        value: '${_formatMontant(double.tryParse(paiements['montant_30jours']?.toString() ?? '0') ?? 0)} F',
+        title: l10n.revenue30Days,
+        value: '${_formatMontant(double.tryParse(paiements['montant_30jours']?.toString() ?? '0') ?? 0, l10n.locale.languageCode)} F',
         icon: Icons.attach_money_rounded,
         color: const Color(0xFF8B5CF6),
-        change: 'Moy: ${_formatMontant(double.tryParse(paiements['montant_moyen']?.toString() ?? '0') ?? 0)}',
+        change: l10n.averageRevenue(
+            _formatMontant(double.tryParse(paiements['montant_moyen']?.toString() ?? '0') ?? 0, l10n.locale.languageCode)
+        ),
+        l10n: l10n,
       ),
     ];
 
@@ -1021,8 +1036,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     required IconData icon,
     required Color color,
     required String change,
+    required AppLocalizations l10n,
   }) {
-    final bool isPositive = !change.contains('-') && !change.contains('résolus') && !change.contains('occ.');
+    final bool isPositive = !change.contains('-') &&
+        !change.contains(l10n.resolved) &&
+        !change.contains(l10n.occupancy);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -1105,7 +1123,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// Graphique des revenus mensuels.
-  Widget _buildRevenueChart() {
+  Widget _buildRevenueChart(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -1124,7 +1142,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Revenus Mensuels',
+            l10n.monthlyRevenue,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -1142,7 +1160,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
               primaryYAxis: NumericAxis(
-                numberFormat: NumberFormat('#,### F'),
+                numberFormat: NumberFormat('#,### F', l10n.locale.languageCode),
                 labelStyle: TextStyle(
                   color: AppTheme.getTextSecondary(context),
                 ),
@@ -1159,7 +1177,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             )
                 : Center(
               child: Text(
-                'Aucune donnée',
+                l10n.noData,
                 style: TextStyle(color: AppTheme.getTextSecondary(context)),
               ),
             ),
@@ -1170,7 +1188,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// Graphique des signalements par type.
-  Widget _buildSignalementsChart() {
+  Widget _buildSignalementsChart(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return FutureBuilder<Map<String, dynamic>>(
@@ -1193,7 +1211,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Signalements par Type',
+                  l10n.reportsByType,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -1231,7 +1249,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Signalements par Type',
+                  l10n.reportsByType,
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -1248,7 +1266,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Icon(Icons.error_outline, size: 50, color: Colors.red),
                         const SizedBox(height: 12),
                         Text(
-                          'Erreur de chargement',
+                          l10n.loadingError,
                           style: TextStyle(color: Colors.red),
                         ),
                       ],
@@ -1261,7 +1279,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
 
         if (snapshot.hasData) {
-          _processChartData(snapshot.data!);
+          _processChartData(snapshot.data!, l10n);
         }
 
         return Container(
@@ -1280,7 +1298,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Signalements par Type',
+                l10n.reportsByType,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -1289,7 +1307,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Distribution des problèmes signalés',
+                l10n.problemDistribution,
                 style: TextStyle(
                   color: AppTheme.getTextSecondary(context),
                 ),
@@ -1301,7 +1319,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ? SfCircularChart(
                   tooltipBehavior: TooltipBehavior(
                     enable: true,
-                    format: 'point.x : point.y signalements',
+                    format: l10n.reportsTooltipFormat,
                     canShowMarker: false,
                   ),
                   series: <CircularSeries>[
@@ -1334,7 +1352,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       const SizedBox(height: 16),
                       Text(
-                        'Aucune donnée disponible',
+                        l10n.noDataAvailable,
                         style: TextStyle(color: AppTheme.getTextSecondary(context)),
                       ),
                     ],
@@ -1349,23 +1367,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// Section des activités récentes.
-  Widget _buildRecentActivity() {
+  Widget _buildRecentActivity(AppLocalizations l10n) {
     return FutureBuilder<Map<String, dynamic>>(
       future: _recentActivityFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildRecentActivitySkeleton();
+          return _buildRecentActivitySkeleton(l10n);
         }
 
         if (snapshot.hasError) {
-          return _buildRecentActivityError(snapshot.error.toString());
+          return _buildRecentActivityError(snapshot.error.toString(), l10n);
         }
 
         final data = snapshot.data?['data'] as Map<String, dynamic>? ?? {};
         final activitiesData = data['activities'] as List? ?? [];
 
         if (activitiesData.isEmpty) {
-          return _buildNoRecentActivity();
+          return _buildNoRecentActivity(l10n);
         }
 
         final activities = activitiesData
@@ -1391,7 +1409,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Activité Récente',
+                    l10n.recentActivity,
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -1410,7 +1428,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          'Actualiser',
+                          l10n.refresh,
                           style: TextStyle(
                             color: Theme.of(context).colorScheme.primary,
                           ),
@@ -1421,14 +1439,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              ...activities.take(5).map((activity) => _buildActivityItem(activity)),
+              ...activities.take(5).map((activity) => _buildActivityItem(activity, l10n)),
               if (activities.length > 5) ...[
                 const SizedBox(height: 12),
                 Center(
                   child: TextButton(
                     onPressed: () {},
                     child: Text(
-                      'Voir toutes les activités',
+                      l10n.viewAllActivities,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.primary,
                       ),
@@ -1444,7 +1462,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// Squelette d'affichage pendant le chargement des activités.
-  Widget _buildRecentActivitySkeleton() {
+  Widget _buildRecentActivitySkeleton(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -1542,7 +1560,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// Affiche une erreur pour les activités récentes.
-  Widget _buildRecentActivityError(String error) {
+  Widget _buildRecentActivityError(String error, AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -1558,7 +1576,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Activité Récente',
+            l10n.recentActivity,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -1576,7 +1594,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Erreur de chargement',
+                  l10n.loadingError,
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: Colors.red.shade400,
@@ -1597,7 +1615,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     backgroundColor: Colors.red.shade400,
                     foregroundColor: Colors.white,
                   ),
-                  child: const Text('Réessayer'),
+                  child: Text(l10n.retry),
                 ),
               ],
             ),
@@ -1608,7 +1626,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// Affichage lorsqu'aucune activité récente n'est disponible.
-  Widget _buildNoRecentActivity() {
+  Widget _buildNoRecentActivity(AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -1625,7 +1643,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Activité Récente',
+            l10n.recentActivity,
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -1643,14 +1661,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Aucune activité récente',
+                  l10n.noRecentActivity,
                   style: TextStyle(
                     color: AppTheme.getTextSecondary(context),
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Les nouvelles activités apparaîtront ici',
+                  l10n.newActivitiesWillAppear,
                   style: TextStyle(
                     fontSize: 12,
                     color: AppTheme.getTextTertiary(context),
@@ -1665,7 +1683,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// Construit un élément individuel d'activité.
-  Widget _buildActivityItem(Activity activity) {
+  Widget _buildActivityItem(Activity activity, AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(12),
@@ -1739,7 +1757,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                DateFormat('HH:mm').format(activity.timestamp),
+                DateFormat('HH:mm', l10n.locale.languageCode).format(activity.timestamp),
                 style: TextStyle(
                   color: AppTheme.getTextTertiary(context).withOpacity(0.7),
                   fontSize: 10,
@@ -1753,7 +1771,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   /// Affiche un widget d'erreur général.
-  Widget _buildErrorWidget(String error) {
+  Widget _buildErrorWidget(String error, AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
@@ -1767,7 +1785,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Icon(Icons.error_outline, color: Colors.red.shade400, size: 48),
           const SizedBox(height: 12),
           Text(
-            'Erreur: $error',
+            '${l10n.error}: $error',
             style: TextStyle(color: isDark ? Colors.red.shade300 : Colors.red.shade600),
           ),
           const SizedBox(height: 16),
@@ -1777,7 +1795,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               backgroundColor: Colors.red.shade400,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Réessayer'),
+            child: Text(l10n.retry),
           ),
         ],
       ),

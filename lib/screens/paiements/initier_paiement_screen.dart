@@ -6,6 +6,7 @@ import '../../config/theme.dart';
 import '../../providers/paiement_provider.dart';
 import '../../utils/mobile_responsive.dart';
 import '../../widgets/custom_button.dart';
+import '../../l10n/app_localizations.dart';
 
 class InitierPaiementScreen extends StatefulWidget {
   const InitierPaiementScreen({Key? key}) : super(key: key);
@@ -43,6 +44,7 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
   }
 
   Future<void> _loadLoyerInfo() async {
+    final l10n = AppLocalizations.of(context);
     try {
       final provider =
       Provider.of<PaiementProvider>(context, listen: false);
@@ -58,7 +60,7 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
       setState(() => _isLoadingLoyer = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Impossible de récupérer le loyer: $e'),
+          content: Text(l10n.cannotLoadRent(e.toString())),
           backgroundColor: AppTheme.errorColor,
           behavior: SnackBarBehavior.floating,
         ));
@@ -82,10 +84,11 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
   }
 
   Future<void> _handleSubmit() async {
+    final l10n = AppLocalizations.of(context);
     if (!_formKey.currentState!.validate()) return;
     if (_modePaiement == null) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text('Veuillez sélectionner un mode de paiement'),
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text(l10n.selectPaymentMethod),
         backgroundColor: Colors.orange,
         behavior: SnackBarBehavior.floating,
       ));
@@ -120,8 +123,9 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
   }
 
   Future<bool> _showConfirmDialog() async {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fmt = NumberFormat('#,###');
+    final fmt = NumberFormat('#,###', l10n.locale.languageCode);
     final config = ResponsiveConfig.fromConstraints(
         BoxConstraints(maxWidth: MediaQuery.of(context).size.width));
 
@@ -132,7 +136,7 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
         isDark ? const Color(0xFF1E1E1E) : Colors.white,
         shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16)),
-        title: Text('Confirmer le paiement',
+        title: Text(l10n.confirmPayment,
             style: TextStyle(
                 fontSize: config.responsive(
                     small: 15, medium: 17, large: 18),
@@ -140,26 +144,26 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _ConfirmRow('Loyer mensuel',
+            _ConfirmRow(l10n.monthlyRent,
                 '${fmt.format(_loyerMensuel)} FCFA', isDark, config),
-            _ConfirmRow('Nombre de mois', '$_nombreMois mois',
+            _ConfirmRow(l10n.numberOfMonths, '$_nombreMois ${l10n.months}',
                 isDark, config),
             const Divider(height: 20),
             _ConfirmRow(
-                'Montant total',
+                l10n.totalAmount,
                 '${fmt.format(_montantTotal)} FCFA',
                 isDark,
                 config,
                 bold: true),
-            _ConfirmRow('Mode',
+            _ConfirmRow(l10n.paymentMethod,
                 _getModeLabel(_modePaiement!), isDark, config),
-            _ConfirmRow('Numéro',
+            _ConfirmRow(l10n.phoneNumber,
                 _telephoneController.text, isDark, config),
             _ConfirmRow(
-                'Période',
+                l10n.period,
                 config.isSmall
-                    ? '${DateFormat('dd/MM/yy').format(DateTime.now())} → ${DateFormat('dd/MM/yy').format(_dateFin)}'
-                    : '${DateFormat('dd/MM/yyyy').format(DateTime.now())} → ${DateFormat('dd/MM/yyyy').format(_dateFin)}',
+                    ? '${DateFormat('dd/MM/yy', l10n.locale.languageCode).format(DateTime.now())} → ${DateFormat('dd/MM/yy', l10n.locale.languageCode).format(_dateFin)}'
+                    : '${DateFormat('dd/MM/yyyy', l10n.locale.languageCode).format(DateTime.now())} → ${DateFormat('dd/MM/yyyy', l10n.locale.languageCode).format(_dateFin)}',
                 isDark,
                 config),
           ],
@@ -167,7 +171,7 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annuler')),
+              child: Text(l10n.cancel)),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
             style: ElevatedButton.styleFrom(
@@ -175,7 +179,7 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
               Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Confirmer'),
+            child: Text(l10n.confirm),
           ),
         ],
       ),
@@ -184,6 +188,7 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
   }
 
   Future<void> _showSuccessDialog(Map<String, dynamic> result) async {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final paiement = result['paiement'];
     await showDialog(
@@ -199,7 +204,7 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
               color: AppTheme.successColor, size: 28),
           const SizedBox(width: 10),
           Expanded(
-            child: Text('Paiement initié',
+            child: Text(l10n.paymentInitiated,
                 style: TextStyle(
                     color: isDark ? Colors.white : Colors.black87,
                     fontSize: 17)),
@@ -209,14 +214,14 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Votre demande a été enregistrée.',
+            Text(l10n.paymentRequestRecorded,
                 style: TextStyle(
                     color: isDark
                         ? Colors.grey.shade300
                         : Colors.black87)),
             const SizedBox(height: 10),
             if (paiement != null) ...[
-              Text('Réf: ${paiement['reference']}',
+              Text(l10n.referenceLabel(paiement['reference']),
                   style: TextStyle(
                       fontSize: 12,
                       color: isDark
@@ -224,7 +229,7 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
                           : Colors.grey[600])),
               const SizedBox(height: 4),
               Text(
-                  'Période: ${paiement['date_debut']} → ${paiement['date_fin']}',
+                  l10n.periodRange(paiement['date_debut'], paiement['date_fin']),
                   style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -232,7 +237,7 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
             ],
             const SizedBox(height: 8),
             Text(
-                'Vous recevrez une notification de confirmation.',
+                l10n.willReceiveNotification,
                 style: TextStyle(
                     fontSize: 13,
                     color: isDark
@@ -248,7 +253,7 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
               Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white,
             ),
-            child: const Text('OK'),
+            child: Text(l10n.ok),
           ),
         ],
       ),
@@ -257,16 +262,17 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final fmt = NumberFormat('#,###');
+    final fmt = NumberFormat('#,###', l10n.locale.languageCode);
 
     return Scaffold(
       backgroundColor:
       isDark ? const Color(0xFF121212) : AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Nouveau paiement',
+        title: Text(l10n.newPayment,
             style:
-            TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
+            const TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
       ),
       body: _isLoadingLoyer
           ? Center(
@@ -298,6 +304,7 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
                     isDark: isDark,
                     config: config,
                     fmt: fmt,
+                    l10n: l10n,
                   ),
 
                   SizedBox(
@@ -305,7 +312,7 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
 
                   // Durée
                   _SectionLabel(
-                      text: 'Durée du paiement',
+                      text: l10n.paymentDuration,
                       isDark: isDark,
                       config: config),
                   const SizedBox(height: 10),
@@ -316,6 +323,7 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
                     config: config,
                     onSelect: (m) =>
                         setState(() => _nombreMois = m),
+                    l10n: l10n,
                   ),
 
                   SizedBox(
@@ -330,6 +338,7 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
                     isDark: isDark,
                     config: config,
                     fmt: fmt,
+                    l10n: l10n,
                   ),
 
                   SizedBox(
@@ -337,7 +346,7 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
 
                   // ── Mode de paiement ─────────────────────────
                   _SectionLabel(
-                      text: 'Mode de paiement',
+                      text: l10n.paymentMethod,
                       isDark: isDark,
                       config: config),
                   const SizedBox(height: 10),
@@ -408,7 +417,7 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
 
                   // ── Téléphone ────────────────────────────────
                   _SectionLabel(
-                      text: 'Numéro de téléphone',
+                      text: l10n.phoneNumber,
                       isDark: isDark,
                       config: config),
                   const SizedBox(height: 10),
@@ -416,6 +425,7 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
                     controller: _telephoneController,
                     isDark: isDark,
                     config: config,
+                    l10n: l10n,
                   ),
 
                   SizedBox(
@@ -424,8 +434,8 @@ class _InitierPaiementScreenState extends State<InitierPaiementScreen> {
                   // ── Bouton payer ─────────────────────────────
                   CustomButton(
                     text: config.isSmall
-                        ? 'PAYER ${fmt.format(_montantTotal)} F'
-                        : 'PAYER ${fmt.format(_montantTotal)} FCFA',
+                        ? l10n.payShort(fmt.format(_montantTotal))
+                        : l10n.pay(fmt.format(_montantTotal)),
                     onPressed:
                     _isLoading ? null : _handleSubmit,
                     isLoading: _isLoading,
@@ -476,6 +486,7 @@ class _LoyerInfoCard extends StatelessWidget {
   final bool isDark;
   final ResponsiveConfig config;
   final NumberFormat fmt;
+  final AppLocalizations l10n;
   const _LoyerInfoCard({
     required this.nomCentre,
     required this.numeroChambre,
@@ -483,6 +494,7 @@ class _LoyerInfoCard extends StatelessWidget {
     required this.isDark,
     required this.config,
     required this.fmt,
+    required this.l10n,
   });
 
   @override
@@ -497,7 +509,7 @@ class _LoyerInfoCard extends StatelessWidget {
     // Tronquer le nom du centre + chambre
     final label = [
       if (nomCentre != null) nomCentre!,
-      if (numeroChambre != null) 'Ch. $numeroChambre',
+      if (numeroChambre != null) l10n.roomAbbr(numeroChambre!),
     ].join(' - ');
     final displayLabel = config.isSmall && label.length > 22
         ? '${label.substring(0, 21)}…'
@@ -534,7 +546,7 @@ class _LoyerInfoCard extends StatelessWidget {
                     overflow: TextOverflow.ellipsis),
                 const SizedBox(height: 2),
                 Text(
-                  'Loyer: ${fmt.format(loyerMensuel)} FCFA / mois',
+                  l10n.rentPerMonth(fmt.format(loyerMensuel)),
                   style: TextStyle(
                       fontSize: loyerSize,
                       color:
@@ -558,12 +570,14 @@ class _MoisSelector extends StatelessWidget {
   final bool isDark;
   final ResponsiveConfig config;
   final ValueChanged<int> onSelect;
+  final AppLocalizations l10n;
   const _MoisSelector({
     required this.options,
     required this.selected,
     required this.isDark,
     required this.config,
     required this.onSelect,
+    required this.l10n,
   });
 
   @override
@@ -611,7 +625,7 @@ class _MoisSelector extends StatelessWidget {
                                 : (isDark
                                 ? Colors.white
                                 : Colors.black87))),
-                    Text('mois',
+                    Text(l10n.months,
                         style: TextStyle(
                             fontSize: labelSize,
                             color: isSel
@@ -638,6 +652,7 @@ class _MontantResume extends StatelessWidget {
   final bool isDark;
   final ResponsiveConfig config;
   final NumberFormat fmt;
+  final AppLocalizations l10n;
   const _MontantResume({
     required this.montantTotal,
     required this.loyerMensuel,
@@ -646,6 +661,7 @@ class _MontantResume extends StatelessWidget {
     required this.isDark,
     required this.config,
     required this.fmt,
+    required this.l10n,
   });
 
   @override
@@ -659,8 +675,8 @@ class _MontantResume extends StatelessWidget {
     final pad = config.responsive(small: 14, medium: 18, large: 20);
 
     final dateStr = config.isSmall
-        ? '${DateFormat('dd/MM/yy').format(DateTime.now())} → ${DateFormat('dd/MM/yy').format(dateFin)}'
-        : '${DateFormat('dd/MM/yyyy').format(DateTime.now())} → ${DateFormat('dd/MM/yyyy').format(dateFin)}';
+        ? '${DateFormat('dd/MM/yy', l10n.locale.languageCode).format(DateTime.now())} → ${DateFormat('dd/MM/yy', l10n.locale.languageCode).format(dateFin)}'
+        : '${DateFormat('dd/MM/yyyy', l10n.locale.languageCode).format(DateTime.now())} → ${DateFormat('dd/MM/yyyy', l10n.locale.languageCode).format(dateFin)}';
 
     return Container(
       width: double.infinity,
@@ -684,7 +700,7 @@ class _MontantResume extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '$nombreMois × ${fmt.format(loyerMensuel)} FCFA',
+            l10n.monthsTimesRent(nombreMois, fmt.format(loyerMensuel)),
             style: TextStyle(
                 fontSize: subSize,
                 color: isDark
@@ -810,10 +826,12 @@ class _PhoneField extends StatelessWidget {
   final TextEditingController controller;
   final bool isDark;
   final ResponsiveConfig config;
+  final AppLocalizations l10n;
   const _PhoneField({
     required this.controller,
     required this.isDark,
     required this.config,
+    required this.l10n,
   });
 
   @override
@@ -828,7 +846,7 @@ class _PhoneField extends StatelessWidget {
           fontSize: textSize,
           color: isDark ? Colors.white : Colors.black87),
       decoration: InputDecoration(
-        hintText: '+226 70 XX XX XX',
+        hintText: l10n.phoneHint,
         hintStyle: TextStyle(
             color: isDark ? Colors.grey.shade600 : Colors.grey[400]),
         prefixIcon: Icon(Icons.phone,
@@ -863,11 +881,11 @@ class _PhoneField extends StatelessWidget {
       ),
       validator: (value) {
         if (value == null || value.isEmpty) {
-          return 'Le numéro de téléphone est requis';
+          return l10n.phoneRequired;
         }
         if (!RegExp(r'^\+?[0-9]{8,15}$')
             .hasMatch(value.replaceAll(' ', ''))) {
-          return 'Numéro invalide';
+          return l10n.phoneInvalid;
         }
         return null;
       },

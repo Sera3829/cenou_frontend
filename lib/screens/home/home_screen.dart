@@ -14,6 +14,7 @@ import '../signalements/signalements_list_screen.dart';
 import '../notifications/notifications_screen.dart';
 import 'dart:async';
 import '../profile/profile_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Écran principal avec navigation par onglets — responsive mobile/tablette.
 class HomeScreen extends StatefulWidget {
@@ -140,6 +141,7 @@ class _BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Container(
       decoration: BoxDecoration(
         boxShadow: [
@@ -170,25 +172,25 @@ class _BottomNav extends StatelessWidget {
           ),
           unselectedLabelStyle: const TextStyle(fontSize: 11),
           items: [
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined, size: 24),
-              activeIcon: Icon(Icons.home_rounded, size: 26),
-              label: 'Accueil',
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.home_outlined, size: 24),
+              activeIcon: const Icon(Icons.home_rounded, size: 26),
+              label: l10n.navHome,
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.payment_outlined, size: 24),
-              activeIcon: Icon(Icons.payment_rounded, size: 26),
-              label: 'Paiements',
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.payment_outlined, size: 24),
+              activeIcon: const Icon(Icons.payment_rounded, size: 26),
+              label: l10n.navPayments,
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.report_problem_outlined, size: 24),
-              activeIcon: Icon(Icons.report_problem_rounded, size: 26),
-              label: 'Signalements',
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.report_problem_outlined, size: 24),
+              activeIcon: const Icon(Icons.report_problem_rounded, size: 26),
+              label: l10n.navReports,
             ),
-            const BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline_rounded, size: 24),
-              activeIcon: Icon(Icons.person_rounded, size: 26),
-              label: 'Profil',
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.person_outline_rounded, size: 24),
+              activeIcon: const Icon(Icons.person_rounded, size: 26),
+              label: l10n.navProfile,
             ),
           ],
         ),
@@ -213,6 +215,7 @@ class HomeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final authProvider = Provider.of<AuthProvider>(context);
     final paiementProvider = Provider.of<PaiementProvider>(context);
     final signalementProvider = Provider.of<SignalementProvider>(context);
@@ -222,7 +225,7 @@ class HomeTab extends StatelessWidget {
     return Scaffold(
       backgroundColor:
       isDark ? const Color(0xFF121212) : AppTheme.backgroundColor,
-      appBar: _buildAppBar(context, user, isDark),
+      appBar: _buildAppBar(context, user, isDark, l10n),
       body: LayoutBuilder(
         builder: (context, constraints) {
           final config = ResponsiveConfig.fromConstraints(constraints);
@@ -247,12 +250,12 @@ class HomeTab extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Carte logement
-                  _LogementCard(user: user, isDark: isDark, config: config),
+                  _LogementCard(user: user, isDark: isDark, config: config, l10n: l10n),
                   SizedBox(height: config.isShortScreen ? 12 : 16),
 
                   // Titre "Aperçu rapide"
                   _SectionTitle(
-                    text: 'Aperçu rapide',
+                    text: l10n.quickOverview,
                     isDark: isDark,
                     config: config,
                   ),
@@ -264,19 +267,20 @@ class HomeTab extends StatelessWidget {
                     signalementProvider: signalementProvider,
                     isDark: isDark,
                     config: config,
+                    l10n: l10n,
                   ),
                   SizedBox(height: config.isShortScreen ? 16 : 24),
 
                   // Titre "Actions rapides"
                   _SectionTitle(
-                    text: 'Actions rapides',
+                    text: l10n.quickActions,
                     isDark: isDark,
                     config: config,
                   ),
                   SizedBox(height: config.isShortScreen ? 8 : 12),
 
                   // Boutons d'action
-                  _QuickActions(context: context, isDark: isDark, config: config),
+                  _QuickActions(context: context, isDark: isDark, config: config, l10n: l10n),
                   SizedBox(height: config.isShortScreen ? 16 : 32),
                 ],
               ),
@@ -288,7 +292,7 @@ class HomeTab extends StatelessWidget {
   }
 
   PreferredSizeWidget _buildAppBar(
-      BuildContext context, User? user, bool isDark) {
+      BuildContext context, User? user, bool isDark, AppLocalizations l10n) {
     // Prénom tronqué si trop long
     final prenom = user?.prenom ?? 'Utilisateur';
     final displayPrenom =
@@ -302,9 +306,9 @@ class HomeTab extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Text(
-            'Bonjour,',
-            style: TextStyle(
+          Text(
+            l10n.hello,
+            style: const TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.normal,
               color: Colors.white,
@@ -333,14 +337,14 @@ class HomeTab extends StatelessWidget {
                   color: Colors.orange,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.cloud_off, size: 13, color: Colors.white),
-                    SizedBox(width: 3),
+                    const Icon(Icons.cloud_off, size: 13, color: Colors.white),
+                    const SizedBox(width: 3),
                     Text(
-                      'Hors ligne',
-                      style: TextStyle(
+                      l10n.offline,
+                      style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
@@ -362,7 +366,7 @@ class HomeTab extends StatelessWidget {
               icon: const Icon(Icons.notifications_outlined,
                   color: Colors.white, size: 24),
               onPressed: onNotificationTap,
-              tooltip: 'Notifications',
+              tooltip: l10n.notifications,
               padding: const EdgeInsets.all(8),
             ),
             if (unreadCount > 0)
@@ -442,11 +446,13 @@ class _LogementCard extends StatelessWidget {
   final User? user;
   final bool isDark;
   final ResponsiveConfig config;
+  final AppLocalizations l10n;
 
   const _LogementCard({
     required this.user,
     required this.isDark,
     required this.config,
+    required this.l10n,
   });
 
   @override
@@ -456,7 +462,7 @@ class _LogementCard extends StatelessWidget {
     final titleSize = config.responsive(small: 15, medium: 18, large: 20);
 
     // Tronquer le nom du centre si trop long
-    final nomCentre = user?.nomCentre ?? 'Mon Logement';
+    final nomCentre = user?.nomCentre ?? l10n.myHousing;
     final displayNom =
     nomCentre.length > 22 ? '${nomCentre.substring(0, 20)}…' : nomCentre;
 
@@ -524,21 +530,21 @@ class _LogementCard extends StatelessWidget {
               children: [
                 _InfoItem(
                   icon: Icons.badge_rounded,
-                  label: 'Matricule',
+                  label: l10n.matricule,
                   value: _truncate(user?.matricule ?? '--', config.isSmall ? 8 : 12),
                   config: config,
                 ),
                 _InfoItem(
                   icon: Icons.meeting_room_rounded,
-                  label: config.isSmall ? 'Ch.' : 'Chambre',
+                  label: config.isSmall ? l10n.chambreShort : l10n.chambre,
                   value: _truncate(
                       user?.numeroChambre ?? 'N/A', config.isSmall ? 6 : 10),
                   config: config,
                 ),
                 _InfoItem(
                   icon: Icons.verified_user_rounded,
-                  label: 'Statut',
-                  value: user?.statut == 'ACTIF' ? 'Actif' : 'Inactif',
+                  label: l10n.status,
+                  value: user?.statut == 'ACTIF' ? l10n.active : l10n.inactive,
                   config: config,
                 ),
               ],
@@ -618,12 +624,14 @@ class _StatsGrid extends StatelessWidget {
   final SignalementProvider signalementProvider;
   final bool isDark;
   final ResponsiveConfig config;
+  final AppLocalizations l10n;
 
   const _StatsGrid({
     required this.paiementProvider,
     required this.signalementProvider,
     required this.isDark,
     required this.config,
+    required this.l10n,
   });
 
   @override
@@ -640,32 +648,32 @@ class _StatsGrid extends StatelessWidget {
 
     final items = [
       _StatItem(
-        title: 'Confirmés',
+        title: l10n.confirmed,
         value: paiementProvider.paiementsConfirmes.toString(),
         icon: Icons.check_circle_rounded,
         color: AppTheme.successColor,
-        subtitle: 'Paiements',
+        subtitle: l10n.payments,
       ),
       _StatItem(
-        title: 'En attente',
+        title: l10n.pending,
         value: paiementProvider.pendingPaiementsCount.toString(),
         icon: Icons.schedule_rounded,
         color: AppTheme.warningColor,
-        subtitle: 'Paiements',
+        subtitle: l10n.payments,
       ),
       _StatItem(
-        title: 'Total',
+        title: l10n.total,
         value: signalementProvider.totalSignalements.toString(),
         icon: Icons.report_rounded,
         color: AppTheme.errorColor,
-        subtitle: 'Signalements',
+        subtitle: l10n.reports,
       ),
       _StatItem(
-        title: 'En attente',
+        title: l10n.pending,
         value: signalementProvider.signalementsEnAttente.toString(),
         icon: Icons.pending_actions_rounded,
         color: AppTheme.infoColor,
-        subtitle: 'Signalements',
+        subtitle: l10n.reports,
       ),
     ];
 
@@ -779,11 +787,13 @@ class _QuickActions extends StatelessWidget {
   final BuildContext context;
   final bool isDark;
   final ResponsiveConfig config;
+  final AppLocalizations l10n;
 
   const _QuickActions({
     required this.context,
     required this.isDark,
     required this.config,
+    required this.l10n,
   });
 
   @override
@@ -794,8 +804,8 @@ class _QuickActions extends StatelessWidget {
         children: [
           Expanded(
             child: _ActionButton(
-              title: 'Effectuer un paiement',
-              description: 'Régler votre loyer',
+              title: l10n.makePayment,
+              description: l10n.makePaymentShort,
               icon: Icons.payment_rounded,
               color: Theme.of(context).colorScheme.primary,
               isDark: isDark,
@@ -807,8 +817,8 @@ class _QuickActions extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: _ActionButton(
-              title: 'Signaler un problème',
-              description: 'Panne ou dysfonctionnement',
+              title: l10n.reportIssue,
+              description: l10n.reportIssueShort,
               icon: Icons.report_problem_rounded,
               color: AppTheme.errorColor,
               isDark: isDark,
@@ -826,10 +836,10 @@ class _QuickActions extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         _ActionButton(
-          title: 'Effectuer un paiement',
+          title: l10n.makePayment,
           description: config.isSmall
-              ? 'Régler votre loyer'
-              : 'Régler votre loyer ou autres frais',
+              ? l10n.makePaymentShort
+              : l10n.makePaymentDesc,
           icon: Icons.payment_rounded,
           color: Theme.of(context).colorScheme.primary,
           isDark: isDark,
@@ -839,10 +849,10 @@ class _QuickActions extends StatelessWidget {
         ),
         SizedBox(height: config.isSmall ? 8 : 12),
         _ActionButton(
-          title: 'Signaler un problème',
+          title: l10n.reportIssue,
           description: config.isSmall
-              ? 'Panne ou dysfonctionnement'
-              : 'Signaler une panne ou un dysfonctionnement',
+              ? l10n.reportIssueShort
+              : l10n.reportIssueDesc,
           icon: Icons.report_problem_rounded,
           color: AppTheme.errorColor,
           isDark: isDark,

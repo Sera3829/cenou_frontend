@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../config/theme.dart';
 import '../../providers/notification_provider.dart';
 import '../../services/connectivity_service.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Écran d'affichage des détails d'une annonce.
 class AnnonceDetailsScreen extends StatefulWidget {
@@ -49,40 +50,42 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
       print('Erreur lors du chargement de l\'annonce: $e');
 
       final connectivityService = Provider.of<ConnectivityService>(context, listen: false);
+      final l10n = AppLocalizations.of(context);
 
       setState(() {
         _isLoading = false;
         _hasError = true;
         _errorMessage = connectivityService.isOffline
-            ? 'Cette annonce n\'est pas disponible hors ligne'
-            : 'Impossible de charger l\'annonce';
+            ? l10n.announceNotAvailableOffline
+            : l10n.cannotLoadAnnounce;
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final connectivityService = Provider.of<ConnectivityService>(context);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Détails de l\'annonce'),
+        title: Text(l10n.announceDetails),
         actions: [
           IconButton(
             onPressed: connectivityService.isOnline ? _loadAnnonce : null,
             icon: const Icon(Icons.refresh),
-            tooltip: connectivityService.isOffline ? 'Hors ligne' : 'Rafraîchir',
+            tooltip: connectivityService.isOffline ? l10n.offline : l10n.refresh,
           ),
         ],
       ),
-      body: _buildBody(isDark, connectivityService),
+      body: _buildBody(isDark, connectivityService, l10n),
     );
   }
 
   /// Construit le contenu principal en fonction de l'état de chargement et de connectivité.
-  Widget _buildBody(bool isDark, ConnectivityService connectivityService) {
+  Widget _buildBody(bool isDark, ConnectivityService connectivityService, AppLocalizations l10n) {
     if (_isLoading) {
       return Center(
         child: CircularProgressIndicator(
@@ -103,7 +106,7 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
             ),
             const SizedBox(height: 16),
             Text(
-              connectivityService.isOffline ? 'Hors ligne' : 'Erreur',
+              connectivityService.isOffline ? l10n.offline : l10n.error,
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -112,7 +115,7 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              _errorMessage ?? 'Impossible de charger l\'annonce',
+              _errorMessage ?? l10n.cannotLoadAnnounce,
               style: TextStyle(
                 color: isDark ? Colors.grey.shade400 : Colors.grey[600],
               ),
@@ -125,7 +128,7 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   foregroundColor: Colors.white,
                 ),
-                child: const Text('Réessayer'),
+                child: Text(l10n.retry),
               ),
           ],
         ),
@@ -152,12 +155,12 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
-                children: const [
-                  Icon(Icons.history, size: 14, color: Colors.amber),
-                  SizedBox(width: 4),
+                children: [
+                  const Icon(Icons.history, size: 14, color: Colors.amber),
+                  const SizedBox(width: 4),
                   Text(
-                    'Hors ligne',
-                    style: TextStyle(
+                    l10n.offline,
+                    style: const TextStyle(
                       color: Colors.amber,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
@@ -180,7 +183,7 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
               ),
             ),
             child: Text(
-              _getTypeLabel(_annonce!['cible']),
+              _getTypeLabel(_annonce!['cible'], l10n),
               style: TextStyle(
                 color: _getTypeColor(_annonce!['cible']),
                 fontWeight: FontWeight.w600,
@@ -203,7 +206,7 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
 
           // Date de publication
           Text(
-            'Publiée le ${_formatDate(_annonce!['created_at'])}',
+            l10n.publishedOn(_formatDate(_annonce!['created_at'], l10n)),
             style: TextStyle(
               fontSize: 14,
               color: isDark ? Colors.grey.shade400 : Colors.grey[600],
@@ -214,7 +217,7 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
           // Auteur
           if (_annonce!['created_by_nom'] != null)
             Text(
-              'Par ${_annonce!['created_by_nom']} ${_annonce!['created_by_prenom'] ?? ''}',
+              l10n.byAuthor('${_annonce!['created_by_nom']} ${_annonce!['created_by_prenom'] ?? ''}'),
               style: TextStyle(
                 fontSize: 14,
                 color: isDark ? Colors.grey.shade400 : Colors.grey[600],
@@ -266,7 +269,7 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Envoyée à ${_annonce!['total_destinataires']} personne(s)',
+                    l10n.sentToNPeople(_annonce!['total_destinataires']),
                     style: TextStyle(
                       color: isDark ? Colors.blue.shade300 : Colors.blue,
                       fontSize: 14,
@@ -281,28 +284,28 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
   }
 
   /// Formate la date pour l'affichage.
-  String _formatDate(dynamic date) {
+  String _formatDate(dynamic date, AppLocalizations l10n) {
     try {
       if (date is String) {
-        return DateFormat('dd/MM/yyyy à HH:mm').format(DateTime.parse(date));
+        return DateFormat('dd/MM/yyyy à HH:mm', l10n.locale.languageCode).format(DateTime.parse(date));
       } else if (date is DateTime) {
-        return DateFormat('dd/MM/yyyy à HH:mm').format(date);
+        return DateFormat('dd/MM/yyyy à HH:mm', l10n.locale.languageCode).format(date);
       }
-      return 'Date inconnue';
+      return l10n.unknownDate;
     } catch (e) {
-      return 'Date inconnue';
+      return l10n.unknownDate;
     }
   }
 
   /// Retourne le libellé du type d'annonce.
-  String _getTypeLabel(String cible) {
+  String _getTypeLabel(String cible, AppLocalizations l10n) {
     switch (cible) {
       case 'TOUS':
-        return 'Générale';
+        return l10n.announceTypeGeneral;
       case 'CENTRE_SPECIFIQUE':
-        return 'Par centre';
+        return l10n.announceTypeByCenter;
       case 'ETUDIANTS':
-        return 'Étudiants spécifiques';
+        return l10n.announceTypeSpecificStudents;
       default:
         return cible;
     }

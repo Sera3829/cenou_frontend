@@ -7,6 +7,7 @@ import '../../providers/signalement_provider.dart';
 import '../../utils/mobile_responsive.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Écran de création de signalement — responsive mobile/tablette.
 class CreateSignalementScreen extends StatefulWidget {
@@ -26,14 +27,16 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
   List<File> _photos = [];
   bool _isLoading = false;
 
-  final List<Map<String, dynamic>> _typesProblemes = [
-    {'value': 'PLOMBERIE',   'label': 'Plomberie',   'icon': Icons.plumbing},
-    {'value': 'ELECTRICITE', 'label': 'Électricité', 'icon': Icons.electrical_services},
-    {'value': 'TOITURE',     'label': 'Toiture',     'icon': Icons.roofing},
-    {'value': 'SERRURE',     'label': 'Serrure',     'icon': Icons.lock},
-    {'value': 'MOBILIER',    'label': 'Mobilier',    'icon': Icons.chair},
-    {'value': 'AUTRE',       'label': 'Autre',       'icon': Icons.more_horiz},
-  ];
+  List<Map<String, dynamic>> _getTypesProblemes(AppLocalizations l10n) {
+    return [
+      {'value': 'PLOMBERIE',   'label': l10n.plumbing,   'icon': Icons.plumbing},
+      {'value': 'ELECTRICITE', 'label': l10n.electricity, 'icon': Icons.electrical_services},
+      {'value': 'TOITURE',     'label': l10n.roofing,     'icon': Icons.roofing},
+      {'value': 'SERRURE',     'label': l10n.locks,       'icon': Icons.lock},
+      {'value': 'MOBILIER',    'label': l10n.furniture,   'icon': Icons.chair},
+      {'value': 'AUTRE',       'label': l10n.other,       'icon': Icons.more_horiz},
+    ];
+  }
 
   @override
   void dispose() {
@@ -42,9 +45,9 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
   }
 
   // ── Sélection photo ──────────────────────────────────────────────────────
-  Future<void> _pickImage(ImageSource source) async {
+  Future<void> _pickImage(ImageSource source, AppLocalizations l10n) async {
     if (_photos.length >= 5) {
-      _snack('Maximum 5 photos autorisées', bg: AppTheme.warningColor);
+      _snack(l10n.maxPhotosReached, bg: AppTheme.warningColor);
       return;
     }
     try {
@@ -52,17 +55,17 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
           source: source, maxWidth: 1920, maxHeight: 1920, imageQuality: 85);
       if (image != null) setState(() => _photos.add(File(image.path)));
     } catch (e) {
-      String msg = 'Erreur lors de l\'accès à la caméra';
+      String msg = l10n.cameraError;
       if (e.toString().contains('denied') || e.toString().contains('restricted')) {
-        msg = 'Accès à la caméra refusé. Autorisez-le dans les paramètres.';
+        msg = l10n.cameraPermissionDenied;
       }
       if (mounted) _snack(msg, bg: Colors.orange);
     }
   }
 
-  Future<void> _pickMultiple() async {
+  Future<void> _pickMultiple(AppLocalizations l10n) async {
     if (_photos.length >= 5) {
-      _snack('Maximum 5 photos autorisées', bg: AppTheme.warningColor);
+      _snack(l10n.maxPhotosReached, bg: AppTheme.warningColor);
       return;
     }
     try {
@@ -71,11 +74,10 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
       final remaining = 5 - _photos.length;
       setState(() => _photos.addAll(images.take(remaining).map((x) => File(x.path))));
       if (images.length > remaining) {
-        _snack('Seulement $remaining photo(s) ajoutée(s) (max 5)',
-            bg: AppTheme.warningColor);
+        _snack(l10n.photosAddedLimit(remaining), bg: AppTheme.warningColor);
       }
     } catch (e) {
-      _snack('Erreur: $e', bg: AppTheme.errorColor);
+      _snack('${l10n.error}: $e', bg: AppTheme.errorColor);
     }
   }
 
@@ -88,10 +90,10 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
   }
 
   // ── Soumission ───────────────────────────────────────────────────────────
-  Future<void> _handleSubmit() async {
+  Future<void> _handleSubmit(AppLocalizations l10n) async {
     if (!_formKey.currentState!.validate()) return;
     if (_photos.isEmpty) {
-      _snack('Veuillez ajouter au moins une photo', bg: AppTheme.warningColor);
+      _snack(l10n.addAtLeastOnePhoto, bg: AppTheme.warningColor);
       return;
     }
     setState(() => _isLoading = true);
@@ -103,7 +105,7 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
         photos: _photos,
       );
       if (!mounted) return;
-      await _showSuccessDialog(signalement);
+      await _showSuccessDialog(signalement, l10n);
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
@@ -113,7 +115,7 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
     }
   }
 
-  Future<void> _showSuccessDialog(dynamic signalement) async {
+  Future<void> _showSuccessDialog(dynamic signalement, AppLocalizations l10n) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     await showDialog(
       context: context,
@@ -125,7 +127,7 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
           Icon(Icons.check_circle, color: AppTheme.successColor, size: 28),
           const SizedBox(width: 12),
           Expanded(
-              child: Text('Signalement créé',
+              child: Text(l10n.reportCreated,
                   style: TextStyle(
                       color: isDark ? Colors.white : Colors.black87))),
         ]),
@@ -133,16 +135,16 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Votre signalement a été enregistré avec succès.',
+              Text(l10n.reportCreatedSuccess,
                   style: TextStyle(
                       color: isDark ? Colors.grey.shade300 : Colors.black87)),
               const SizedBox(height: 10),
-              Text('Numéro de suivi: ${signalement.numeroSuivi}',
+              Text(l10n.trackingNumber(signalement.numeroSuivi),
                   style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: isDark ? Colors.white : Colors.black87)),
               const SizedBox(height: 6),
-              Text('Vous serez notifié de son traitement.',
+              Text(l10n.willBeNotified,
                   style: TextStyle(
                       color: isDark ? Colors.grey.shade300 : Colors.black87)),
             ]),
@@ -155,7 +157,7 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
             style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white),
-            child: const Text('OK'),
+            child: Text(l10n.ok),
           ),
         ],
       ),
@@ -165,14 +167,15 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
   // ── Build ────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       backgroundColor:
       isDark ? const Color(0xFF121212) : AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Signaler un problème',
-            style: TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
+        title: Text(l10n.reportIssue,
+            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
       ),
       body: LayoutBuilder(
         builder: (context, constraints) {
@@ -185,8 +188,8 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
               padding: EdgeInsets.fromLTRB(
                   hPad, config.isShortScreen ? 12 : 18, hPad, 24),
               child: config.isTablet
-                  ? _buildTabletLayout(isDark, config)
-                  : _buildMobileLayout(isDark, config),
+                  ? _buildTabletLayout(isDark, config, l10n)
+                  : _buildMobileLayout(isDark, config, l10n),
             ),
           );
         },
@@ -195,15 +198,16 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
   }
 
   // ── Layout mobile : colonnes empilées ────────────────────────────────────
-  Widget _buildMobileLayout(bool isDark, ResponsiveConfig config) {
+  Widget _buildMobileLayout(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
+    final types = _getTypesProblemes(l10n);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _InfoBanner(isDark: isDark, config: config),
+      _InfoBanner(isDark: isDark, config: config, l10n: l10n),
       SizedBox(height: config.isShortScreen ? 16 : 22),
 
-      _SectionLabel(text: 'Type de problème', isDark: isDark, config: config),
+      _SectionLabel(text: l10n.problemType, isDark: isDark, config: config),
       const SizedBox(height: 10),
       _TypeSelector(
-        types: _typesProblemes,
+        types: types,
         selected: _typeProbleme,
         isDark: isDark,
         config: config,
@@ -212,28 +216,29 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
       ),
       SizedBox(height: config.isShortScreen ? 16 : 22),
 
-      _SectionLabel(text: 'Description', isDark: isDark, config: config),
+      _SectionLabel(text: l10n.description, isDark: isDark, config: config),
       const SizedBox(height: 10),
       _DescriptionField(
-          controller: _descriptionController, isDark: isDark, config: config),
+          controller: _descriptionController, isDark: isDark, config: config, l10n: l10n),
       SizedBox(height: config.isShortScreen ? 16 : 22),
 
       _SectionLabel(
-          text: 'Photos (${_photos.length}/5)', isDark: isDark, config: config),
+          text: l10n.photosCount(_photos.length), isDark: isDark, config: config),
       const SizedBox(height: 10),
       _PhotoSection(
         photos: _photos,
         isDark: isDark,
         config: config,
-        onPickCamera: () => _pickImage(ImageSource.camera),
-        onPickGallery: _pickMultiple,
+        onPickCamera: () => _pickImage(ImageSource.camera, l10n),
+        onPickGallery: () => _pickMultiple(l10n),
         onRemove: (i) => setState(() => _photos.removeAt(i)),
+        l10n: l10n,
       ),
       SizedBox(height: config.isShortScreen ? 22 : 30),
 
       CustomButton(
-        text: 'CRÉER LE SIGNALEMENT',
-        onPressed: _isLoading ? null : _handleSubmit,
+        text: l10n.createReportButton,
+        onPressed: _isLoading ? null : () => _handleSubmit(l10n),
         isLoading: _isLoading,
         icon: Icons.send,
       ),
@@ -242,9 +247,10 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
   }
 
   // ── Layout tablette : type + description côte à côte ────────────────────
-  Widget _buildTabletLayout(bool isDark, ResponsiveConfig config) {
+  Widget _buildTabletLayout(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
+    final types = _getTypesProblemes(l10n);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _InfoBanner(isDark: isDark, config: config),
+      _InfoBanner(isDark: isDark, config: config, l10n: l10n),
       const SizedBox(height: 24),
 
       Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -252,10 +258,10 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             _SectionLabel(
-                text: 'Type de problème', isDark: isDark, config: config),
+                text: l10n.problemType, isDark: isDark, config: config),
             const SizedBox(height: 10),
             _TypeSelector(
-              types: _typesProblemes,
+              types: types,
               selected: _typeProbleme,
               isDark: isDark,
               config: config,
@@ -268,33 +274,35 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
         // Colonne droite : description
         Expanded(
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _SectionLabel(text: 'Description', isDark: isDark, config: config),
+            _SectionLabel(text: l10n.description, isDark: isDark, config: config),
             const SizedBox(height: 10),
             _DescriptionField(
                 controller: _descriptionController,
                 isDark: isDark,
-                config: config),
+                config: config,
+                l10n: l10n),
           ]),
         ),
       ]),
       const SizedBox(height: 24),
 
       _SectionLabel(
-          text: 'Photos (${_photos.length}/5)', isDark: isDark, config: config),
+          text: l10n.photosCount(_photos.length), isDark: isDark, config: config),
       const SizedBox(height: 10),
       _PhotoSection(
         photos: _photos,
         isDark: isDark,
         config: config,
-        onPickCamera: () => _pickImage(ImageSource.camera),
-        onPickGallery: _pickMultiple,
+        onPickCamera: () => _pickImage(ImageSource.camera, l10n),
+        onPickGallery: () => _pickMultiple(l10n),
         onRemove: (i) => setState(() => _photos.removeAt(i)),
+        l10n: l10n,
       ),
       const SizedBox(height: 32),
 
       CustomButton(
-        text: 'CRÉER LE SIGNALEMENT',
-        onPressed: _isLoading ? null : _handleSubmit,
+        text: l10n.createReportButton,
+        onPressed: _isLoading ? null : () => _handleSubmit(l10n),
         isLoading: _isLoading,
         icon: Icons.send,
       ),
@@ -327,7 +335,8 @@ class _SectionLabel extends StatelessWidget {
 class _InfoBanner extends StatelessWidget {
   final bool isDark;
   final ResponsiveConfig config;
-  const _InfoBanner({required this.isDark, required this.config});
+  final AppLocalizations l10n;
+  const _InfoBanner({required this.isDark, required this.config, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
@@ -345,7 +354,7 @@ class _InfoBanner extends StatelessWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              'Décrivez le problème et ajoutez des photos pour un traitement rapide',
+              l10n.reportInfoBanner,
               style: TextStyle(
                   fontSize: textSize,
                   color: isDark ? Colors.grey.shade300 : Colors.black87),
@@ -437,21 +446,22 @@ class _DescriptionField extends StatelessWidget {
   final TextEditingController controller;
   final bool isDark;
   final ResponsiveConfig config;
+  final AppLocalizations l10n;
   const _DescriptionField(
-      {required this.controller, required this.isDark, required this.config});
+      {required this.controller, required this.isDark, required this.config, required this.l10n});
 
   @override
   Widget build(BuildContext context) {
     return CustomTextField(
       controller: controller,
-      label: 'Description détaillée',
-      hint: 'Décrivez le problème en détail…',
+      label: l10n.detailedDescription,
+      hint: l10n.detailedDescriptionHint,
       prefixIcon: Icons.description,
       maxLines: config.isTablet ? 8 : 5,
       maxLength: 1000,
       validator: (v) {
-        if (v == null || v.isEmpty) return 'La description est requise';
-        if (v.length < 10) return 'Au moins 10 caractères';
+        if (v == null || v.isEmpty) return l10n.descriptionRequired;
+        if (v.length < 10) return l10n.descriptionMinLength;
         return null;
       },
     );
@@ -465,6 +475,7 @@ class _PhotoSection extends StatelessWidget {
   final VoidCallback onPickCamera;
   final VoidCallback onPickGallery;
   final ValueChanged<int> onRemove;
+  final AppLocalizations l10n;
 
   const _PhotoSection({
     required this.photos,
@@ -473,6 +484,7 @@ class _PhotoSection extends StatelessWidget {
     required this.onPickCamera,
     required this.onPickGallery,
     required this.onRemove,
+    required this.l10n,
   });
 
   @override
@@ -527,7 +539,7 @@ class _PhotoSection extends StatelessWidget {
             icon: Icon(Icons.camera_alt,
                 color: isDark ? Colors.white : Colors.black87,
                 size: config.responsive(small: 18, medium: 20, large: 22)),
-            label: Text(config.isSmall ? 'Caméra' : 'Caméra',
+            label: Text(l10n.camera,
                 style: TextStyle(
                     color: isDark ? Colors.white : Colors.black87,
                     fontSize: config.responsive(small: 12, medium: 14, large: 14))),
@@ -545,7 +557,7 @@ class _PhotoSection extends StatelessWidget {
             icon: Icon(Icons.photo_library,
                 color: isDark ? Colors.white : Colors.black87,
                 size: config.responsive(small: 18, medium: 20, large: 22)),
-            label: Text('Galerie',
+            label: Text(l10n.gallery,
                 style: TextStyle(
                     color: isDark ? Colors.white : Colors.black87,
                     fontSize: config.responsive(small: 12, medium: 14, large: 14))),
@@ -560,7 +572,7 @@ class _PhotoSection extends StatelessWidget {
 
       if (photos.isEmpty) ...[
         SizedBox(height: config.isSmall ? 10 : 14),
-        Text('Ajoutez au moins une photo du problème',
+        Text(l10n.addAtLeastOnePhotoHint,
             style: TextStyle(
                 fontSize: config.responsive(small: 11, medium: 12, large: 13),
                 color: isDark ? Colors.grey.shade400 : Colors.grey[600])),
