@@ -729,6 +729,23 @@ class AppLocalizations {
   String get noCenter => _t('Aucun centre', 'No center');
   String get noHousing => _t('Aucun logement', 'No housing');
 
+  // Activités récentes
+  String get justNow => _t('À l\'instant', 'Just now');
+  String timeWeeksAgo(int weeks) => _t('Il y a $weeks sem', '$weeks wk ago');
+  String timeMonthsAgo(int months) => _t('Il y a $months mois', '$months mo ago');
+  String get unknownRoom => _t('Chambre inconnue', 'Unknown room');
+  String get unknownUser => _t('Utilisateur inconnu', 'Unknown user');
+  String get unknownActivity => _t('Activité inconnue', 'Unknown activity');
+  String get reportResolved => _t('Signalement résolu', 'Report resolved');
+  String get reportAssigned => _t('Signalement affecté', 'Report assigned');
+  String reportCreatedDesc(String type, String room) => _t('Signalement $type - $room', '$type report - $room');
+  String paymentConfirmedDesc(String amount, String room) => _t('Paiement de $amount FCFA - $room', 'Payment of $amount FCFA - $room');
+  String paymentInitiatedDesc(String amount, String room) => _t('Paiement initié de $amount FCFA - $room', 'Payment initiated of $amount FCFA - $room');
+  String userCreatedDesc(String user) => _t('$user a été créé', '$user was created');
+  String reportResolvedDesc(String type) => _t('Signalement $type résolu', '$type report resolved');
+  String reportAssignedDesc(String type) => _t('Signalement $type affecté', '$type report assigned');
+  String get newReport => _t('Nouveau signalement', 'New report');
+
   String get dashboard => _t('Tableau de bord', 'Dashboard');
   String get users => _t('Utilisateurs', 'Users');
   String get announcements => _t('Annonces', 'Announcements');

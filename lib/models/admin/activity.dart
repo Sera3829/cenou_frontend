@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/app_localizations.dart';
 
 /// Modèle représentant une activité ou un événement système au sein du tableau de bord.
 class Activity {
@@ -106,6 +107,88 @@ class Activity {
 
       default:
         return description;
+    }
+  }
+
+  // ==================== MÉTHODES LOCALISÉES ====================
+
+  /// Retourne le temps écoulé localisé (ex: "Il y a 5 min" ou "5 min ago")
+  String getLocalizedTimeAgo(AppLocalizations l10n) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+
+    if (difference.inMinutes < 1) {
+      return l10n.justNow;
+    }
+    if (difference.inMinutes < 60) {
+      return l10n.timeMinutesAgo(difference.inMinutes);
+    }
+    if (difference.inHours < 24) {
+      return l10n.timeHoursAgo(difference.inHours);
+    }
+    if (difference.inDays < 7) {
+      return l10n.timeDaysAgo(difference.inDays);
+    }
+    if (difference.inDays < 30) {
+      final weeks = (difference.inDays / 7).floor();
+      return l10n.timeWeeksAgo(weeks);
+    }
+    final months = (difference.inDays / 30).floor();
+    return l10n.timeMonthsAgo(months);
+  }
+
+  /// Retourne la description formatée et localisée
+  String getLocalizedDescription(AppLocalizations l10n) {
+    switch (activityType) {
+      case 'SIGNALEMENT_CREATE':
+        final type = metadata['type_probleme'] ?? l10n.problem;
+        final chambre = metadata['chambre'] ?? metadata['numero_chambre'] ?? l10n.unknownRoom;
+        return l10n.reportCreatedDesc(type, chambre);
+
+      case 'PAIEMENT_CONFIRME':
+        final montant = metadata['montant'] ?? '0';
+        final chambre = metadata['chambre'] ?? l10n.unknownRoom;
+        return l10n.paymentConfirmedDesc(montant, chambre);
+
+      case 'PAIEMENT_INITIE':
+        final montant = metadata['montant'] ?? '0';
+        final chambre = metadata['chambre'] ?? l10n.unknownRoom;
+        return l10n.paymentInitiatedDesc(montant, chambre);
+
+      case 'USER_CREATE':
+        final user = metadata['utilisateur'] ?? metadata['nom'] ?? l10n.unknownUser;
+        return l10n.userCreatedDesc(user);
+
+      case 'SIGNALEMENT_RESOLU':
+        final type = metadata['type_probleme'] ?? l10n.problem;
+        return l10n.reportResolvedDesc(type);
+
+      case 'SIGNALEMENT_AFFECTE':
+        final type = metadata['type_probleme'] ?? l10n.problem;
+        return l10n.reportAssignedDesc(type);
+
+      default:
+        return description.isNotEmpty ? description : l10n.unknownActivity;
+    }
+  }
+
+  /// Retourne le titre localisé
+  String getLocalizedTitle(AppLocalizations l10n) {
+    switch (activityType) {
+      case 'SIGNALEMENT_CREATE':
+        return l10n.newReport;
+      case 'PAIEMENT_CONFIRME':
+        return l10n.paymentConfirmed;
+      case 'PAIEMENT_INITIE':
+        return l10n.paymentInitiated;
+      case 'USER_CREATE':
+        return l10n.newUser;
+      case 'SIGNALEMENT_RESOLU':
+        return l10n.reportResolved;
+      case 'SIGNALEMENT_AFFECTE':
+        return l10n.reportAssigned;
+      default:
+        return title.isNotEmpty ? title : l10n.activity;
     }
   }
 }

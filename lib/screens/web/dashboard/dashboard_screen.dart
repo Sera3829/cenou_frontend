@@ -1707,7 +1707,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  activity.title,
+                  activity.getLocalizedTitle(l10n),   // ← Titre traduit
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: AppTheme.getTextPrimary(context),
@@ -1715,7 +1715,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  activity.formattedDescription,
+                  activity.getLocalizedDescription(l10n),   // ← Description traduite
                   style: TextStyle(
                     color: AppTheme.getTextSecondary(context),
                     fontSize: 13,
@@ -1749,7 +1749,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                activity.timeAgo,
+                activity.getLocalizedTimeAgo(l10n),   // ← Temps relatif traduit
                 style: TextStyle(
                   color: AppTheme.getTextTertiary(context),
                   fontSize: 12,
