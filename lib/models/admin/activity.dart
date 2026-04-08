@@ -156,8 +156,12 @@ class Activity {
         return l10n.paymentInitiatedDesc(montant, chambre);
 
       case 'USER_CREATE':
-        final user = metadata['utilisateur'] ?? metadata['nom'] ?? l10n.unknownUser;
-        return l10n.userCreatedDesc(user);
+        final user = metadata['utilisateur'] ?? metadata['nom'] ?? '';
+        final role = metadata['role'] ?? '';
+        if (user.isNotEmpty) {
+          return l10n.userCreatedDesc(user);
+        }
+        return description.isNotEmpty ? description : l10n.unknownActivity;
 
       case 'SIGNALEMENT_RESOLU':
         final type = metadata['type_probleme'] ?? l10n.problem;
