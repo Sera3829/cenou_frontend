@@ -9,6 +9,7 @@ import 'package:cenou_mobile/config/theme.dart';
 import 'package:cenou_mobile/services/api_service.dart';
 import '../../../config/app_config.dart';
 import '../dashboard/dashboard_screen.dart';
+import '../../../l10n/app_localizations.dart';
 
 /// Écran d'administration des utilisateurs.
 class UserAdminScreen extends StatefulWidget {
@@ -43,18 +44,20 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
     await provider.loadUsers();
   }
 
-  String _formatDate(DateTime date) => DateFormat('dd/MM/yyyy').format(date);
+  String _formatDate(DateTime date, AppLocalizations l10n) =>
+      DateFormat('dd/MM/yyyy', l10n.locale.languageCode).format(date);
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return DashboardLayout(
       selectedIndex: 3,
       child: Column(
         children: [
-          _buildFloatingFiltersBar(isDark),
-          Expanded(child: _buildMainContent(isDark)),
+          _buildFloatingFiltersBar(isDark, l10n),
+          Expanded(child: _buildMainContent(isDark, l10n)),
         ],
       ),
     );
@@ -62,7 +65,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
 
   // ==================== CONTENU PRINCIPAL ====================
 
-  Widget _buildMainContent(bool isDark) {
+  Widget _buildMainContent(bool isDark, AppLocalizations l10n) {
     return Consumer<UserAdminProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading && provider.users.isEmpty) {
@@ -73,25 +76,25 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
         }
 
         if (provider.error != null && provider.users.isEmpty) {
-          return _buildErrorWidget(provider.error!, isDark);
+          return _buildErrorWidget(provider.error!, isDark, l10n);
         }
 
         if (provider.users.isEmpty) {
-          return _buildEmptyState(isDark);
+          return _buildEmptyState(isDark, l10n);
         }
 
         return SingleChildScrollView(
           child: Column(
             children: [
-              _buildQuickStats(provider, isDark),
+              _buildQuickStats(provider, isDark, l10n),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 height: _showFilters ? null : 0,
                 child: _showFilters
-                    ? _buildFiltersCard(isDark)
+                    ? _buildFiltersCard(isDark, l10n)
                     : const SizedBox.shrink(),
               ),
-              _buildUsersTable(provider, isDark),
+              _buildUsersTable(provider, isDark, l10n),
             ],
           ),
         );
@@ -101,7 +104,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
 
   // ==================== BARRE DE FILTRES ====================
 
-  Widget _buildFloatingFiltersBar(bool isDark) {
+  Widget _buildFloatingFiltersBar(bool isDark, AppLocalizations l10n) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth > 1100;
 
@@ -121,26 +124,26 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
       child: isWide
           ? Row(
         children: [
-          Expanded(flex: 3, child: _buildSearchField(isDark)),
+          Expanded(flex: 3, child: _buildSearchField(isDark, l10n)),
           const SizedBox(width: 12),
-          SizedBox(width: 160, child: _buildRoleDropdown(isDark)),
+          SizedBox(width: 160, child: _buildRoleDropdown(isDark, l10n)),
           const SizedBox(width: 12),
-          SizedBox(width: 160, child: _buildStatutDropdown(isDark)),
+          SizedBox(width: 160, child: _buildStatutDropdown(isDark, l10n)),
           const SizedBox(width: 12),
-          _buildActionButtons(isDark),
+          _buildActionButtons(isDark, l10n),
         ],
       )
           : Column(
         children: [
-          _buildSearchField(isDark),
+          _buildSearchField(isDark, l10n),
           const SizedBox(height: 8),
           Row(
             children: [
-              Expanded(child: _buildRoleDropdown(isDark)),
+              Expanded(child: _buildRoleDropdown(isDark, l10n)),
               const SizedBox(width: 8),
-              Expanded(child: _buildStatutDropdown(isDark)),
+              Expanded(child: _buildStatutDropdown(isDark, l10n)),
               const SizedBox(width: 8),
-              _buildActionButtons(isDark),
+              _buildActionButtons(isDark, l10n),
             ],
           ),
         ],
@@ -148,11 +151,11 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
     );
   }
 
-  Widget _buildSearchField(bool isDark) {
+  Widget _buildSearchField(bool isDark, AppLocalizations l10n) {
     return TextField(
       controller: _searchController,
       decoration: InputDecoration(
-        hintText: 'Rechercher nom, matricule, email...',
+        hintText: l10n.searchUserHint,
         hintStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
         prefixIcon: Icon(Icons.search,
             size: 20, color: AppTheme.getTextSecondary(context)),
@@ -192,11 +195,11 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
     );
   }
 
-  Widget _buildRoleDropdown(bool isDark) {
+  Widget _buildRoleDropdown(bool isDark, AppLocalizations l10n) {
     return DropdownButtonFormField<String>(
       value: _selectedRole,
       decoration: InputDecoration(
-        labelText: 'Rôle',
+        labelText: l10n.role,
         labelStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -219,7 +222,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
         return DropdownMenuItem(
           value: item,
           child: Text(
-            _getRoleLabel(item),
+            _getRoleLabel(item, l10n),
             style: TextStyle(
                 fontSize: 14, color: AppTheme.getTextPrimary(context)),
           ),
@@ -233,11 +236,11 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
     );
   }
 
-  Widget _buildStatutDropdown(bool isDark) {
+  Widget _buildStatutDropdown(bool isDark, AppLocalizations l10n) {
     return DropdownButtonFormField<String>(
       value: _selectedStatut,
       decoration: InputDecoration(
-        labelText: 'Statut',
+        labelText: l10n.status,
         labelStyle: TextStyle(color: AppTheme.getTextSecondary(context)),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -260,7 +263,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
         return DropdownMenuItem(
           value: item,
           child: Text(
-            _getStatutLabel(item),
+            _getStatutLabel(item, l10n),
             style: TextStyle(
                 fontSize: 14, color: AppTheme.getTextPrimary(context)),
           ),
@@ -274,7 +277,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
     );
   }
 
-  Widget _buildActionButtons(bool isDark) {
+  Widget _buildActionButtons(bool isDark, AppLocalizations l10n) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -284,17 +287,17 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
             _showFilters ? Icons.filter_list_off : Icons.filter_list,
             color: Theme.of(context).colorScheme.primary,
           ),
-          tooltip: _showFilters ? 'Masquer filtres' : 'Plus de filtres',
+          tooltip: _showFilters ? l10n.hideFilters : l10n.moreFilters,
         ),
         IconButton(
           onPressed: _resetFilters,
           icon: Icon(Icons.refresh, color: AppTheme.getTextSecondary(context)),
-          tooltip: 'Réinitialiser',
+          tooltip: l10n.reset,
         ),
         ElevatedButton.icon(
-          onPressed: () => _showCreateUserDialog(),
+          onPressed: () => _showCreateUserDialog(l10n),
           icon: const Icon(Icons.add, size: 18, color: Colors.white),
-          label: const Text('Nouveau', style: TextStyle(color: Colors.white)),
+          label: Text(l10n.newUser, style: const TextStyle(color: Colors.white)),
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.primary,
             padding:
@@ -313,8 +316,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
             shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
-          child:
-          const Text('Actualiser', style: TextStyle(color: Colors.white)),
+          child: Text(l10n.refresh, style: const TextStyle(color: Colors.white)),
         ),
       ],
     );
@@ -322,7 +324,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
 
   // ==================== STATISTIQUES ====================
 
-  Widget _buildQuickStats(UserAdminProvider provider, bool isDark) {
+  Widget _buildQuickStats(UserAdminProvider provider, bool isDark, AppLocalizations l10n) {
     final screenWidth = MediaQuery.of(context).size.width;
     final sidebarWidth = screenWidth > 900 ? 280.0 : 0.0;
     final isWide = (screenWidth - sidebarWidth) > 700;
@@ -337,35 +339,35 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
           ? Row(
         children: [
           _buildStatCard(
-              label: 'Total',
+              label: l10n.total,
               value: '${stats['total']}',
               color: const Color(0xFF3B82F6),
               icon: Icons.people,
               isDark: isDark),
           const SizedBox(width: 16),
           _buildStatCard(
-              label: 'Actifs',
+              label: l10n.active,
               value: '${stats['actifs']}',
               color: const Color(0xFF10B981),
               icon: Icons.check_circle,
               isDark: isDark),
           const SizedBox(width: 16),
           _buildStatCard(
-              label: 'Étudiants',
+              label: l10n.students,
               value: '${stats['etudiants']}',
               color: const Color(0xFF8B5CF6),
               icon: Icons.school,
               isDark: isDark),
           const SizedBox(width: 16),
           _buildStatCard(
-              label: 'Gestionnaires',
+              label: l10n.managers,
               value: '${stats['gestionnaires']}',
               color: const Color(0xFFF59E0B),
               icon: Icons.manage_accounts,
               isDark: isDark),
           const SizedBox(width: 16),
           _buildStatCard(
-              label: 'Admins',
+              label: l10n.admins,
               value: '${stats['admins']}',
               color: const Color(0xFFEC4899),
               icon: Icons.admin_panel_settings,
@@ -378,7 +380,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
             children: [
               Expanded(
                   child: _buildStatCard(
-                      label: 'Total',
+                      label: l10n.total,
                       value: '${stats['total']}',
                       color: const Color(0xFF3B82F6),
                       icon: Icons.people,
@@ -386,7 +388,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
               const SizedBox(width: 12),
               Expanded(
                   child: _buildStatCard(
-                      label: 'Actifs',
+                      label: l10n.active,
                       value: '${stats['actifs']}',
                       color: const Color(0xFF10B981),
                       icon: Icons.check_circle,
@@ -398,7 +400,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
             children: [
               Expanded(
                   child: _buildStatCard(
-                      label: 'Étudiants',
+                      label: l10n.students,
                       value: '${stats['etudiants']}',
                       color: const Color(0xFF8B5CF6),
                       icon: Icons.school,
@@ -406,7 +408,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
               const SizedBox(width: 12),
               Expanded(
                   child: _buildStatCard(
-                      label: 'Gestionnaires',
+                      label: l10n.managers,
                       value: '${stats['gestionnaires']}',
                       color: const Color(0xFFF59E0B),
                       icon: Icons.manage_accounts,
@@ -415,7 +417,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
           ),
           const SizedBox(height: 12),
           _buildStatCard(
-              label: 'Admins',
+              label: l10n.admins,
               value: '${stats['admins']}',
               color: const Color(0xFFEC4899),
               icon: Icons.admin_panel_settings,
@@ -490,7 +492,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
 
   // ==================== FILTRES AVANCÉS ====================
 
-  Widget _buildFiltersCard(bool isDark) {
+  Widget _buildFiltersCard(bool isDark, AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
       padding: const EdgeInsets.all(20),
@@ -509,7 +511,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
           Row(
             children: [
               Text(
-                'Filtres avancés',
+                l10n.advancedFilters,
                 style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -520,7 +522,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                 onPressed: () => setState(() => _showFilters = false),
                 icon: Icon(Icons.close,
                     size: 16, color: AppTheme.getTextSecondary(context)),
-                label: Text('Fermer',
+                label: Text(l10n.close,
                     style:
                     TextStyle(color: AppTheme.getTextSecondary(context))),
               ),
@@ -528,7 +530,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Autres options de filtrage seront ajoutées ici',
+            l10n.otherFilterOptions,
             style: TextStyle(color: AppTheme.getTextSecondary(context)),
           ),
         ],
@@ -538,7 +540,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
 
   // ==================== TABLEAU RESPONSIVE AVEC SCROLL HORIZONTAL ====================
 
-  Widget _buildUsersTable(UserAdminProvider provider, bool isDark) {
+  Widget _buildUsersTable(UserAdminProvider provider, bool isDark, AppLocalizations l10n) {
     final screenWidth = MediaQuery.of(context).size.width;
     final sidebarWidth = screenWidth > 900 ? 220.0 : 0.0;
     final availableWidth = screenWidth - sidebarWidth - 48; // marges 24*2
@@ -589,20 +591,20 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                   children: [
                     SizedBox(
                         width: colUtilisateur,
-                        child: _headerText('Utilisateur')),
+                        child: _headerText(l10n.user)),
                     SizedBox(
                         width: colMatricule,
-                        child: _headerText('Matricule')),
+                        child: _headerText(l10n.matricule)),
                     SizedBox(
-                        width: colRole, child: _headerText('Rôle')),
+                        width: colRole, child: _headerText(l10n.role)),
                     SizedBox(
-                        width: colStatut, child: _headerText('Statut')),
+                        width: colStatut, child: _headerText(l10n.status)),
                     SizedBox(
                         width: colDate,
-                        child: _headerText('Date création')),
+                        child: _headerText(l10n.dateCreation)),
                     SizedBox(
                         width: colActions,
-                        child: _headerText('Actions')),
+                        child: _headerText(l10n.actions)),
                   ],
                 ),
               ),
@@ -616,6 +618,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                   provider,
                   index,
                   isDark,
+                  l10n,
                   colUtilisateur: colUtilisateur,
                   colMatricule: colMatricule,
                   colRole: colRole,
@@ -648,7 +651,8 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
       AdminUser user,
       UserAdminProvider provider,
       int index,
-      bool isDark, {
+      bool isDark,
+      AppLocalizations l10n, {
         required double colUtilisateur,
         required double colMatricule,
         required double colRole,
@@ -752,7 +756,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                   ),
                 ),
                 child: Text(
-                  _getRoleLabel(user.role),
+                  _getRoleLabel(user.role, l10n),
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
@@ -794,7 +798,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      _getStatutLabel(user.statut),
+                      _getStatutLabel(user.statut, l10n),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -811,7 +815,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
           SizedBox(
             width: colDate,
             child: Text(
-              _formatDate(user.createdAt),
+              _formatDate(user.createdAt, l10n),
               style: TextStyle(
                   color: AppTheme.getTextSecondary(context), fontSize: 13),
             ),
@@ -825,21 +829,21 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
               children: [
                 // Œil
                 IconButton(
-                  onPressed: () => _showUserDetails(user, provider),
+                  onPressed: () => _showUserDetails(user, provider, l10n),
                   icon: Icon(Icons.visibility_outlined,
                       size: 20,
                       color: AppTheme.getTextSecondary(context)),
-                  tooltip: 'Voir détails',
+                  tooltip: l10n.viewDetails,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
                 const SizedBox(width: 12),
                 // Stylo
                 IconButton(
-                  onPressed: () => _showEditUserDialog(user, provider),
+                  onPressed: () => _showEditUserDialog(user, provider, l10n),
                   icon: const Icon(Icons.edit_outlined,
                       size: 20, color: Color(0xFF3B82F6)),
-                  tooltip: 'Modifier',
+                  tooltip: l10n.edit,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                 ),
@@ -852,9 +856,9 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                   color: AppTheme.getCardBackground(context),
                   surfaceTintColor: AppTheme.getCardBackground(context),
                   itemBuilder: (context) =>
-                      _buildActionMenu(user, isDark),
+                      _buildActionMenu(user, isDark, l10n),
                   onSelected: (value) =>
-                      _handleAction(value, user, provider),
+                      _handleAction(value, user, provider, l10n),
                   padding: EdgeInsets.zero,
                 ),
               ],
@@ -867,7 +871,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
 
   // ==================== ÉTATS VIDE / ERREUR ====================
 
-  Widget _buildEmptyState(bool isDark) {
+  Widget _buildEmptyState(bool isDark, AppLocalizations l10n) {
     return Container(
       margin: const EdgeInsets.all(24),
       padding: const EdgeInsets.all(48),
@@ -887,7 +891,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                 size: 80, color: AppTheme.getTextTertiary(context)),
             const SizedBox(height: 24),
             Text(
-              'Aucun utilisateur trouvé',
+              l10n.noUsersFound,
               style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w600,
@@ -895,7 +899,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Ajustez vos filtres ou créez un nouvel utilisateur',
+              l10n.adjustFiltersOrCreate,
               style: TextStyle(color: AppTheme.getTextTertiary(context)),
             ),
             const SizedBox(height: 24),
@@ -905,14 +909,14 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Réinitialiser les filtres'),
+              child: Text(l10n.resetFilters),
             ),
             const SizedBox(height: 12),
             ElevatedButton.icon(
-              onPressed: () => _showCreateUserDialog(),
+              onPressed: () => _showCreateUserDialog(l10n),
               icon: const Icon(Icons.add, color: Colors.white),
-              label: const Text('Créer un nouvel utilisateur',
-                  style: TextStyle(color: Colors.white)),
+              label: Text(l10n.createNewUser,
+                  style: const TextStyle(color: Colors.white)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
@@ -924,7 +928,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
     );
   }
 
-  Widget _buildErrorWidget(String error, bool isDark) {
+  Widget _buildErrorWidget(String error, bool isDark, AppLocalizations l10n) {
     return Container(
       padding: const EdgeInsets.all(24),
       margin: const EdgeInsets.all(24),
@@ -943,7 +947,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
           children: [
             Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
             const SizedBox(height: 16),
-            Text('Erreur de chargement',
+            Text(l10n.loadingError,
                 style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
@@ -961,7 +965,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
               style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red.shade400,
                   foregroundColor: Colors.white),
-              child: const Text('Réessayer'),
+              child: Text(l10n.retry),
             ),
           ],
         ),
@@ -972,7 +976,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
   // ==================== MENU CONTEXTUEL ====================
 
   List<PopupMenuEntry<String>> _buildActionMenu(
-      AdminUser user, bool isDark) {
+      AdminUser user, bool isDark, AppLocalizations l10n) {
     return [
       PopupMenuItem(
         value: 'details',
@@ -980,7 +984,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
           Icon(Icons.info_outline,
               size: 18, color: AppTheme.getTextSecondary(context)),
           const SizedBox(width: 8),
-          Text('Détails complets',
+          Text(l10n.fullDetails,
               style: TextStyle(color: AppTheme.getTextPrimary(context))),
         ]),
       ),
@@ -990,7 +994,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
           child: Row(children: [
             const Icon(Icons.send, size: 18, color: Color(0xFF3B82F6)),
             const SizedBox(width: 8),
-            Text('Envoyer une annonce',
+            Text(l10n.sendAnnouncement,
                 style:
                 TextStyle(color: AppTheme.getTextPrimary(context))),
           ]),
@@ -1000,7 +1004,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
         child: Row(children: [
           const Icon(Icons.edit, size: 18, color: Color(0xFF3B82F6)),
           const SizedBox(width: 8),
-          Text('Modifier',
+          Text(l10n.edit,
               style: TextStyle(color: AppTheme.getTextPrimary(context))),
         ]),
       ),
@@ -1011,7 +1015,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
             const Icon(Icons.pause_circle,
                 size: 18, color: Color(0xFFF59E0B)),
             const SizedBox(width: 8),
-            Text('Désactiver',
+            Text(l10n.deactivate,
                 style:
                 TextStyle(color: AppTheme.getTextPrimary(context))),
           ]),
@@ -1021,7 +1025,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
           child: Row(children: [
             const Icon(Icons.block, size: 18, color: Color(0xFFEF4444)),
             const SizedBox(width: 8),
-            Text('Suspendre',
+            Text(l10n.suspend,
                 style:
                 TextStyle(color: AppTheme.getTextPrimary(context))),
           ]),
@@ -1034,7 +1038,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
             const Icon(Icons.play_arrow,
                 size: 18, color: Color(0xFF10B981)),
             const SizedBox(width: 8),
-            Text('Réactiver',
+            Text(l10n.reactivate,
                 style:
                 TextStyle(color: AppTheme.getTextPrimary(context))),
           ]),
@@ -1046,7 +1050,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
         child: Row(children: [
           const Icon(Icons.delete, size: 18, color: Color(0xFFEF4444)),
           const SizedBox(width: 8),
-          Text('Supprimer',
+          Text(l10n.delete,
               style: TextStyle(color: Colors.red.shade700)),
         ]),
       ),
@@ -1056,54 +1060,53 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
   // ==================== ACTIONS ====================
 
   Future<void> _handleAction(
-      String action, AdminUser user, UserAdminProvider provider) async {
+      String action, AdminUser user, UserAdminProvider provider, AppLocalizations l10n) async {
     switch (action) {
       case 'details':
-        _showUserDetails(user, provider);
+        _showUserDetails(user, provider, l10n);
         break;
       case 'edit':
-        _showEditUserDialog(user, provider);
+        _showEditUserDialog(user, provider, l10n);
         break;
       case 'send_annonce':
-        _showSendAnnonceDialog(user);
+        _showSendAnnonceDialog(user, l10n);
         break;
       case 'desactiver':
-        await _updateUserStatus(user, 'INACTIF', provider);
+        await _updateUserStatus(user, 'INACTIF', provider, l10n);
         break;
       case 'suspendre':
-        await _updateUserStatus(user, 'SUSPENDU', provider);
+        await _updateUserStatus(user, 'SUSPENDU', provider, l10n);
         break;
       case 'reactiver':
-        await _updateUserStatus(user, 'ACTIF', provider);
+        await _updateUserStatus(user, 'ACTIF', provider, l10n);
         break;
       case 'supprimer':
-        await _deleteUser(user, provider);
+        await _deleteUser(user, provider, l10n);
         break;
     }
   }
 
   Future<void> _updateUserStatus(
-      AdminUser user, String nouveauStatut, UserAdminProvider provider) async {
+      AdminUser user, String nouveauStatut, UserAdminProvider provider, AppLocalizations l10n) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     try {
       final confirm = await _showConfirmationDialog(
-        title: 'Confirmer la modification',
-        message:
-        'Voulez-vous vraiment ${_getStatutLabel(nouveauStatut).toLowerCase()} cet utilisateur ?',
+        title: l10n.confirmModification,
+        message: l10n.confirmStatusChange(_getStatutLabel(nouveauStatut, l10n)),
         isDark: isDark,
+        l10n: l10n,
       );
       if (confirm == true) {
         await provider.updateUserStatus(user.id, nouveauStatut);
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(
-              'Utilisateur ${_getStatutLabel(nouveauStatut).toLowerCase()} avec succès'),
+          content: Text(l10n.userStatusUpdated(_getStatutLabel(nouveauStatut, l10n))),
           backgroundColor: _getStatutColor(nouveauStatut),
           behavior: SnackBarBehavior.floating,
         ));
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Erreur: $e'),
+        content: Text('${l10n.error}: $e'),
         backgroundColor: const Color(0xFFEF4444),
         behavior: SnackBarBehavior.floating,
       ));
@@ -1111,27 +1114,27 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
   }
 
   Future<void> _deleteUser(
-      AdminUser user, UserAdminProvider provider) async {
+      AdminUser user, UserAdminProvider provider, AppLocalizations l10n) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     try {
       final confirm = await _showConfirmationDialog(
-        title: 'Confirmer la suppression',
-        message:
-        'Voulez-vous vraiment supprimer définitivement cet utilisateur ?\nCette action est irréversible.',
+        title: l10n.confirmDeletion,
+        message: l10n.confirmDeleteUser,
         isCritical: true,
         isDark: isDark,
+        l10n: l10n,
       );
       if (confirm == true) {
         await provider.deleteUser(user.id);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Utilisateur supprimé avec succès'),
-          backgroundColor: Color(0xFF10B981),
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(l10n.userDeleted),
+          backgroundColor: const Color(0xFF10B981),
           behavior: SnackBarBehavior.floating,
         ));
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text('Erreur: $e'),
+        content: Text('${l10n.error}: $e'),
         backgroundColor: const Color(0xFFEF4444),
         behavior: SnackBarBehavior.floating,
       ));
@@ -1140,7 +1143,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
 
   // ==================== DIALOGUES ====================
 
-  void _showUserDetails(AdminUser user, UserAdminProvider provider) {
+  void _showUserDetails(AdminUser user, UserAdminProvider provider, AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showDialog(
       context: context,
@@ -1188,7 +1191,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Détails de l\'utilisateur',
+                          Text(l10n.userDetails,
                               style: TextStyle(
                                   fontSize: 20,
                                   fontWeight: FontWeight.bold,
@@ -1218,36 +1221,36 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildSectionHeader(
-                          'Informations personnelles', Icons.person),
+                          l10n.personalInformation, Icons.person),
                       const SizedBox(height: 12),
                       _buildInfoGrid([
-                        ('Nom complet', '${user.prenom} ${user.nom}'),
-                        ('Matricule', user.matricule),
-                        ('Email', user.email),
-                        ('Téléphone', user.telephone),
+                        (l10n.fullName, '${user.prenom} ${user.nom}'),
+                        (l10n.matricule, user.matricule),
+                        (l10n.email, user.email),
+                        (l10n.phone, user.telephone),
                       ]),
                       const SizedBox(height: 24),
                       _buildSectionHeader(
-                          'Compte', Icons.admin_panel_settings),
+                          l10n.account, Icons.admin_panel_settings),
                       const SizedBox(height: 12),
                       _buildInfoGrid([
-                        ('Rôle', _getRoleLabel(user.role)),
-                        ('Statut', _getStatutLabel(user.statut)),
-                        ('Date création', _formatDate(user.createdAt)),
+                        (l10n.role, _getRoleLabel(user.role, l10n)),
+                        (l10n.status, _getStatutLabel(user.statut, l10n)),
+                        (l10n.dateCreation, _formatDate(user.createdAt, l10n)),
                         if (user.updatedAt != null)
-                          ('Dernière modification',
-                          _formatDate(user.updatedAt!)),
+                          (l10n.lastModification,
+                          _formatDate(user.updatedAt!, l10n)),
                       ]),
                       if (user.centreNom != null ||
                           user.numeroChambre != null) ...[
                         const SizedBox(height: 24),
-                        _buildSectionHeader('Logement', Icons.home),
+                        _buildSectionHeader(l10n.housing, Icons.home),
                         const SizedBox(height: 12),
                         _buildInfoGrid([
                           if (user.centreNom != null)
-                            ('Centre', user.centreNom!),
+                            (l10n.center, user.centreNom!),
                           if (user.numeroChambre != null)
-                            ('Numéro de chambre', user.numeroChambre!),
+                            (l10n.roomNumber, user.numeroChambre!),
                         ]),
                       ],
                     ],
@@ -1273,7 +1276,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                   children: [
                     TextButton(
                       onPressed: () => Navigator.pop(context),
-                      child: Text('Fermer',
+                      child: Text(l10n.close,
                           style: TextStyle(
                               color: AppTheme.getTextSecondary(context))),
                     ),
@@ -1281,12 +1284,12 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                     ElevatedButton.icon(
                       onPressed: () {
                         Navigator.pop(context);
-                        _showEditUserDialog(user, provider);
+                        _showEditUserDialog(user, provider, l10n);
                       },
                       icon: const Icon(Icons.edit,
                           size: 18, color: Colors.white),
-                      label: const Text('Modifier',
-                          style: TextStyle(color: Colors.white)),
+                      label: Text(l10n.edit,
+                          style: const TextStyle(color: Colors.white)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor:
                         Theme.of(context).colorScheme.primary,
@@ -1350,7 +1353,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
     );
   }
 
-  Future<void> _showSendAnnonceDialog(AdminUser user) async {
+  Future<void> _showSendAnnonceDialog(AdminUser user, AppLocalizations l10n) async {
     final titreController = TextEditingController();
     final contenuController = TextEditingController();
     bool isSending = false;
@@ -1399,14 +1402,14 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Envoyer une annonce',
+                            Text(l10n.sendAnnouncement,
                                 style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
                                     color:
                                     AppTheme.getTextPrimary(context))),
                             const SizedBox(height: 4),
-                            Text('À: ${user.prenom} ${user.nom}',
+                            Text('${l10n.sendAnnouncementTo}: ${user.prenom} ${user.nom}',
                                 style: TextStyle(
                                     fontSize: 14,
                                     color: AppTheme.getTextSecondary(
@@ -1431,7 +1434,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                         TextField(
                           controller: titreController,
                           decoration: InputDecoration(
-                            labelText: 'Titre *',
+                            labelText: l10n.title,
                             labelStyle: TextStyle(
                                 color:
                                 AppTheme.getTextSecondary(context)),
@@ -1465,7 +1468,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                         TextField(
                           controller: contenuController,
                           decoration: InputDecoration(
-                            labelText: 'Message *',
+                            labelText: l10n.message,
                             labelStyle: TextStyle(
                                 color:
                                 AppTheme.getTextSecondary(context)),
@@ -1522,7 +1525,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                         onPressed: isSending
                             ? null
                             : () => Navigator.pop(context),
-                        child: Text('Annuler',
+                        child: Text(l10n.cancel,
                             style: TextStyle(
                                 color:
                                 AppTheme.getTextSecondary(context))),
@@ -1535,9 +1538,8 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                           if (titreController.text.trim().isEmpty ||
                               contenuController.text.trim().isEmpty) {
                             ScaffoldMessenger.of(context)
-                                .showSnackBar(const SnackBar(
-                              content: Text(
-                                  'Veuillez remplir tous les champs'),
+                                .showSnackBar(SnackBar(
+                              content: Text(l10n.fillAllFields),
                               backgroundColor: Colors.orange,
                               behavior: SnackBarBehavior.floating,
                             ));
@@ -1559,7 +1561,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                             ScaffoldMessenger.of(context)
                                 .showSnackBar(SnackBar(
                               content: Text(
-                                  'Annonce envoyée à ${user.prenom} ${user.nom}'),
+                                  '${l10n.announcementSentToUser} ${user.prenom} ${user.nom}'),
                               backgroundColor:
                               const Color(0xFF10B981),
                               behavior: SnackBarBehavior.floating,
@@ -1567,7 +1569,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                           } catch (e) {
                             ScaffoldMessenger.of(context)
                                 .showSnackBar(SnackBar(
-                              content: Text('Erreur: $e'),
+                              content: Text('${l10n.error}: $e'),
                               backgroundColor:
                               const Color(0xFFEF4444),
                               behavior: SnackBarBehavior.floating,
@@ -1585,7 +1587,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                                 color: Colors.white))
                             : const Icon(Icons.send,
                             size: 18, color: Colors.white),
-                        label: Text(isSending ? 'Envoi...' : 'Envoyer',
+                        label: Text(isSending ? l10n.sending : l10n.send,
                             style: const TextStyle(color: Colors.white)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor:
@@ -1607,7 +1609,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
     contenuController.dispose();
   }
 
-  Future<void> _showCreateUserDialog() async {
+  Future<void> _showCreateUserDialog(AppLocalizations l10n) async {
     final provider = Provider.of<UserAdminProvider>(context, listen: false);
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -1672,7 +1674,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Nouvel étudiant',
+                            Text(l10n.newStudent,
                                 style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -1680,7 +1682,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                                     AppTheme.getTextPrimary(context))),
                             const SizedBox(height: 4),
                             Text(
-                                'Remplissez les informations de l\'étudiant',
+                                l10n.fillStudentInfo,
                                 style: TextStyle(
                                     fontSize: 14,
                                     color: AppTheme.getTextSecondary(
@@ -1692,15 +1694,15 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                     const SizedBox(height: 24),
                     _buildFormField(
                       controller: matriculeController,
-                      label: 'Matricule *',
+                      label: '${l10n.matricule} *',
                       hint: 'Ex: ETUD2024001',
                       icon: Icons.badge,
                       isDark: isDark,
                       validator: (v) {
                         if (v == null || v.trim().isEmpty)
-                          return 'Le matricule est requis';
+                          return l10n.matriculeRequired;
                         if (v.trim().length < 5)
-                          return 'Au moins 5 caractères';
+                          return l10n.matriculeMinLength;
                         return null;
                       },
                     ),
@@ -1709,15 +1711,15 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                       Expanded(
                         child: _buildFormField(
                           controller: nomController,
-                          label: 'Nom *',
-                          hint: 'Nom de famille',
+                          label: '${l10n.lastName} *',
+                          hint: l10n.lastNameHint,
                           icon: Icons.person,
                           isDark: isDark,
                           validator: (v) {
                             if (v == null || v.trim().isEmpty)
-                              return 'Le nom est requis';
+                              return l10n.lastNameRequired;
                             if (v.trim().length < 2)
-                              return 'Au moins 2 caractères';
+                              return l10n.lastNameMinLength;
                             return null;
                           },
                         ),
@@ -1726,15 +1728,15 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                       Expanded(
                         child: _buildFormField(
                           controller: prenomController,
-                          label: 'Prénom *',
-                          hint: 'Prénom',
+                          label: '${l10n.firstName} *',
+                          hint: l10n.firstNameHint,
                           icon: Icons.person_outline,
                           isDark: isDark,
                           validator: (v) {
                             if (v == null || v.trim().isEmpty)
-                              return 'Le prénom est requis';
+                              return l10n.firstNameRequired;
                             if (v.trim().length < 2)
-                              return 'Au moins 2 caractères';
+                              return l10n.firstNameMinLength;
                             return null;
                           },
                         ),
@@ -1743,24 +1745,24 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                     const SizedBox(height: 16),
                     _buildFormField(
                       controller: emailController,
-                      label: 'Email *',
-                      hint: 'exemple@cenou.bf',
+                      label: '${l10n.email} *',
+                      hint: l10n.emailHint,
                       icon: Icons.email,
                       isDark: isDark,
                       keyboardType: TextInputType.emailAddress,
                       validator: (v) {
                         if (v == null || v.trim().isEmpty)
-                          return 'L\'email est requis';
+                          return l10n.emailRequired;
                         if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                            .hasMatch(v.trim())) return 'Email invalide';
+                            .hasMatch(v.trim())) return l10n.emailInvalid;
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
                     _buildFormField(
                       controller: telephoneController,
-                      label: 'Téléphone (optionnel)',
-                      hint: '+226 70 XX XX XX',
+                      label: l10n.phoneOptional,
+                      hint: l10n.phoneHint,
                       icon: Icons.phone,
                       isDark: isDark,
                       keyboardType: TextInputType.phone,
@@ -1769,7 +1771,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                     DropdownButtonFormField<int>(
                       value: selectedCentreId,
                       decoration: _dropdownDecoration(
-                          'Centre *', Icons.location_city, isDark),
+                          '${l10n.center} *', Icons.location_city, isDark),
                       dropdownColor: AppTheme.getCardBackground(context),
                       style: TextStyle(
                           color: AppTheme.getTextPrimary(context)),
@@ -1797,14 +1799,14 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                         }
                       },
                       validator: (v) =>
-                      v == null ? 'Sélectionnez un centre' : null,
+                      v == null ? l10n.centerRequired : null,
                     ),
                     if (selectedCentreId != null) ...[
                       const SizedBox(height: 16),
                       DropdownButtonFormField<int>(
                         value: selectedLogementId,
                         decoration: _dropdownDecoration(
-                            'Logement (optionnel)', Icons.home, isDark),
+                            l10n.housingOptional, Icons.home, isDark),
                         dropdownColor: AppTheme.getCardBackground(context),
                         style: TextStyle(
                             color: AppTheme.getTextPrimary(context)),
@@ -1812,7 +1814,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                             ? [
                           DropdownMenuItem<int>(
                               value: null,
-                              child: Text('Aucun logement disponible',
+                              child: Text(l10n.noHousingAvailable,
                                   style: TextStyle(
                                       color:
                                       AppTheme.getTextTertiary(
@@ -1822,7 +1824,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                           return DropdownMenuItem<int>(
                             value: l['id'],
                             child: Text(
-                                'Chambre ${l['numero_chambre']} - ${l['type_chambre']}',
+                                '${l10n.room} ${l['numero_chambre']} - ${l['type_chambre']}',
                                 style: TextStyle(
                                     color:
                                     AppTheme.getTextPrimary(
@@ -1844,7 +1846,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                         }
                       }),
                       title: Text(
-                          'Générer un mot de passe automatiquement',
+                          l10n.generatePassword,
                           style: TextStyle(
                               color: AppTheme.getTextPrimary(context),
                               fontSize: 14)),
@@ -1857,8 +1859,8 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                       const SizedBox(height: 8),
                       _buildPasswordField(
                         controller: passwordController,
-                        label: 'Mot de passe *',
-                        hint: 'Minimum 6 caractères',
+                        label: l10n.passwordLabel,
+                        hint: l10n.passwordHint,
                         isVisible: isPasswordVisible,
                         isDark: isDark,
                         onToggle: () => setState(
@@ -1866,13 +1868,13 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                         validator: (v) {
                           if (!generatePassword) {
                             if (v == null || v.trim().isEmpty)
-                              return 'Requis';
+                              return l10n.passwordRequired;
                             if (v.length < 6)
-                              return 'Au moins 6 caractères';
+                              return l10n.passwordMinLength;
                             if (!RegExp(r'[A-Z]').hasMatch(v))
-                              return 'Au moins une majuscule';
+                              return l10n.passwordUppercase;
                             if (!RegExp(r'[0-9]').hasMatch(v))
-                              return 'Au moins un chiffre';
+                              return l10n.passwordDigit;
                           }
                           return null;
                         },
@@ -1880,8 +1882,8 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                       const SizedBox(height: 16),
                       _buildPasswordField(
                         controller: confirmPasswordController,
-                        label: 'Confirmer le mot de passe *',
-                        hint: 'Retapez le mot de passe',
+                        label: l10n.confirmPasswordLabel,
+                        hint: l10n.confirmPasswordHint,
                         isVisible: isConfirmPasswordVisible,
                         isDark: isDark,
                         icon: Icons.lock_outline,
@@ -1891,9 +1893,9 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                         validator: (v) {
                           if (!generatePassword) {
                             if (v == null || v.trim().isEmpty)
-                              return 'Confirmation requise';
+                              return l10n.confirmPasswordRequired;
                             if (v != passwordController.text)
-                              return 'Les mots de passe ne correspondent pas';
+                              return l10n.passwordsMismatch;
                           }
                           return null;
                         },
@@ -1915,7 +1917,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                           const SizedBox(width: 12),
                           Expanded(
                               child: Text(
-                                  'Un mot de passe sécurisé sera généré automatiquement.',
+                                  l10n.securePasswordGenerated,
                                   style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.blue.shade700))),
@@ -1930,7 +1932,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                           onPressed: isSaving
                               ? null
                               : () => Navigator.pop(context),
-                          child: Text('Annuler',
+                          child: Text(l10n.cancel,
                               style: TextStyle(
                                   color:
                                   AppTheme.getTextSecondary(context))),
@@ -1970,17 +1972,17 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                                       : null,
                                 );
                                 Navigator.pop(context);
-                                sm.showSnackBar(const SnackBar(
+                                sm.showSnackBar(SnackBar(
                                   content:
-                                  Text('Étudiant créé avec succès'),
-                                  backgroundColor: Color(0xFF10B981),
+                                  Text(l10n.studentCreated),
+                                  backgroundColor: const Color(0xFF10B981),
                                   behavior:
                                   SnackBarBehavior.floating,
                                 ));
                               } catch (e) {
                                 setState(() => isSaving = false);
                                 sm.showSnackBar(SnackBar(
-                                  content: Text('Erreur: $e'),
+                                  content: Text('${l10n.error}: $e'),
                                   backgroundColor:
                                   const Color(0xFFEF4444),
                                   behavior:
@@ -1998,7 +2000,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                                   color: Colors.white))
                               : const Icon(Icons.save, color: Colors.white),
                           label: Text(
-                              isSaving ? 'Création...' : 'Créer l\'étudiant',
+                              isSaving ? l10n.creating : l10n.createStudent,
                               style:
                               const TextStyle(color: Colors.white)),
                           style: ElevatedButton.styleFrom(
@@ -2029,7 +2031,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
   }
 
   Future<void> _showEditUserDialog(
-      AdminUser user, UserAdminProvider provider) async {
+      AdminUser user, UserAdminProvider provider, AppLocalizations l10n) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     if (provider.centres.isEmpty) await provider.loadCentres();
 
@@ -2101,7 +2103,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Modifier l\'utilisateur',
+                            Text(l10n.editUser,
                                 style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.bold,
@@ -2123,7 +2125,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                       controller: matriculeController,
                       enabled: false,
                       decoration: InputDecoration(
-                        labelText: 'Matricule',
+                        labelText: l10n.matricule,
                         labelStyle: TextStyle(
                             color: AppTheme.getTextSecondary(context)),
                         prefixIcon: Icon(Icons.badge,
@@ -2151,11 +2153,11 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                       Expanded(
                         child: _buildFormField(
                           controller: nomController,
-                          label: 'Nom *',
+                          label: '${l10n.lastName} *',
                           icon: Icons.person,
                           isDark: isDark,
                           validator: (v) => (v == null || v.trim().isEmpty)
-                              ? 'Requis'
+                              ? l10n.lastNameRequired
                               : null,
                         ),
                       ),
@@ -2163,11 +2165,11 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                       Expanded(
                         child: _buildFormField(
                           controller: prenomController,
-                          label: 'Prénom *',
+                          label: '${l10n.firstName} *',
                           icon: Icons.person_outline,
                           isDark: isDark,
                           validator: (v) => (v == null || v.trim().isEmpty)
-                              ? 'Requis'
+                              ? l10n.firstNameRequired
                               : null,
                         ),
                       ),
@@ -2175,21 +2177,21 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                     const SizedBox(height: 16),
                     _buildFormField(
                       controller: emailController,
-                      label: 'Email *',
+                      label: '${l10n.email} *',
                       icon: Icons.email,
                       isDark: isDark,
                       keyboardType: TextInputType.emailAddress,
                       validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'Requis';
+                        if (v == null || v.trim().isEmpty) return l10n.emailRequired;
                         if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                            .hasMatch(v.trim())) return 'Email invalide';
+                            .hasMatch(v.trim())) return l10n.emailInvalid;
                         return null;
                       },
                     ),
                     const SizedBox(height: 16),
                     _buildFormField(
                       controller: telephoneController,
-                      label: 'Téléphone',
+                      label: l10n.phone,
                       icon: Icons.phone,
                       isDark: isDark,
                       keyboardType: TextInputType.phone,
@@ -2216,14 +2218,14 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Rôle',
+                              Text(l10n.role,
                                   style: TextStyle(
                                       fontSize: 12,
                                       color:
                                       AppTheme.getTextSecondary(
                                           context))),
                               const SizedBox(height: 4),
-                              Text(_getRoleLabel(selectedRole),
+                              Text(_getRoleLabel(selectedRole, l10n),
                                   style: TextStyle(
                                       fontSize: 16,
                                       color: AppTheme.getTextPrimary(
@@ -2238,12 +2240,12 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                     DropdownButtonFormField<String>(
                       value: selectedStatut,
                       decoration: _dropdownDecoration(
-                          'Statut', Icons.circle, isDark),
+                          l10n.status, Icons.circle, isDark),
                       dropdownColor: AppTheme.getCardBackground(context),
                       items: ['ACTIF', 'INACTIF', 'SUSPENDU'].map((s) {
                         return DropdownMenuItem<String>(
                           value: s,
-                          child: Text(_getStatutLabel(s),
+                          child: Text(_getStatutLabel(s, l10n),
                               style: TextStyle(
                                   color: _getStatutColor(s),
                                   fontWeight: FontWeight.w500)),
@@ -2258,12 +2260,12 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                     DropdownButtonFormField<int?>(
                       value: selectedCentreId,
                       decoration: _dropdownDecoration(
-                          'Centre', Icons.location_city, isDark),
+                          l10n.center, Icons.location_city, isDark),
                       dropdownColor: AppTheme.getCardBackground(context),
                       items: [
-                        const DropdownMenuItem<int?>(
+                        DropdownMenuItem<int?>(
                             value: null,
-                            child: Text('Aucun centre')),
+                            child: Text(l10n.noCenter)),
                         ...provider.centres.map((c) {
                           return DropdownMenuItem<int?>(
                               value: c.id, child: Text(c.nom));
@@ -2289,18 +2291,18 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                       DropdownButtonFormField<int?>(
                         value: selectedLogementId,
                         decoration: _dropdownDecoration(
-                            'Logement', Icons.home, isDark),
+                            l10n.housing, Icons.home, isDark),
                         dropdownColor:
                         AppTheme.getCardBackground(context),
                         items: [
-                          const DropdownMenuItem<int?>(
+                          DropdownMenuItem<int?>(
                               value: null,
-                              child: Text('Aucun logement')),
+                              child: Text(l10n.noHousing)),
                           ...availableLogements.map((l) {
                             return DropdownMenuItem<int?>(
                               value: l['id'] as int,
                               child: Text(
-                                  'Chambre ${l['numero_chambre']} - ${l['type_chambre']}'),
+                                  '${l10n.room} ${l['numero_chambre']} - ${l['type_chambre']}'),
                             );
                           }),
                         ],
@@ -2318,7 +2320,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                           onPressed: isSaving
                               ? null
                               : () => Navigator.pop(context),
-                          child: Text('Annuler',
+                          child: Text(l10n.cancel,
                               style: TextStyle(
                                   color:
                                   AppTheme.getTextSecondary(context))),
@@ -2348,17 +2350,16 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                                   logementId: selectedLogementId,
                                 );
                                 Navigator.pop(context);
-                                sm.showSnackBar(const SnackBar(
-                                  content: Text(
-                                      'Utilisateur mis à jour avec succès'),
-                                  backgroundColor: Color(0xFF10B981),
+                                sm.showSnackBar(SnackBar(
+                                  content: Text(l10n.userUpdated),
+                                  backgroundColor: const Color(0xFF10B981),
                                   behavior:
                                   SnackBarBehavior.floating,
                                 ));
                               } catch (e) {
                                 setState(() => isSaving = false);
                                 sm.showSnackBar(SnackBar(
-                                  content: Text('Erreur: $e'),
+                                  content: Text('${l10n.error}: $e'),
                                   backgroundColor:
                                   const Color(0xFFEF4444),
                                   behavior:
@@ -2377,8 +2378,8 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                               : const Icon(Icons.save, color: Colors.white),
                           label: Text(
                               isSaving
-                                  ? 'Enregistrement...'
-                                  : 'Enregistrer',
+                                  ? l10n.saving
+                                  : l10n.save,
                               style:
                               const TextStyle(color: Colors.white)),
                           style: ElevatedButton.styleFrom(
@@ -2410,6 +2411,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
     required String message,
     bool isCritical = false,
     required bool isDark,
+    required AppLocalizations l10n,
   }) async {
     return showDialog<bool>(
       context: context,
@@ -2438,7 +2440,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                 children: [
                   TextButton(
                     onPressed: () => Navigator.pop(context, false),
-                    child: Text('Annuler',
+                    child: Text(l10n.cancel,
                         style: TextStyle(
                             color: AppTheme.getTextSecondary(context))),
                   ),
@@ -2452,7 +2454,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                       foregroundColor: Colors.white,
                     ),
                     child:
-                    Text(isCritical ? 'Supprimer' : 'Confirmer'),
+                    Text(isCritical ? l10n.deleteAction : l10n.confirmAction),
                   ),
                 ],
               ),
@@ -2584,14 +2586,14 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
 
   // ==================== UTILITAIRES ====================
 
-  String _getRoleLabel(String role) {
-    const map = {
-      'ETUDIANT': 'Étudiant',
-      'GESTIONNAIRE': 'Gestionnaire',
-      'ADMIN': 'Administrateur',
-      'TOUS': 'Tous',
-    };
-    return map[role] ?? role;
+  String _getRoleLabel(String role, AppLocalizations l10n) {
+    switch (role) {
+      case 'ETUDIANT': return l10n.studentRole;
+      case 'GESTIONNAIRE': return l10n.managerRole;
+      case 'ADMIN': return l10n.adminRole;
+      case 'TOUS': return l10n.all;
+      default: return role;
+    }
   }
 
   Color _getRoleColor(String role) {
@@ -2603,14 +2605,14 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
     return map[role] ?? const Color(0xFF64748B);
   }
 
-  String _getStatutLabel(String statut) {
-    const map = {
-      'ACTIF': 'Actif',
-      'INACTIF': 'Inactif',
-      'SUSPENDU': 'Suspendu',
-      'TOUS': 'Tous',
-    };
-    return map[statut] ?? statut;
+  String _getStatutLabel(String statut, AppLocalizations l10n) {
+    switch (statut) {
+      case 'ACTIF': return l10n.activeStatus;
+      case 'INACTIF': return l10n.inactiveStatus;
+      case 'SUSPENDU': return l10n.suspendedStatus;
+      case 'TOUS': return l10n.all;
+      default: return statut;
+    }
   }
 
   Color _getStatutColor(String statut) {

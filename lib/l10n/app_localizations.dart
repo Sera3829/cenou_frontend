@@ -726,6 +726,8 @@ class AppLocalizations {
   String get activeStatus => _t('Actif', 'Active');
   String get inactiveStatus => _t('Inactif', 'Inactive');
   String get suspendedStatus => _t('Suspendu', 'Suspended');
+  String get noCenter => _t('Aucun centre', 'No center');
+  String get noHousing => _t('Aucun logement', 'No housing');
 
   String get dashboard => _t('Tableau de bord', 'Dashboard');
   String get users => _t('Utilisateurs', 'Users');
