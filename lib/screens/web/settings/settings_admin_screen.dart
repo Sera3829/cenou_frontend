@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import '../../../services/language_service.dart';
 import '../../../services/preference_service.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../../../config/theme.dart';
@@ -527,87 +528,83 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
   /// Affiche la boîte de dialogue de sélection de la langue.
   void _showLanguageDialog(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     final languages = [
       {'code': 'fr', 'name': l10n.french, 'flag': '🇫🇷'},
       {'code': 'en', 'name': l10n.english, 'flag': '🇺🇸'},
     ];
+    final langSvc = Provider.of<LanguageService>(context, listen: false);
+    final prefSvc = PreferenceService();
 
     showDialog(
       context: context,
-      builder: (context) {
-        return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          backgroundColor: AppTheme.getCardBackground(context),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Container(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    l10n.chooseLanguage,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.getTextPrimary(context),
-                    ),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        backgroundColor: AppTheme.getCardBackground(context),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 400),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.chooseLanguage,
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.getTextPrimary(context),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.selectInterfaceLanguage,
-                    style: TextStyle(
-                      color: AppTheme.getTextSecondary(context),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.selectInterfaceLanguage,
+                  style: TextStyle(color: AppTheme.getTextSecondary(context)),
+                ),
+                const SizedBox(height: 24),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: languages.map((lang) {
+                    return RadioListTile<String>(
+                      title: Row(
+                        children: [
+                          Text(lang['flag'] as String),
+                          const SizedBox(width: 12),
+                          Text(
+                            lang['name'] as String,
+                            style: TextStyle(color: AppTheme.getTextPrimary(context)),
+                          ),
+                        ],
+                      ),
+                      value: lang['code'] as String,
+                      groupValue: _selectedLanguage,
+                      onChanged: (String? value) async {
+                        if (value != null) {
+                          setState(() => _selectedLanguage = value);
+                          await prefSvc.setPreferredLanguage(value);
 
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: languages.map<Widget>((lang) {
-                      return RadioListTile<String>(
-                        title: Row(
-                          children: [
-                            Text(lang['flag'] as String),
-                            const SizedBox(width: 12),
-                            Text(
-                              lang['name'] as String,
-                              style: TextStyle(
-                                color: AppTheme.getTextPrimary(context),
-                              ),
+                          // ✅ Met à jour la locale dans LanguageService
+                          final countryCode = value == 'en' ? 'US' : 'FR';
+                          await langSvc.setLocale(Locale(value, countryCode));
+
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(l10n.languageChanged(lang['name'] as String)),
+                              backgroundColor: Theme.of(context).colorScheme.primary,
                             ),
-                          ],
-                        ),
-                        value: lang['code'] as String,
-                        groupValue: _selectedLanguage,
-                        onChanged: (String? value) async {
-                          if (value != null) {
-                            setState(() => _selectedLanguage = value);
-                            await _preferenceService.setPreferredLanguage(value);
-                            Navigator.pop(context);
-
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(l10n.languageChanged(lang['name'] as String)),
-                                backgroundColor: Theme.of(context).colorScheme.primary,
-                              ),
-                            );
-                          }
-                        },
-                        activeColor: Theme.of(context).colorScheme.primary,
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
+                          );
+                        }
+                      },
+                      activeColor: Theme.of(context).colorScheme.primary,
+                    );
+                  }).toList(),
+                ),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 
