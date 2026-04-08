@@ -745,6 +745,17 @@ class AppLocalizations {
   String reportResolvedDesc(String type) => _t('Signalement $type résolu', '$type report resolved');
   String reportAssignedDesc(String type) => _t('Signalement $type affecté', '$type report assigned');
   String get newReport => _t('Nouveau signalement', 'New report');
+  // ── Activités (contexte dashboard) ────────────────────────────────────────
+  String get actNewUser       => _t('Nouvel utilisateur', 'New user');
+  String get actPaymentConf   => _t('Paiement confirmé', 'Payment confirmed');
+  String get actPaymentInit   => _t('Paiement initié', 'Payment initiated');
+  String get actReportCreated => _t('Nouveau signalement', 'New report');
+  String get actReportResolved=> _t('Signalement résolu', 'Report resolved');
+  String get actReportAssigned=> _t('Signalement affecté', 'Report assigned');
+
+// Description inscription (format API : "Inscription: NOM PRENOM (ROLE)")
+  String registrationDesc(String name, String role) =>
+      _t('Inscription : $name ($role)', 'Registration: $name ($role)');
 
   String get dashboard => _t('Tableau de bord', 'Dashboard');
   String get users => _t('Utilisateurs', 'Users');

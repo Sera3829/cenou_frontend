@@ -141,27 +141,31 @@ class Activity {
   String getLocalizedDescription(AppLocalizations l10n) {
     switch (activityType) {
       case 'SIGNALEMENT_CREATE':
-        final type = metadata['type_probleme'] ?? l10n.problem;
-        final chambre = metadata['chambre'] ?? metadata['numero_chambre'] ?? l10n.unknownRoom;
+        final type   = metadata['type_probleme'] ?? l10n.problem;
+        final chambre= metadata['chambre'] ?? metadata['numero_chambre'] ?? l10n.unknownRoom;
         return l10n.reportCreatedDesc(type, chambre);
 
       case 'PAIEMENT_CONFIRME':
-        final montant = metadata['montant'] ?? '0';
-        final chambre = metadata['chambre'] ?? l10n.unknownRoom;
+        final montant = metadata['montant']?.toString() ?? '0';
+        final chambre = metadata['chambre'] ?? metadata['numero_chambre'] ?? l10n.unknownRoom;
         return l10n.paymentConfirmedDesc(montant, chambre);
 
       case 'PAIEMENT_INITIE':
-        final montant = metadata['montant'] ?? '0';
-        final chambre = metadata['chambre'] ?? l10n.unknownRoom;
+        final montant = metadata['montant']?.toString() ?? '0';
+        final chambre = metadata['chambre'] ?? metadata['numero_chambre'] ?? l10n.unknownRoom;
         return l10n.paymentInitiatedDesc(montant, chambre);
 
       case 'USER_CREATE':
-        final user = metadata['utilisateur'] ?? metadata['nom'] ?? '';
-        final role = metadata['role'] ?? '';
-        if (user.isNotEmpty) {
-          return l10n.userCreatedDesc(user);
+      // Essayer d'abord les champs metadata
+        final name = metadata['utilisateur'] ?? metadata['nom'] ??
+            metadata['prenom_nom'] ?? '';
+        final role = metadata['role']?.toString() ?? '';
+        if (name.isNotEmpty) {
+          return l10n.registrationDesc(name, role);
         }
-        return description.isNotEmpty ? description : l10n.unknownActivity;
+        // Fallback : parser la description brute de l'API
+        // Format API : "Inscription: Madi OUEDRAOGO (ETUDIANT)"
+        return _translateApiDescription(description, l10n);
 
       case 'SIGNALEMENT_RESOLU':
         final type = metadata['type_probleme'] ?? l10n.problem;
@@ -172,27 +176,75 @@ class Activity {
         return l10n.reportAssignedDesc(type);
 
       default:
-        return description.isNotEmpty ? description : l10n.unknownActivity;
+        return _translateApiDescription(description, l10n);
+    }
+  }
+
+
+  /// Parse et traduit les descriptions brutes de l'API.
+  /// Ex: "Inscription: Madi OUEDRAOGO (ETUDIANT)" → "Registration: Madi OUEDRAOGO (STUDENT)"
+  String _translateApiDescription(String apiDesc, AppLocalizations l10n) {
+    if (apiDesc.isEmpty) return l10n.unknownActivity;
+
+    // Pattern "Inscription: NOM (ROLE)"
+    final inscRegex = RegExp(r'^Inscription\s*:\s*(.+?)\s*\((\w+)\)$', caseSensitive: false);
+    final inscMatch = inscRegex.firstMatch(apiDesc);
+    if (inscMatch != null) {
+      final name = inscMatch.group(1) ?? '';
+      final role = inscMatch.group(2) ?? '';
+      return l10n.registrationDesc(name, _translateRole(role, l10n));
+    }
+
+    // Pattern "Paiement de X FCFA - Y"
+    final payRegex = RegExp(r'^Paiement de (.+?) - (.+)$', caseSensitive: false);
+    final payMatch = payRegex.firstMatch(apiDesc);
+    if (payMatch != null) {
+      final amount = payMatch.group(1) ?? '0';
+      final room   = payMatch.group(2) ?? l10n.unknownRoom;
+      return l10n.paymentConfirmedDesc(amount, room);
+    }
+
+    return apiDesc; // pas de pattern connu → retour brut
+  }
+
+  String _translateRole(String role, AppLocalizations l10n) {
+    switch (role.toUpperCase()) {
+      case 'ETUDIANT':
+        return l10n.isFrench ? 'ÉTUDIANT' : 'STUDENT';
+      case 'GESTIONNAIRE':
+        return l10n.isFrench ? 'GESTIONNAIRE' : 'MANAGER';
+      case 'ADMIN':
+        return l10n.isFrench ? 'ADMIN' : 'ADMIN';
+      default:
+        return role;
     }
   }
 
   /// Retourne le titre localisé
   String getLocalizedTitle(AppLocalizations l10n) {
     switch (activityType) {
-      case 'SIGNALEMENT_CREATE':
-        return l10n.newReport;
-      case 'PAIEMENT_CONFIRME':
-        return l10n.paymentConfirmed;
-      case 'PAIEMENT_INITIE':
-        return l10n.paymentInitiated;
-      case 'USER_CREATE':
-        return l10n.newUser;
-      case 'SIGNALEMENT_RESOLU':
-        return l10n.reportResolved;
-      case 'SIGNALEMENT_AFFECTE':
-        return l10n.reportAssigned;
+      case 'SIGNALEMENT_CREATE':  return l10n.actReportCreated;
+      case 'PAIEMENT_CONFIRME':   return l10n.actPaymentConf;
+      case 'PAIEMENT_INITIE':     return l10n.actPaymentInit;
+      case 'USER_CREATE':         return l10n.actNewUser;
+      case 'SIGNALEMENT_RESOLU':  return l10n.actReportResolved;
+      case 'SIGNALEMENT_AFFECTE': return l10n.actReportAssigned;
       default:
-        return title.isNotEmpty ? title : l10n.activity;
+      // Le title vient de l'API en français → on tente de le traduire
+        return _translateApiTitle(title, l10n);
+    }
+  }
+
+  /// Traduit les titres connus que l'API envoie en français.
+  String _translateApiTitle(String apiTitle, AppLocalizations l10n) {
+    switch (apiTitle.toLowerCase().trim()) {
+      case 'nouvel utilisateur':   return l10n.actNewUser;
+      case 'paiement confirmé':    return l10n.actPaymentConf;
+      case 'paiement initié':      return l10n.actPaymentInit;
+      case 'nouveau signalement':  return l10n.actReportCreated;
+      case 'signalement résolu':   return l10n.actReportResolved;
+      case 'signalement affecté':  return l10n.actReportAssigned;
+      default: return apiTitle.isNotEmpty ? apiTitle : l10n.activity;
     }
   }
 }
