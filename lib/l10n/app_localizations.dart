@@ -755,6 +755,47 @@ class AppLocalizations {
   String get scrollLeft => _t('Défiler vers la gauche', 'Scroll left');
   String get scrollRight => _t('Défiler vers la droite', 'Scroll right');
   String get horizontalScroll => _t('Défiler horizontalement', 'Scroll horizontally');
+  String get tableFullyVisible => _t('Tout visible', 'Fully visible');
+  String get biometricPrompt =>
+      _t('Utilisez votre empreinte digitale ou le code PIN pour accéder',
+          'Use your fingerprint or PIN to access');
+
+  String get biometricVerifying =>
+      _t('Vérification en cours…',
+          'Verifying…');
+
+  String get biometricTapToRetry =>
+      _t('Appuyez sur l\'icône pour réessayer',
+          'Tap the icon to try again');
+
+
+  String get biometricNotEnrolled =>
+      _t('Aucune empreinte enregistrée sur cet appareil',
+          'No fingerprint enrolled on this device');
+
+  String get biometricLockedOut =>
+      _t('Biométrie bloquée. Utilisez votre code PIN',
+          'Biometrics locked. Use your PIN');
+
+  String get biometricNotAvailable =>
+      _t('Biométrie non disponible sur cet appareil',
+          'Biometrics not available on this device');
+
+  String get usePassword =>
+      _t('Utiliser le mot de passe',
+          'Use password');
+
+  String get welcomeBackGeneric =>
+      _t('Bon retour !',
+          'Welcome back!');
+
+  String welcomeBack(String prenom) =>
+      _t('Bon retour, $prenom !',
+          'Welcome back, $prenom!');
+
+  String attemptsRemaining(int n) =>
+      _t('$n tentative(s) restante(s)',
+          '$n attempt(s) remaining');
 
 // Description inscription (format API : "Inscription: NOM PRENOM (ROLE)")
   String registrationDesc(String name, String role) =>

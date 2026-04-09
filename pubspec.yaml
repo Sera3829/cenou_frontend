@@ -12,6 +12,8 @@ dependencies:
   local_auth: ^3.0.0
   flutter_phoenix: ^1.1.1
   connectivity_plus: ^7.0.0
+  local_auth_android: ^1.0.0
+  local_auth_ios: ^1.0.0
   # l'export PDF
   pdf: ^3.10.10
   printing: ^5.13.4

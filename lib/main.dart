@@ -11,6 +11,8 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'l10n/app_localizations.dart';
 import 'services/api_service.dart';
 import 'widgets/admin_guard.dart';
+import 'package:local_auth/local_auth.dart';
+import 'screens/auth/biometric_lock_screen.dart';
 
 // Import communs
 import 'config/theme.dart';
@@ -421,18 +423,80 @@ class MobileAuthWrapper extends StatefulWidget {
   State<MobileAuthWrapper> createState() => _MobileAuthWrapperState();
 }
 
-class _MobileAuthWrapperState extends State<MobileAuthWrapper> {
+class _MobileAuthWrapperState extends State<MobileAuthWrapper>
+    with WidgetsBindingObserver {
+
   final NotificationService _notificationService = NotificationService();
-  bool _authChecked = false;
+  final PreferenceService    _prefService        = PreferenceService();
+  final LocalAuthentication  _localAuth          = LocalAuthentication();
+
+  bool _authChecked     = false;
   bool _isAuthenticated = false;
+
+  // Contrôle l'affichage de l'écran de verrouillage biométrique
+  bool _showBiometricLock = false;
+
+  // Mémorise quand l'app est passée en arrière-plan
+  DateTime? _backgroundedAt;
+
+  // Délai minimal avant de demander la biométrie au retour (15 s)
+  static const Duration _lockDelay = Duration(seconds: 15);
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initializeAuth();
   }
 
-  /// Initialise l'authentification et, si connecté, le service de notifications.
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // ── Cycle de vie de l'app ─────────────────────────────────────────────
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive) {
+      _backgroundedAt = DateTime.now();
+    }
+
+    if (state == AppLifecycleState.resumed) {
+      _onAppResumed();
+    }
+  }
+
+  Future<void> _onAppResumed() async {
+    if (!_isAuthenticated) return;
+
+    // Pas de biométrie si l'app est restée en avant-plan moins de _lockDelay
+    final bg = _backgroundedAt;
+    if (bg != null &&
+        DateTime.now().difference(bg) < _lockDelay) {
+      return;
+    }
+
+    // Vérifier que la biométrie est activée dans les préfs
+    final biometricEnabled = await _prefService.getBiometricEnabled();
+    if (!biometricEnabled) return;
+
+    // Vérifier que le device supporte encore la biométrie
+    final canCheck    = await _localAuth.canCheckBiometrics;
+    final isSupported = await _localAuth.isDeviceSupported();
+    if (!canCheck || !isSupported) return;
+
+    if (mounted) {
+      setState(() => _showBiometricLock = true);
+    }
+  }
+
+  // ── Initialisation ─────────────────────────────────────────────────────
+
   Future<void> _initializeAuth() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     await authProvider.initAuth();
@@ -441,25 +505,49 @@ class _MobileAuthWrapperState extends State<MobileAuthWrapper> {
       await _notificationService.initialize();
     }
 
-    setState(() {
-      _authChecked = true;
-      _isAuthenticated = authProvider.isAuthenticated;
-    });
+    if (mounted) {
+      setState(() {
+        _authChecked     = true;
+        _isAuthenticated = authProvider.isAuthenticated;
+      });
+    }
   }
+
+  // ── Build ───────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     if (!_authChecked) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+          body: Center(child: CircularProgressIndicator()));
     }
 
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
-        if (auth.isAuthenticated) {
-          return const HomeScreen();
+        // Pas connecté → Login
+        if (!auth.isAuthenticated) {
+          _isAuthenticated    = false;
+          _showBiometricLock  = false;
+          return const LoginScreen();
         }
-        // Déconnexion détectée → login immédiat sans stack résiduel
-        return const LoginScreen();
+
+        _isAuthenticated = true;
+
+        // Connecté mais verrouillé → BiometricLockScreen
+        if (_showBiometricLock) {
+          return BiometricLockScreen(
+            onSuccess: () {
+              if (mounted) setState(() => _showBiometricLock = false);
+            },
+            onFallback: () {
+              // logout() est appelé dans BiometricLockScreen avant onFallback
+              if (mounted) setState(() => _showBiometricLock = false);
+            },
+          );
+        }
+
+        // Connecté et déverrouillé → HomeScreen
+        return const HomeScreen();
       },
     );
   }
