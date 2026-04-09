@@ -112,6 +112,21 @@ class Activity {
 
   // ==================== MÉTHODES LOCALISÉES ====================
 
+  /// Lit le numéro de chambre depuis les métadonnées.
+  /// Cherche 'chambre' puis 'numero_chambre' — les deux clés sont
+  /// désormais exposées par le backend.
+  String _chambre(AppLocalizations l10n) {
+    final v = metadata['chambre'] ?? metadata['numero_chambre'];
+    if (v == null || v.toString().isEmpty) return l10n.unknownRoom;
+    return v.toString();
+  }
+
+  /// Lit le nom du centre depuis les métadonnées (optionnel).
+  String? _centre() {
+    final v = metadata['centre_nom'];
+    return (v != null && v.toString().isNotEmpty) ? v.toString() : null;
+  }
+
   /// Retourne le temps écoulé localisé (ex: "Il y a 5 min" ou "5 min ago")
   String getLocalizedTimeAgo(AppLocalizations l10n) {
     final now = DateTime.now();
@@ -140,46 +155,41 @@ class Activity {
   /// Retourne la description formatée et localisée
   String getLocalizedDescription(AppLocalizations l10n) {
     switch (activityType) {
+
       case 'SIGNALEMENT_CREATE':
-        final type   = metadata['type_probleme'] ?? l10n.problem;
-        final chambre= metadata['chambre'] ?? metadata['numero_chambre'] ?? l10n.unknownRoom;
+      case 'SIGNALEMENT_AFFECTE':
+        final type   = metadata['type_probleme']?.toString() ?? l10n.problem;
+        final chambre = _chambre(l10n);
         return l10n.reportCreatedDesc(type, chambre);
+
+      case 'SIGNALEMENT_RESOLU':
+        final type = metadata['type_probleme']?.toString() ?? l10n.problem;
+        final chambre = _chambre(l10n);
+        return l10n.reportResolvedDesc(type) + ' — $chambre';
 
       case 'PAIEMENT_CONFIRME':
         final montant = metadata['montant']?.toString() ?? '0';
-        final chambre = metadata['chambre'] ?? metadata['numero_chambre'] ?? l10n.unknownRoom;
+        final chambre = _chambre(l10n);
         return l10n.paymentConfirmedDesc(montant, chambre);
 
       case 'PAIEMENT_INITIE':
         final montant = metadata['montant']?.toString() ?? '0';
-        final chambre = metadata['chambre'] ?? metadata['numero_chambre'] ?? l10n.unknownRoom;
+        final chambre = _chambre(l10n);
         return l10n.paymentInitiatedDesc(montant, chambre);
 
       case 'USER_CREATE':
-      // Essayer d'abord les champs metadata
-        final name = metadata['utilisateur'] ?? metadata['nom'] ??
-            metadata['prenom_nom'] ?? '';
+        final name = metadata['utilisateur']?.toString()
+            ?? metadata['nom']?.toString()
+            ?? metadata['prenom_nom']?.toString()
+            ?? '';
         final role = metadata['role']?.toString() ?? '';
-        if (name.isNotEmpty) {
-          return l10n.registrationDesc(name, role);
-        }
-        // Fallback : parser la description brute de l'API
-        // Format API : "Inscription: Madi OUEDRAOGO (ETUDIANT)"
+        if (name.isNotEmpty) return l10n.registrationDesc(name, role);
         return _translateApiDescription(description, l10n);
-
-      case 'SIGNALEMENT_RESOLU':
-        final type = metadata['type_probleme'] ?? l10n.problem;
-        return l10n.reportResolvedDesc(type);
-
-      case 'SIGNALEMENT_AFFECTE':
-        final type = metadata['type_probleme'] ?? l10n.problem;
-        return l10n.reportAssignedDesc(type);
 
       default:
         return _translateApiDescription(description, l10n);
     }
   }
-
 
   /// Parse et traduit les descriptions brutes de l'API.
   /// Ex: "Inscription: Madi OUEDRAOGO (ETUDIANT)" → "Registration: Madi OUEDRAOGO (STUDENT)"
