@@ -663,7 +663,6 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
         final colDate     = tableWidth * 0.18;
         final colActions  = tableWidth * 0.10;
 
-        // Détermine si la navigation horizontale doit être affichée
         final bool needsHorizontalScroll = tableWidth > availableWidth;
 
         return Container(
@@ -675,7 +674,55 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
           ),
           child: Column(
             children: [
-              // Le tableau avec scroll horizontal contrôlé
+              // 🆕 Barre de navigation horizontale EN HAUT (si nécessaire)
+              if (needsHorizontalScroll) ...[
+                Container(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF8FAFC),
+                    borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+                    border: Border(bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1)),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        l10n.horizontalScroll,
+                        style: TextStyle(fontSize: 12, color: AppTheme.getTextSecondary(context)),
+                      ),
+                      const SizedBox(width: 12),
+                      IconButton(
+                        onPressed: () {
+                          _horizontalScrollController.animateTo(
+                            _horizontalScrollController.offset - 300,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOut,
+                          );
+                        },
+                        icon: Icon(Icons.chevron_left, color: Theme.of(context).colorScheme.primary),
+                        tooltip: l10n.scrollLeft,
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(4),
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          _horizontalScrollController.animateTo(
+                            _horizontalScrollController.offset + 300,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOut,
+                          );
+                        },
+                        icon: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.primary),
+                        tooltip: l10n.scrollRight,
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(4),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              // Tableau avec scroll horizontal contrôlé
               Scrollbar(
                 controller: _horizontalScrollController,
                 thumbVisibility: true,
@@ -686,25 +733,48 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                     width: tableWidth,
                     child: Column(
                       children: [
-                        // En-tête
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                          decoration: BoxDecoration(
-                            color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF8FAFC),
-                            borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
-                            border: Border(bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1)),
+                        // En-tête du tableau (seulement si la barre de navigation n'est pas affichée,
+                        // sinon l'en-tête est déjà géré par la barre ci-dessus)
+                        if (!needsHorizontalScroll)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF8FAFC),
+                              borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+                              border: Border(bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1)),
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(width: colEtudiant, child: _headerText(l10n.student)),
+                                SizedBox(width: colMontant,  child: _headerText(l10n.amount)),
+                                SizedBox(width: colStatut,   child: _headerText(l10n.status)),
+                                SizedBox(width: colMode,     child: _headerText(l10n.mode)),
+                                SizedBox(width: colDate,     child: _headerText(l10n.date)),
+                                SizedBox(width: colActions,  child: _headerText(l10n.actions)),
+                              ],
+                            ),
+                          )
+                        else
+                        // Si la barre de navigation est affichée, l'en-tête du tableau doit être présent
+                        // mais sans la bordure arrondie du haut (déjà gérée par la barre)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            decoration: BoxDecoration(
+                              color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF8FAFC),
+                              border: Border(bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1)),
+                            ),
+                            child: Row(
+                              children: [
+                                SizedBox(width: colEtudiant, child: _headerText(l10n.student)),
+                                SizedBox(width: colMontant,  child: _headerText(l10n.amount)),
+                                SizedBox(width: colStatut,   child: _headerText(l10n.status)),
+                                SizedBox(width: colMode,     child: _headerText(l10n.mode)),
+                                SizedBox(width: colDate,     child: _headerText(l10n.date)),
+                                SizedBox(width: colActions,  child: _headerText(l10n.actions)),
+                              ],
+                            ),
                           ),
-                          child: Row(
-                            children: [
-                              SizedBox(width: colEtudiant, child: _headerText(l10n.student)),
-                              SizedBox(width: colMontant,  child: _headerText(l10n.amount)),
-                              SizedBox(width: colStatut,   child: _headerText(l10n.status)),
-                              SizedBox(width: colMode,     child: _headerText(l10n.mode)),
-                              SizedBox(width: colDate,     child: _headerText(l10n.date)),
-                              SizedBox(width: colActions,  child: _headerText(l10n.actions)),
-                            ],
-                          ),
-                        ),
+
                         // Lignes
                         ListView.builder(
                           shrinkWrap: true,
@@ -728,42 +798,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                 ),
               ),
 
-              // Barre de navigation horizontale (flèches)
-              if (needsHorizontalScroll) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      IconButton(
-                        onPressed: () {
-                          _horizontalScrollController.animateTo(
-                            _horizontalScrollController.offset - 300,
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOut,
-                          );
-                        },
-                        icon: Icon(Icons.chevron_left, color: Theme.of(context).colorScheme.primary),
-                        tooltip: l10n.scrollLeft,
-                      ),
-                      IconButton(
-                        onPressed: () {
-                          _horizontalScrollController.animateTo(
-                            _horizontalScrollController.offset + 300,
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeOut,
-                          );
-                        },
-                        icon: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.primary),
-                        tooltip: l10n.scrollRight,
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-              ],
-
-              // Pagination
+              // Pagination (reste en bas)
               _buildPagination(provider, isDark, l10n),
             ],
           ),

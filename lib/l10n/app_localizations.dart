@@ -754,6 +754,7 @@ class AppLocalizations {
   String get actReportAssigned=> _t('Signalement affecté', 'Report assigned');
   String get scrollLeft => _t('Défiler vers la gauche', 'Scroll left');
   String get scrollRight => _t('Défiler vers la droite', 'Scroll right');
+  String get horizontalScroll => _t('Défiler horizontalement', 'Scroll horizontally');
 
 // Description inscription (format API : "Inscription: NOM PRENOM (ROLE)")
   String registrationDesc(String name, String role) =>
