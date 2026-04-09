@@ -752,6 +752,8 @@ class AppLocalizations {
   String get actReportCreated => _t('Nouveau signalement', 'New report');
   String get actReportResolved=> _t('Signalement résolu', 'Report resolved');
   String get actReportAssigned=> _t('Signalement affecté', 'Report assigned');
+  String get scrollLeft => _t('Défiler vers la gauche', 'Scroll left');
+  String get scrollRight => _t('Défiler vers la droite', 'Scroll right');
 
 // Description inscription (format API : "Inscription: NOM PRENOM (ROLE)")
   String registrationDesc(String name, String role) =>

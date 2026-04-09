@@ -30,6 +30,16 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
   DateTime? _selectedDateTo;
   bool _showFilters = true;
 
+  // Contrôleur pour le scroll horizontal du tableau
+  final ScrollController _horizontalScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _horizontalScrollController.dispose();
+    super.dispose();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -642,7 +652,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
 
         final screenWidth = MediaQuery.of(context).size.width;
         final sidebarWidth = screenWidth > 900 ? 220.0 : 0.0;
-        final availableWidth = screenWidth - sidebarWidth - 48; // 48 = margins (24*2)
+        final availableWidth = screenWidth - sidebarWidth - 48;
 
         final tableWidth = availableWidth > 700 ? availableWidth : 700.0;
 
@@ -653,6 +663,9 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
         final colDate     = tableWidth * 0.18;
         final colActions  = tableWidth * 0.10;
 
+        // Détermine si la navigation horizontale doit être affichée
+        final bool needsHorizontalScroll = tableWidth > availableWidth;
+
         return Container(
           margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
           decoration: BoxDecoration(
@@ -662,52 +675,95 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
           ),
           child: Column(
             children: [
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: tableWidth,
-                  child: Column(
+              // Le tableau avec scroll horizontal contrôlé
+              Scrollbar(
+                controller: _horizontalScrollController,
+                thumbVisibility: true,
+                child: SingleChildScrollView(
+                  controller: _horizontalScrollController,
+                  scrollDirection: Axis.horizontal,
+                  child: SizedBox(
+                    width: tableWidth,
+                    child: Column(
+                      children: [
+                        // En-tête
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                          decoration: BoxDecoration(
+                            color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF8FAFC),
+                            borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
+                            border: Border(bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1)),
+                          ),
+                          child: Row(
+                            children: [
+                              SizedBox(width: colEtudiant, child: _headerText(l10n.student)),
+                              SizedBox(width: colMontant,  child: _headerText(l10n.amount)),
+                              SizedBox(width: colStatut,   child: _headerText(l10n.status)),
+                              SizedBox(width: colMode,     child: _headerText(l10n.mode)),
+                              SizedBox(width: colDate,     child: _headerText(l10n.date)),
+                              SizedBox(width: colActions,  child: _headerText(l10n.actions)),
+                            ],
+                          ),
+                        ),
+                        // Lignes
+                        ListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: provider.paiements.length,
+                          itemBuilder: (context, index) {
+                            return _buildPaiementRow(
+                              provider.paiements[index], provider, index, isDark, l10n,
+                              colEtudiant: colEtudiant,
+                              colMontant: colMontant,
+                              colStatut: colStatut,
+                              colMode: colMode,
+                              colDate: colDate,
+                              colActions: colActions,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // Barre de navigation horizontale (flèches)
+              if (needsHorizontalScroll) ...[
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // En-tête
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                        decoration: BoxDecoration(
-                          color: isDark ? Colors.grey.shade900.withOpacity(0.5) : const Color(0xFFF8FAFC),
-                          borderRadius: const BorderRadius.only(topLeft: Radius.circular(12), topRight: Radius.circular(12)),
-                          border: Border(bottom: BorderSide(color: AppTheme.getBorderColor(context), width: 1)),
-                        ),
-                        child: Row(
-                          children: [
-                            SizedBox(width: colEtudiant, child: _headerText(l10n.student)),
-                            SizedBox(width: colMontant,  child: _headerText(l10n.amount)),
-                            SizedBox(width: colStatut,   child: _headerText(l10n.status)),
-                            SizedBox(width: colMode,     child: _headerText(l10n.mode)),
-                            SizedBox(width: colDate,     child: _headerText(l10n.date)),
-                            SizedBox(width: colActions,  child: _headerText(l10n.actions)),
-                          ],
-                        ),
-                      ),
-                      // Lignes
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: provider.paiements.length,
-                        itemBuilder: (context, index) {
-                          return _buildPaiementRow(
-                            provider.paiements[index], provider, index, isDark, l10n,
-                            colEtudiant: colEtudiant,
-                            colMontant: colMontant,
-                            colStatut: colStatut,
-                            colMode: colMode,
-                            colDate: colDate,
-                            colActions: colActions,
+                      IconButton(
+                        onPressed: () {
+                          _horizontalScrollController.animateTo(
+                            _horizontalScrollController.offset - 300,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOut,
                           );
                         },
+                        icon: Icon(Icons.chevron_left, color: Theme.of(context).colorScheme.primary),
+                        tooltip: l10n.scrollLeft,
+                      ),
+                      IconButton(
+                        onPressed: () {
+                          _horizontalScrollController.animateTo(
+                            _horizontalScrollController.offset + 300,
+                            duration: const Duration(milliseconds: 300),
+                            curve: Curves.easeOut,
+                          );
+                        },
+                        icon: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.primary),
+                        tooltip: l10n.scrollRight,
                       ),
                     ],
                   ),
                 ),
-              ),
+                const Divider(height: 1),
+              ],
+
+              // Pagination
               _buildPagination(provider, isDark, l10n),
             ],
           ),
