@@ -566,7 +566,7 @@ class _SignalementCard extends StatelessWidget {
                       Icon(statusInfo.icon, color: statusInfo.color, size: 12),
                       const SizedBox(width: 4),
                       Text(
-                        signalement.statut.replaceAll('_', ' '),
+                        _statLabel(signalement.statut, l10n),
                         style: TextStyle(
                             color: statusInfo.color,
                             fontSize: statusFont,
@@ -603,11 +603,13 @@ class _SignalementCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      _statLabel(signalement.statut, l10n),
+                      signalement.typeProbleme.replaceAll('_', ' '),
                       style: TextStyle(
-                          color: statusInfo.color,
-                          fontSize: statusFont,
-                          fontWeight: FontWeight.w600),
+                          fontSize: typeSize,                                      // ← typeSize
+                          fontWeight: FontWeight.w600,
+                          color: isDark ? Colors.white : Colors.black87),         // ← couleur neutre
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   Icon(Icons.arrow_forward_ios_rounded,

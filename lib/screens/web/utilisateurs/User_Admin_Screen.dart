@@ -25,6 +25,10 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
   String _selectedStatut = 'TOUS';
   bool _showFilters = true;
 
+  // Contrôleurs pour le scroll
+  final ScrollController _scrollController = ScrollController();
+  final ScrollController _tableHScrollCtrl = ScrollController();
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +40,8 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
+    _tableHScrollCtrl.dispose();
     super.dispose();
   }
 
@@ -57,48 +63,55 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
       child: Column(
         children: [
           _buildFloatingFiltersBar(isDark, l10n),
-          Expanded(child: _buildMainContent(isDark, l10n)),
+          Expanded(
+            child: Consumer<UserAdminProvider>(
+              builder: (context, provider, _) {
+                if (provider.isLoading && provider.users.isEmpty) {
+                  return Center(
+                    child: CircularProgressIndicator(
+                        color: Theme.of(context).colorScheme.primary),
+                  );
+                }
+                if (provider.error != null && provider.users.isEmpty) {
+                  return _buildErrorWidget(provider.error!, isDark, l10n);
+                }
+                if (provider.users.isEmpty) {
+                  return _buildEmptyState(isDark, l10n);
+                }
+
+                return CustomScrollView(
+                  controller: _scrollController,
+                  slivers: [
+                    SliverToBoxAdapter(
+                      child: Column(
+                        children: [
+                          _buildQuickStats(provider, isDark, l10n),
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 300),
+                            child: _showFilters
+                                ? _buildFiltersCard(isDark, l10n)
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _HScrollBarDelegate(
+                        hScrollCtrl: _tableHScrollCtrl,
+                        isDark: isDark,
+                      ),
+                    ),
+                    SliverToBoxAdapter(
+                      child: _buildUsersTable(provider, isDark, l10n),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
         ],
       ),
-    );
-  }
-
-  // ==================== CONTENU PRINCIPAL ====================
-
-  Widget _buildMainContent(bool isDark, AppLocalizations l10n) {
-    return Consumer<UserAdminProvider>(
-      builder: (context, provider, child) {
-        if (provider.isLoading && provider.users.isEmpty) {
-          return Center(
-            child: CircularProgressIndicator(
-                color: Theme.of(context).colorScheme.primary),
-          );
-        }
-
-        if (provider.error != null && provider.users.isEmpty) {
-          return _buildErrorWidget(provider.error!, isDark, l10n);
-        }
-
-        if (provider.users.isEmpty) {
-          return _buildEmptyState(isDark, l10n);
-        }
-
-        return SingleChildScrollView(
-          child: Column(
-            children: [
-              _buildQuickStats(provider, isDark, l10n),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                height: _showFilters ? null : 0,
-                child: _showFilters
-                    ? _buildFiltersCard(isDark, l10n)
-                    : const SizedBox.shrink(),
-              ),
-              _buildUsersTable(provider, isDark, l10n),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -566,6 +579,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
         ],
       ),
       child: SingleChildScrollView(
+        controller: _tableHScrollCtrl,
         scrollDirection: Axis.horizontal,
         child: SizedBox(
           width: tableWidth,
@@ -1826,8 +1840,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                             child: Text(
                                 '${l10n.room} ${l['numero_chambre']} - ${l['type_chambre']}',
                                 style: TextStyle(
-                                    color:
-                                    AppTheme.getTextPrimary(
+                                    color: AppTheme.getTextPrimary(
                                         context))),
                           );
                         }).toList(),
@@ -2647,5 +2660,133 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
   Future<void> _refreshData() async {
     await Provider.of<UserAdminProvider>(context, listen: false)
         .loadUsers();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// _HScrollBarDelegate — barre de scroll horizontal sticky
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _HScrollBarDelegate extends SliverPersistentHeaderDelegate {
+  final ScrollController hScrollCtrl;
+  final bool isDark;
+
+  const _HScrollBarDelegate({
+    required this.hScrollCtrl,
+    required this.isDark,
+  });
+
+  static const double _barHeight = 48.0;
+
+  @override double get minExtent => _barHeight;
+  @override double get maxExtent => _barHeight;
+
+  @override
+  bool shouldRebuild(_HScrollBarDelegate old) =>
+      old.isDark != isDark || old.hScrollCtrl != hScrollCtrl;
+
+  void _nudge(double delta) {
+    if (!hScrollCtrl.hasClients) return;
+    final target = (hScrollCtrl.offset + delta).clamp(
+      0.0,
+      hScrollCtrl.position.maxScrollExtent,
+    );
+    hScrollCtrl.animateTo(
+      target,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final isDarkCtx = Theme.of(context).brightness == Brightness.dark;
+    final primary   = Theme.of(context).colorScheme.primary;
+
+    return Container(
+      height: _barHeight,
+      decoration: BoxDecoration(
+        color: isDarkCtx ? const Color(0xFF1A1A2E) : const Color(0xFFF0F4FF),
+        border: Border(
+          top:    BorderSide(color: AppTheme.getBorderColor(context)),
+          bottom: BorderSide(color: AppTheme.getBorderColor(context)),
+        ),
+        boxShadow: overlapsContent
+            ? [BoxShadow(
+          color:  Colors.black.withOpacity(isDarkCtx ? 0.2 : 0.08),
+          offset: const Offset(0, 3),
+          blurRadius: 6,
+        )]
+            : null,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Row(children: [
+          Icon(Icons.swap_horiz_rounded, size: 18, color: primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: AnimatedBuilder(
+              animation: hScrollCtrl,
+              builder: (context, _) {
+                double progress = 0.0;
+                if (hScrollCtrl.hasClients) {
+                  final max = hScrollCtrl.position.maxScrollExtent;
+                  if (max > 0) progress = (hScrollCtrl.offset / max).clamp(0.0, 1.0);
+                }
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Scroll horizontal',
+                        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w500,
+                            letterSpacing: 0.4,
+                            color: isDarkCtx ? Colors.white38 : Colors.black38)),
+                    const SizedBox(height: 4),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 5,
+                        backgroundColor: isDarkCtx
+                            ? Colors.white12
+                            : Colors.black.withOpacity(0.08),
+                        valueColor: AlwaysStoppedAnimation<Color>(primary),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 10),
+          _ArrowBtn(icon: Icons.chevron_left,  tooltip: 'Défiler à gauche',
+              onPressed: () => _nudge(-160)),
+          const SizedBox(width: 4),
+          _ArrowBtn(icon: Icons.chevron_right, tooltip: 'Défiler à droite',
+              onPressed: () => _nudge(160)),
+        ]),
+      ),
+    );
+  }
+}
+
+class _ArrowBtn extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+  const _ArrowBtn({required this.icon, required this.tooltip, required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 30, height: 30,
+      child: IconButton(
+        padding:   EdgeInsets.zero,
+        icon:      Icon(icon, size: 20),
+        color:     Theme.of(context).colorScheme.primary,
+        onPressed: onPressed,
+        tooltip:   tooltip,
+      ),
+    );
   }
 }

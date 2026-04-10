@@ -25,6 +25,10 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
   bool _showFilters = true;
   bool _isRefreshing = false;
 
+  // Contrôleurs pour le scroll
+  final ScrollController _scrollController = ScrollController();
+  final ScrollController _tableHScrollCtrl = ScrollController();
+
   @override
   void initState() {
     super.initState();
@@ -34,6 +38,8 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
+    _tableHScrollCtrl.dispose();
     super.dispose();
   }
 
@@ -53,22 +59,44 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
       selectedIndex: 2,
       child: Column(
         children: [
+          // ① Barre de filtres rapides (fixe en haut)
           _buildFloatingFiltersBar(isDark, l10n),
+
+          // ② Zone scrollable principale
           Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  _buildQuickStats(isDark, l10n),
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    height: _showFilters ? null : 0,
-                    child: _showFilters
-                        ? _buildFiltersCard(isDark, l10n)
-                        : const SizedBox.shrink(),
+            child: CustomScrollView(
+              controller: _scrollController,
+              slivers: [
+                // Stats + filtres avancés — scrollent normalement
+                SliverToBoxAdapter(
+                  child: Column(
+                    children: [
+                      _buildQuickStats(isDark, l10n),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 300),
+                        height: _showFilters ? null : 0,
+                        child: _showFilters
+                            ? _buildFiltersCard(isDark, l10n)
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
                   ),
-                  _buildSignalementsList(isDark, l10n),
-                ],
-              ),
+                ),
+
+                // ③ Barre de scroll horizontal — STICKY (pinned: true)
+                SliverPersistentHeader(
+                  pinned: true,
+                  delegate: _HScrollBarDelegate(
+                    hScrollCtrl: _tableHScrollCtrl,
+                    isDark: isDark,
+                  ),
+                ),
+
+                // ④ Tableau (en-têtes + lignes + pagination)
+                SliverToBoxAdapter(
+                  child: _buildSignalementsList(isDark, l10n),
+                ),
+              ],
             ),
           ),
         ],
@@ -685,7 +713,9 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
           ),
           child: Column(
             children: [
+              // Tableau scrollable horizontalement — MÊME controller que la barre sticky
               SingleChildScrollView(
+                controller: _tableHScrollCtrl,
                 scrollDirection: Axis.horizontal,
                 child: SizedBox(
                   width: tableWidth,
@@ -1814,7 +1844,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     if (_isRefreshing) return;
     setState(() => _isRefreshing = true);
     try {
-      final l10n = AppLocalizations.of(context); // ← AJOUTER
+      final l10n = AppLocalizations.of(context);
       final provider = Provider.of<SignalementAdminProvider>(context, listen: false);
       await Future.wait([provider.loadSignalements(), provider.loadStatistiques()]);
       if (mounted) {
@@ -1828,7 +1858,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
         );
       }
     } catch (e) {
-      final l10n = AppLocalizations.of(context); // ← AJOUTER aussi ici
+      final l10n = AppLocalizations.of(context);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1889,5 +1919,153 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
       'AUTRE': Color(0xFF64748B),
     };
     return map[t] ?? const Color(0xFF64748B);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// _HScrollBarDelegate — barre de scroll horizontal sticky
+// ═══════════════════════════════════════════════════════════════════════════
+
+class _HScrollBarDelegate extends SliverPersistentHeaderDelegate {
+  final ScrollController hScrollCtrl;
+  final bool isDark;
+
+  const _HScrollBarDelegate({
+    required this.hScrollCtrl,
+    required this.isDark,
+  });
+
+  static const double _barHeight = 48.0;
+
+  @override double get minExtent => _barHeight;
+  @override double get maxExtent => _barHeight;
+
+  @override
+  bool shouldRebuild(_HScrollBarDelegate old) =>
+      old.isDark != isDark || old.hScrollCtrl != hScrollCtrl;
+
+  void _nudge(double delta) {
+    if (!hScrollCtrl.hasClients) return;
+    final target = (hScrollCtrl.offset + delta).clamp(
+      0.0,
+      hScrollCtrl.position.maxScrollExtent,
+    );
+    hScrollCtrl.animateTo(
+      target,
+      duration: const Duration(milliseconds: 220),
+      curve: Curves.easeOut,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    final isDarkCtx = Theme.of(context).brightness == Brightness.dark;
+    final primary   = Theme.of(context).colorScheme.primary;
+
+    return Container(
+      height: _barHeight,
+      decoration: BoxDecoration(
+        color: isDarkCtx ? const Color(0xFF1A1A2E) : const Color(0xFFF0F4FF),
+        border: Border(
+          top:    BorderSide(color: AppTheme.getBorderColor(context)),
+          bottom: BorderSide(color: AppTheme.getBorderColor(context)),
+        ),
+        boxShadow: overlapsContent
+            ? [BoxShadow(
+          color:  Colors.black.withOpacity(isDarkCtx ? 0.2 : 0.08),
+          offset: const Offset(0, 3),
+          blurRadius: 6,
+        )]
+            : null,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Row(children: [
+          Icon(Icons.swap_horiz_rounded, size: 18, color: primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: AnimatedBuilder(
+              animation: hScrollCtrl,
+              builder: (context, _) {
+                double progress = 0.0;
+                if (hScrollCtrl.hasClients) {
+                  final max = hScrollCtrl.position.maxScrollExtent;
+                  if (max > 0) {
+                    progress = (hScrollCtrl.offset / max).clamp(0.0, 1.0);
+                  }
+                }
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Scroll horizontal',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.4,
+                        color: isDarkCtx
+                            ? Colors.white38
+                            : Colors.black38,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 5,
+                        backgroundColor: isDarkCtx
+                            ? Colors.white12
+                            : Colors.black.withOpacity(0.08),
+                        valueColor: AlwaysStoppedAnimation<Color>(primary),
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+          const SizedBox(width: 10),
+          _ArrowBtn(
+            icon:      Icons.chevron_left,
+            tooltip:   'Défiler à gauche',
+            onPressed: () => _nudge(-160),
+          ),
+          const SizedBox(width: 4),
+          _ArrowBtn(
+            icon:      Icons.chevron_right,
+            tooltip:   'Défiler à droite',
+            onPressed: () => _nudge(160),
+          ),
+        ]),
+      ),
+    );
+  }
+}
+
+class _ArrowBtn extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+  const _ArrowBtn({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 30,
+      height: 30,
+      child: IconButton(
+        padding:   EdgeInsets.zero,
+        icon:      Icon(icon, size: 20),
+        color:     Theme.of(context).colorScheme.primary,
+        onPressed: onPressed,
+        tooltip:   tooltip,
+      ),
+    );
   }
 }
