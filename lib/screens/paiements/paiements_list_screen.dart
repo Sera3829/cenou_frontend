@@ -560,7 +560,7 @@ class _PaiementCard extends StatelessWidget {
                               color: statusInfo.color, size: 12),
                           const SizedBox(width: 4),
                           Text(
-                            paiement.statut,
+                            _statLabel(paiement.statut, l10n),
                             style: TextStyle(
                               color: statusInfo.color,
                               fontSize: statusFontSize,
@@ -682,6 +682,15 @@ class _PaiementCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _statLabel(String s, AppLocalizations l10n) {
+    switch (s.toUpperCase()) {
+      case 'EN_ATTENTE': return l10n.pendingStatus;    // "En attente"
+      case 'CONFIRME':   return l10n.confirmedStatus;  // "Confirmé"
+      case 'ECHEC':      return l10n.failedStatus;     // "Échec"
+      default:           return s.replaceAll('_', ' ');
+    }
   }
 }
 

@@ -106,6 +106,7 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
       );
       if (!mounted) return;
       await _showSuccessDialog(signalement, l10n);
+      if (!mounted) return;
       Navigator.pop(context);
     } catch (e) {
       if (!mounted) return;
@@ -150,10 +151,7 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
             ]),
         actions: [
           ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context),
             style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white),

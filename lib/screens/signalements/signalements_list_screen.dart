@@ -16,6 +16,7 @@ class SignalementsListScreen extends StatefulWidget {
 
   @override
   State<SignalementsListScreen> createState() => _SignalementsListScreenState();
+
 }
 
 class _SignalementsListScreenState extends State<SignalementsListScreen> {
@@ -602,13 +603,11 @@ class _SignalementCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      signalement.typeProbleme.replaceAll('_', ' '),
+                      _statLabel(signalement.statut, l10n),
                       style: TextStyle(
-                          fontSize: typeSize,
-                          fontWeight: FontWeight.w600,
-                          color: isDark ? Colors.white : Colors.black87),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                          color: statusInfo.color,
+                          fontSize: statusFont,
+                          fontWeight: FontWeight.w600),
                     ),
                   ),
                   Icon(Icons.arrow_forward_ios_rounded,
@@ -661,6 +660,16 @@ class _SignalementCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _statLabel(String s, AppLocalizations l10n) {
+    switch (s.toUpperCase()) {
+      case 'EN_ATTENTE': return l10n.pendingProcessing;   // "En attente de traitement"
+      case 'EN_COURS':   return l10n.inProgressStatus;    // "En cours de traitement"
+      case 'RESOLU':     return l10n.problemResolved;     // "Problème résolu"
+      case 'ANNULE':     return l10n.reportCancelled;     // "Signalement annulé"
+      default:           return s.replaceAll('_', ' ');
+    }
   }
 }
 
