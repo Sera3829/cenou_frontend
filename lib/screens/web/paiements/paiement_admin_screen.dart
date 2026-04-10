@@ -622,12 +622,12 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
         final availableWidth = screenWidth - sidebarWidth - 48;
         final tableWidth = availableWidth > 700 ? availableWidth : 700.0;
 
-        final colEtudiant = tableWidth * 0.22;
-        final colMontant  = tableWidth * 0.16;
-        final colStatut   = tableWidth * 0.16;
-        final colMode     = tableWidth * 0.18;
-        final colDate     = tableWidth * 0.18;
-        final colActions  = tableWidth * 0.10;
+        final colEtudiant = tableWidth * 0.20;
+        final colMontant  = tableWidth * 0.14;
+        final colStatut   = tableWidth * 0.14;
+        final colMode     = tableWidth * 0.16;
+        final colDate     = tableWidth * 0.16;
+        final colActions  = tableWidth * 0.13;
 
         return Container(
           margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),

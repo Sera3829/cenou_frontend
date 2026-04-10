@@ -692,12 +692,12 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
         final availableWidth = screenWidth - sidebarWidth - 48;
         final tableWidth = availableWidth > 800 ? availableWidth : 800.0;
 
-        final colEtudiant = tableWidth * 0.22;
-        final colDescription = tableWidth * 0.24;
-        final colType = tableWidth * 0.13;
-        final colStatut = tableWidth * 0.15;
-        final colDate = tableWidth * 0.16;
-        final colActions = tableWidth * 0.10;
+        final colEtudiant    = tableWidth * 0.20;
+        final colDescription = tableWidth * 0.22;
+        final colType        = tableWidth * 0.12;
+        final colStatut      = tableWidth * 0.13;
+        final colDate        = tableWidth * 0.14;
+        final colActions     = tableWidth * 0.13;
 
         return Container(
           margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
