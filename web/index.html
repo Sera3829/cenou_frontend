@@ -2,26 +2,28 @@
 <html>
 <head>
   <base href="$FLUTTER_BASE_HREF">
-
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
+  <meta name="description" content="Cenou Room - Gestion de résidences universitaires CENOU">
 
   <!-- iOS meta tags & icons -->
-  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="cenou_mobile">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <meta name="apple-mobile-web-app-title" content="Cenou Room">
+  <link rel="apple-touch-icon" href="icons/icon_192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon_32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon_16.png">
+  <link rel="shortcut icon" href="icons/favicon_32.png">
 
-  <title>Dashboard CENOU Admin</title>
+  <title>Cenou Room</title>
   <link rel="manifest" href="manifest.json">
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #1E3A8A; }
+
     #mobile-block {
       display: none;
       flex-direction: column;
@@ -34,11 +36,15 @@
       text-align: center;
       padding: 24px;
     }
-    #mobile-block .icon { font-size: 64px; margin-bottom: 24px; }
-    #mobile-block h1 { font-size: 24px; margin-bottom: 16px; font-weight: bold; }
-    #mobile-block p { font-size: 16px; opacity: 0.8; max-width: 400px; line-height: 1.5; }
+    #mobile-block img {
+      width: 96px; height: 96px;
+      border-radius: 22px;
+      margin-bottom: 24px;
+    }
+    #mobile-block h1 { font-size: 22px; margin-bottom: 12px; font-weight: bold; }
+    #mobile-block p  { font-size: 15px; opacity: 0.85; max-width: 320px; line-height: 1.6; }
     #mobile-block .badge {
-      margin-top: 32px;
+      margin-top: 28px;
       padding: 12px 20px;
       background: rgba(255,255,255,0.15);
       border: 1px solid rgba(255,255,255,0.3);
@@ -50,69 +56,61 @@
 
 <body>
 
-<!-- Écran de blocage mobile (caché par défaut) -->
+<!-- Écran de blocage mobile (caché par défaut, affiché si téléphone détecté) -->
 <div id="mobile-block">
-  <div class="icon">🖥️</div>
-  <h1>Application réservée aux ordinateurs</h1>
+  <img src="icons/icon_192.png" alt="Cenou Room">
+  <h1>Cenou Room</h1>
   <p>
-    Ce tableau de bord CENOU est uniquement accessible depuis un ordinateur.
-    Veuillez utiliser l'application mobile CENOU.
+    Cette application de gestion est réservée aux ordinateurs.<br>
+    Veuillez utiliser l'application mobile Cenou Room.
   </p>
-  <div class="badge">📱 Téléchargez l'application CENOU Mobile</div>
+  <div class="badge">📱 Téléchargez l'application Cenou Room</div>
 </div>
 
-<!-- Détection et blocage mobile -->
+<!-- Détection mobile et blocage -->
 <script>
-  (function() {
-    var ua = navigator.userAgent || navigator.vendor || window.opera;
-    var uaLower = ua.toLowerCase();
+  (function () {
+    var ua         = navigator.userAgent || navigator.vendor || window.opera;
+    var uaLower    = ua.toLowerCase();
 
-    // Détecter les téléphones (pas les tablettes)
-    var isPhone = /iphone|ipod|(android.*mobile)|windows phone|blackberry|iemobile|opera mini/i.test(uaLower);
+    // Téléphones (pas tablettes)
+    var isPhone    = /iphone|ipod|(android.*mobile)|windows phone|blackberry|iemobile|opera mini/i.test(uaLower);
 
-    // Détecter iPad explicitement (tablette = autorisée)
-    var isIpad = /ipad/i.test(uaLower) ||
-                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    // iPads (autorisés comme les PC)
+    var isIpad     = /ipad/i.test(uaLower) ||
+                     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
-    // Vérification supplémentaire par taille d'écran
-    // Téléphone = largeur < 768px ET hauteur < 1024px ET pas une tablette connue
-    var isSmallScreen = window.screen.width < 768 && window.screen.height < 1024;
+    // Petit écran portrait = probablement un téléphone
+    var isSmall    = window.screen.width < 768 && window.screen.height < 1024;
 
-    // Bloquer uniquement si c'est un téléphone ET pas une tablette
-    var shouldBlock = (isPhone && !isIpad) || (isSmallScreen && !isIpad);
+    var shouldBlock = (isPhone && !isIpad) || (isSmall && !isIpad);
 
     if (shouldBlock) {
-      // Afficher immédiatement l'écran de blocage
-      var block = document.getElementById('mobile-block');
-      if (block) {
-        block.style.display = 'flex';
-      }
-      // Empêcher Flutter de démarrer
+      document.getElementById('mobile-block').style.display = 'flex';
+      // Empêche Flutter de démarrer
       window._flutter_web_auto_start = false;
     }
   })();
 </script>
 
-<!-- Chargement Flutter uniquement si pas un téléphone -->
+<!-- Chargement Flutter uniquement sur non-mobile -->
 <script>
-  (function() {
-    var ua = navigator.userAgent || navigator.vendor || window.opera;
-    var uaLower = ua.toLowerCase();
+  (function () {
+    var ua         = navigator.userAgent || navigator.vendor || window.opera;
+    var uaLower    = ua.toLowerCase();
 
-    var isPhone = /iphone|ipod|(android.*mobile)|windows phone|blackberry|iemobile|opera mini/i.test(uaLower);
+    var isPhone    = /iphone|ipod|(android.*mobile)|windows phone|blackberry|iemobile|opera mini/i.test(uaLower);
+    var isIpad     = /ipad/i.test(uaLower) ||
+                     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var isSmall    = window.screen.width < 768 && window.screen.height < 1024;
 
-    var isIpad = /ipad/i.test(uaLower) ||
-                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-    var isSmallScreen = window.screen.width < 768 && window.screen.height < 1024;
-
-    var shouldBlock = (isPhone && !isIpad) || (isSmallScreen && !isIpad);
+    var shouldBlock = (isPhone && !isIpad) || (isSmall && !isIpad);
 
     if (!shouldBlock) {
-      var script = document.createElement('script');
-      script.src = 'flutter_bootstrap.js';
-      script.async = true;
-      document.body.appendChild(script);
+      var s    = document.createElement('script');
+      s.src    = 'flutter_bootstrap.js';
+      s.async  = true;
+      document.body.appendChild(s);
     }
   })();
 </script>
