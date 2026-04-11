@@ -23,7 +23,7 @@ dependencies:
   share_plus: ^12.0.1
 
   # Pour picker de fichiers
-  file_picker: ^6.1.1
+  file_picker: ^8.0.0
 
   # Pour les rapports
   open_file: ^3.3.3
