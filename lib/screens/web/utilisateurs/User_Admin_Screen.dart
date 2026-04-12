@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../../../models/admin/centre.dart';
+import '../../../providers/auth_provider.dart';
 import '../../../providers/web/UserAdminProvider.dart';
 import '../../../models/admin/admin_user.dart';
 import 'package:cenou_mobile/config/theme.dart';
@@ -991,12 +992,14 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
 
   List<PopupMenuEntry<String>> _buildActionMenu(
       AdminUser user, bool isDark, AppLocalizations l10n) {
+    final authProv = Provider.of<AuthProvider>(context, listen: false);
+    final isAdmin  = authProv.isAdmin;
+
     return [
       PopupMenuItem(
         value: 'details',
         child: Row(children: [
-          Icon(Icons.info_outline,
-              size: 18, color: AppTheme.getTextSecondary(context)),
+          Icon(Icons.info_outline, size: 18, color: AppTheme.getTextSecondary(context)),
           const SizedBox(width: 8),
           Text(l10n.fullDetails,
               style: TextStyle(color: AppTheme.getTextPrimary(context))),
@@ -1009,8 +1012,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
             const Icon(Icons.send, size: 18, color: Color(0xFF3B82F6)),
             const SizedBox(width: 8),
             Text(l10n.sendAnnouncement,
-                style:
-                TextStyle(color: AppTheme.getTextPrimary(context))),
+                style: TextStyle(color: AppTheme.getTextPrimary(context))),
           ]),
         ),
       PopupMenuItem(
@@ -1018,56 +1020,63 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
         child: Row(children: [
           const Icon(Icons.edit, size: 18, color: Color(0xFF3B82F6)),
           const SizedBox(width: 8),
-          Text(l10n.edit,
-              style: TextStyle(color: AppTheme.getTextPrimary(context))),
+          Text(l10n.edit, style: TextStyle(color: AppTheme.getTextPrimary(context))),
         ]),
       ),
       if (user.isActive) ...[
         PopupMenuItem(
           value: 'desactiver',
           child: Row(children: [
-            const Icon(Icons.pause_circle,
-                size: 18, color: Color(0xFFF59E0B)),
+            const Icon(Icons.pause_circle, size: 18, color: Color(0xFFF59E0B)),
             const SizedBox(width: 8),
             Text(l10n.deactivate,
-                style:
-                TextStyle(color: AppTheme.getTextPrimary(context))),
+                style: TextStyle(color: AppTheme.getTextPrimary(context))),
           ]),
         ),
-        PopupMenuItem(
-          value: 'suspendre',
-          child: Row(children: [
-            const Icon(Icons.block, size: 18, color: Color(0xFFEF4444)),
-            const SizedBox(width: 8),
-            Text(l10n.suspend,
-                style:
-                TextStyle(color: AppTheme.getTextPrimary(context))),
-          ]),
-        ),
-      ] else if (user.statut == 'INACTIF' ||
-          user.statut == 'SUSPENDU') ...[
+        // GESTIONNAIRE ne peut pas suspendre un ADMIN
+        if (isAdmin || user.role != 'ADMIN')
+          PopupMenuItem(
+            value: 'suspendre',
+            child: Row(children: [
+              const Icon(Icons.block, size: 18, color: Color(0xFFEF4444)),
+              const SizedBox(width: 8),
+              Text(l10n.suspend,
+                  style: TextStyle(color: AppTheme.getTextPrimary(context))),
+            ]),
+          ),
+      ] else if (user.statut == 'INACTIF' || user.statut == 'SUSPENDU') ...[
         PopupMenuItem(
           value: 'reactiver',
           child: Row(children: [
-            const Icon(Icons.play_arrow,
-                size: 18, color: Color(0xFF10B981)),
+            const Icon(Icons.play_arrow, size: 18, color: Color(0xFF10B981)),
             const SizedBox(width: 8),
             Text(l10n.reactivate,
-                style:
-                TextStyle(color: AppTheme.getTextPrimary(context))),
+                style: TextStyle(color: AppTheme.getTextPrimary(context))),
           ]),
         ),
       ],
-      const PopupMenuDivider(),
-      PopupMenuItem(
-        value: 'supprimer',
-        child: Row(children: [
-          const Icon(Icons.delete, size: 18, color: Color(0xFFEF4444)),
-          const SizedBox(width: 8),
-          Text(l10n.delete,
-              style: TextStyle(color: Colors.red.shade700)),
-        ]),
-      ),
+      // Supprimer : ADMIN uniquement, et ne peut pas se supprimer lui-même
+      if (isAdmin && user.role != 'ADMIN') ...[
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'supprimer',
+          child: Row(children: [
+            const Icon(Icons.delete, size: 18, color: Color(0xFFEF4444)),
+            const SizedBox(width: 8),
+            Text(l10n.delete, style: TextStyle(color: Colors.red.shade700)),
+          ]),
+        ),
+      ] else if (isAdmin) ...[
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: 'supprimer',
+          child: Row(children: [
+            const Icon(Icons.delete, size: 18, color: Color(0xFFEF4444)),
+            const SizedBox(width: 8),
+            Text(l10n.delete, style: TextStyle(color: Colors.red.shade700)),
+          ]),
+        ),
+      ],
     ];
   }
 
@@ -1624,413 +1633,429 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
   }
 
   Future<void> _showCreateUserDialog(AppLocalizations l10n) async {
-    final provider = Provider.of<UserAdminProvider>(context, listen: false);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final provider  = Provider.of<UserAdminProvider>(context, listen: false);
+    final authProv  = Provider.of<AuthProvider>(context, listen: false);
+    final isDark    = Theme.of(context).brightness == Brightness.dark;
+    final isAdmin   = authProv.isAdmin; // seul ADMIN peut créer ADMIN/GESTIONNAIRE
 
-    if (provider.centres.isEmpty) {
-      await provider.loadCentres();
-    }
+    if (provider.centres.isEmpty) await provider.loadCentres();
 
-    final matriculeController = TextEditingController();
-    final nomController = TextEditingController();
-    final prenomController = TextEditingController();
-    final emailController = TextEditingController();
-    final telephoneController = TextEditingController();
-    final passwordController = TextEditingController();
+    final matriculeController       = TextEditingController();
+    final nomController             = TextEditingController();
+    final prenomController          = TextEditingController();
+    final emailController           = TextEditingController();
+    final telephoneController       = TextEditingController();
+    final passwordController        = TextEditingController();
     final confirmPasswordController = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    String selectedRole = 'ETUDIANT';
+    // Rôles disponibles selon le rôle de l'admin connecté
+    final availableRoles = isAdmin
+        ? ['ETUDIANT', 'GESTIONNAIRE', 'ADMIN']
+        : ['ETUDIANT'];
+
+    String selectedRole   = 'ETUDIANT';
     String selectedStatut = 'ACTIF';
-    int? selectedCentreId;
-    int? selectedLogementId;
-    bool generatePassword = true;
-    bool isPasswordVisible = false;
-    bool isConfirmPasswordVisible = false;
-    bool isSaving = false;
+    int?   selectedCentreId;
+    int?   selectedLogementId;
+    bool   generatePassword        = true;
+    bool   isPasswordVisible       = false;
+    bool   isConfirmPasswordVisible = false;
+    bool   isSaving                = false;
     List<Map<String, dynamic>> availableLogements = [];
 
     await showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => Dialog(
-          backgroundColor: AppTheme.getCardBackground(context),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16)),
-          child: SingleChildScrollView(
-            child: Container(
-              width: 600,
-              padding: const EdgeInsets.all(24),
-              child: Form(
-                key: formKey,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .primary
-                              .withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
+        builder: (context, setState) {
+          // Titre et sous-titre dynamiques selon le rôle
+          String dialogTitle;
+          String dialogSubtitle;
+          IconData dialogIcon;
+          switch (selectedRole) {
+            case 'ADMIN':
+              dialogTitle    = l10n.newAdmin;
+              dialogSubtitle = l10n.fillAdminInfo;
+              dialogIcon     = Icons.admin_panel_settings;
+              break;
+            case 'GESTIONNAIRE':
+              dialogTitle    = l10n.newManager;
+              dialogSubtitle = l10n.fillManagerInfo;
+              dialogIcon     = Icons.manage_accounts;
+              break;
+            default:
+              dialogTitle    = l10n.newStudent;
+              dialogSubtitle = l10n.fillStudentInfo;
+              dialogIcon     = Icons.school;
+          }
+
+          final isEtudiant = selectedRole == 'ETUDIANT';
+
+          return Dialog(
+            backgroundColor: AppTheme.getCardBackground(context),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: SingleChildScrollView(
+              child: Container(
+                width: 600,
+                padding: const EdgeInsets.all(24),
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ── Header ──────────────────────────────────────────────
+                      Row(children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(dialogIcon,
+                              color: Theme.of(context).colorScheme.primary, size: 24),
                         ),
-                        child: Icon(Icons.person_add,
-                            color:
-                            Theme.of(context).colorScheme.primary,
-                            size: 24),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(l10n.newStudent,
-                                style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color:
-                                    AppTheme.getTextPrimary(context))),
-                            const SizedBox(height: 4),
-                            Text(
-                                l10n.fillStudentInfo,
-                                style: TextStyle(
-                                    fontSize: 14,
-                                    color: AppTheme.getTextSecondary(
-                                        context))),
-                          ],
-                        ),
-                      ),
-                    ]),
-                    const SizedBox(height: 24),
-                    _buildFormField(
-                      controller: matriculeController,
-                      label: '${l10n.matricule} *',
-                      hint: 'Ex: ETUD2024001',
-                      icon: Icons.badge,
-                      isDark: isDark,
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty)
-                          return l10n.matriculeRequired;
-                        if (v.trim().length < 5)
-                          return l10n.matriculeMinLength;
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    Row(children: [
-                      Expanded(
-                        child: _buildFormField(
-                          controller: nomController,
-                          label: '${l10n.lastName} *',
-                          hint: l10n.lastNameHint,
-                          icon: Icons.person,
-                          isDark: isDark,
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty)
-                              return l10n.lastNameRequired;
-                            if (v.trim().length < 2)
-                              return l10n.lastNameMinLength;
-                            return null;
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildFormField(
-                          controller: prenomController,
-                          label: '${l10n.firstName} *',
-                          hint: l10n.firstNameHint,
-                          icon: Icons.person_outline,
-                          isDark: isDark,
-                          validator: (v) {
-                            if (v == null || v.trim().isEmpty)
-                              return l10n.firstNameRequired;
-                            if (v.trim().length < 2)
-                              return l10n.firstNameMinLength;
-                            return null;
-                          },
-                        ),
-                      ),
-                    ]),
-                    const SizedBox(height: 16),
-                    _buildFormField(
-                      controller: emailController,
-                      label: '${l10n.email} *',
-                      hint: l10n.emailHint,
-                      icon: Icons.email,
-                      isDark: isDark,
-                      keyboardType: TextInputType.emailAddress,
-                      validator: (v) {
-                        if (v == null || v.trim().isEmpty)
-                          return l10n.emailRequired;
-                        if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                            .hasMatch(v.trim())) return l10n.emailInvalid;
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    _buildFormField(
-                      controller: telephoneController,
-                      label: l10n.phoneOptional,
-                      hint: l10n.phoneHint,
-                      icon: Icons.phone,
-                      isDark: isDark,
-                      keyboardType: TextInputType.phone,
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<int>(
-                      value: selectedCentreId,
-                      decoration: _dropdownDecoration(
-                          '${l10n.center} *', Icons.location_city, isDark),
-                      dropdownColor: AppTheme.getCardBackground(context),
-                      style: TextStyle(
-                          color: AppTheme.getTextPrimary(context)),
-                      items: provider.centres.map((centre) {
-                        return DropdownMenuItem<int>(
-                          value: centre.id,
-                          child: Text(centre.nom,
-                              style: TextStyle(
-                                  color:
-                                  AppTheme.getTextPrimary(context))),
-                        );
-                      }).toList(),
-                      onChanged: (value) async {
-                        setState(() {
-                          selectedCentreId = value;
-                          selectedLogementId = null;
-                          availableLogements = [];
-                        });
-                        if (value != null) {
-                          await provider.loadAvailableLogements(value);
-                          setState(() {
-                            availableLogements =
-                                provider.availableLogements;
-                          });
-                        }
-                      },
-                      validator: (v) =>
-                      v == null ? l10n.centerRequired : null,
-                    ),
-                    if (selectedCentreId != null) ...[
-                      const SizedBox(height: 16),
-                      DropdownButtonFormField<int>(
-                        value: selectedLogementId,
-                        decoration: _dropdownDecoration(
-                            l10n.housingOptional, Icons.home, isDark),
-                        dropdownColor: AppTheme.getCardBackground(context),
-                        style: TextStyle(
-                            color: AppTheme.getTextPrimary(context)),
-                        items: availableLogements.isEmpty
-                            ? [
-                          DropdownMenuItem<int>(
-                              value: null,
-                              child: Text(l10n.noHousingAvailable,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(dialogTitle,
                                   style: TextStyle(
-                                      color:
-                                      AppTheme.getTextTertiary(
-                                          context))))
-                        ]
-                            : availableLogements.map((l) {
-                          return DropdownMenuItem<int>(
-                            value: l['id'],
-                            child: Text(
-                                '${l10n.room} ${l['numero_chambre']} - ${l['type_chambre']}',
-                                style: TextStyle(
-                                    color: AppTheme.getTextPrimary(
-                                        context))),
-                          );
-                        }).toList(),
-                        onChanged: (v) =>
-                            setState(() => selectedLogementId = v),
-                      ),
-                    ],
-                    const SizedBox(height: 16),
-                    CheckboxListTile(
-                      value: generatePassword,
-                      onChanged: (v) => setState(() {
-                        generatePassword = v ?? true;
-                        if (generatePassword) {
-                          passwordController.clear();
-                          confirmPasswordController.clear();
-                        }
-                      }),
-                      title: Text(
-                          l10n.generatePassword,
-                          style: TextStyle(
-                              color: AppTheme.getTextPrimary(context),
-                              fontSize: 14)),
-                      controlAffinity: ListTileControlAffinity.leading,
-                      activeColor:
-                      Theme.of(context).colorScheme.primary,
-                      contentPadding: EdgeInsets.zero,
-                    ),
-                    if (!generatePassword) ...[
-                      const SizedBox(height: 8),
-                      _buildPasswordField(
-                        controller: passwordController,
-                        label: l10n.passwordLabel,
-                        hint: l10n.passwordHint,
-                        isVisible: isPasswordVisible,
-                        isDark: isDark,
-                        onToggle: () => setState(
-                                () => isPasswordVisible = !isPasswordVisible),
-                        validator: (v) {
-                          if (!generatePassword) {
-                            if (v == null || v.trim().isEmpty)
-                              return l10n.passwordRequired;
-                            if (v.length < 6)
-                              return l10n.passwordMinLength;
-                            if (!RegExp(r'[A-Z]').hasMatch(v))
-                              return l10n.passwordUppercase;
-                            if (!RegExp(r'[0-9]').hasMatch(v))
-                              return l10n.passwordDigit;
-                          }
-                          return null;
-                        },
-                      ),
-                      const SizedBox(height: 16),
-                      _buildPasswordField(
-                        controller: confirmPasswordController,
-                        label: l10n.confirmPasswordLabel,
-                        hint: l10n.confirmPasswordHint,
-                        isVisible: isConfirmPasswordVisible,
-                        isDark: isDark,
-                        icon: Icons.lock_outline,
-                        onToggle: () => setState(() =>
-                        isConfirmPasswordVisible =
-                        !isConfirmPasswordVisible),
-                        validator: (v) {
-                          if (!generatePassword) {
-                            if (v == null || v.trim().isEmpty)
-                              return l10n.confirmPasswordRequired;
-                            if (v != passwordController.text)
-                              return l10n.passwordsMismatch;
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
-                    if (generatePassword) ...[
-                      const SizedBox(height: 16),
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.withOpacity(isDark ? 0.2 : 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                              color: Colors.blue.withOpacity(0.3)),
-                        ),
-                        child: Row(children: [
-                          const Icon(Icons.info_outline,
-                              color: Colors.blue, size: 20),
-                          const SizedBox(width: 12),
-                          Expanded(
-                              child: Text(
-                                  l10n.securePasswordGenerated,
+                                      fontSize: 20, fontWeight: FontWeight.bold,
+                                      color: AppTheme.getTextPrimary(context))),
+                              const SizedBox(height: 4),
+                              Text(dialogSubtitle,
                                   style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.blue.shade700))),
-                        ]),
-                      ),
-                    ],
-                    const SizedBox(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: isSaving
-                              ? null
-                              : () => Navigator.pop(context),
-                          child: Text(l10n.cancel,
-                              style: TextStyle(
-                                  color:
-                                  AppTheme.getTextSecondary(context))),
-                        ),
-                        const SizedBox(width: 12),
-                        ElevatedButton.icon(
-                          onPressed: isSaving
-                              ? null
-                              : () async {
-                            if (formKey.currentState!.validate()) {
-                              final sm =
-                              ScaffoldMessenger.of(context);
-                              setState(() => isSaving = true);
-                              try {
-                                await provider.createUser(
-                                  matricule: matriculeController.text
-                                      .trim(),
-                                  nom: nomController.text.trim(),
-                                  prenom: prenomController.text.trim(),
-                                  email: emailController.text.trim(),
-                                  telephone: telephoneController.text
-                                      .trim()
-                                      .isEmpty
-                                      ? null
-                                      : telephoneController.text
-                                      .trim(),
-                                  role: selectedRole,
-                                  statut: selectedStatut,
-                                  motDePasse: generatePassword
-                                      ? null
-                                      : passwordController.text.trim(),
-                                  centreId: selectedCentreId,
-                                  logementId: selectedLogementId,
-                                  dateDebut: selectedLogementId != null
-                                      ? DateTime.now()
-                                      .toIso8601String()
-                                      : null,
-                                );
-                                Navigator.pop(context);
-                                sm.showSnackBar(SnackBar(
-                                  content:
-                                  Text(l10n.studentCreated),
-                                  backgroundColor: const Color(0xFF10B981),
-                                  behavior:
-                                  SnackBarBehavior.floating,
-                                ));
-                              } catch (e) {
-                                setState(() => isSaving = false);
-                                sm.showSnackBar(SnackBar(
-                                  content: Text('${l10n.error}: $e'),
-                                  backgroundColor:
-                                  const Color(0xFFEF4444),
-                                  behavior:
-                                  SnackBarBehavior.floating,
-                                ));
-                              }
-                            }
-                          },
-                          icon: isSaving
-                              ? const SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white))
-                              : const Icon(Icons.save, color: Colors.white),
-                          label: Text(
-                              isSaving ? l10n.creating : l10n.createStudent,
-                              style:
-                              const TextStyle(color: Colors.white)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                            Theme.of(context).colorScheme.primary,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 24, vertical: 14),
+                                      fontSize: 14,
+                                      color: AppTheme.getTextSecondary(context))),
+                            ],
                           ),
                         ),
+                      ]),
+                      const SizedBox(height: 24),
+
+                      // ── Sélecteur de rôle (visible uniquement si ADMIN) ─────
+                      if (isAdmin) ...[
+                        DropdownButtonFormField<String>(
+                          value: selectedRole,
+                          decoration: _dropdownDecoration(l10n.role, Icons.badge, isDark),
+                          dropdownColor: AppTheme.getCardBackground(context),
+                          style: TextStyle(color: AppTheme.getTextPrimary(context)),
+                          items: availableRoles.map((r) => DropdownMenuItem(
+                            value: r,
+                            child: Row(children: [
+                              Icon(_roleIcon(r), size: 16, color: _getRoleColor(r)),
+                              const SizedBox(width: 8),
+                              Text(_getRoleLabel(r, l10n),
+                                  style: TextStyle(color: AppTheme.getTextPrimary(context))),
+                            ]),
+                          )).toList(),
+                          onChanged: (v) => setState(() {
+                            selectedRole = v!;
+                            // Réinitialiser centre/chambre si non étudiant
+                            if (selectedRole != 'ETUDIANT') {
+                              selectedCentreId   = null;
+                              selectedLogementId = null;
+                              availableLogements = [];
+                            }
+                          }),
+                        ),
+                        const SizedBox(height: 16),
                       ],
-                    ),
-                  ],
+
+                      // ── Matricule ────────────────────────────────────────────
+                      _buildFormField(
+                        controller: matriculeController,
+                        label: '${l10n.matricule} *',
+                        hint: 'Ex: ${selectedRole == 'ETUDIANT' ? 'ETUD2024001' : selectedRole == 'GESTIONNAIRE' ? 'GEST001' : 'ADMIN001'}',
+                        icon: Icons.badge,
+                        isDark: isDark,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return l10n.matriculeRequired;
+                          if (v.trim().length < 5) return l10n.matriculeMinLength;
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ── Nom + Prénom ──────────────────────────────────────────
+                      Row(children: [
+                        Expanded(
+                          child: _buildFormField(
+                            controller: nomController,
+                            label: '${l10n.lastName} *',
+                            hint: l10n.lastNameHint,
+                            icon: Icons.person,
+                            isDark: isDark,
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) return l10n.lastNameRequired;
+                              if (v.trim().length < 2) return l10n.lastNameMinLength;
+                              return null;
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _buildFormField(
+                            controller: prenomController,
+                            label: '${l10n.firstName} *',
+                            hint: l10n.firstNameHint,
+                            icon: Icons.person_outline,
+                            isDark: isDark,
+                            validator: (v) {
+                              if (v == null || v.trim().isEmpty) return l10n.firstNameRequired;
+                              if (v.trim().length < 2) return l10n.firstNameMinLength;
+                              return null;
+                            },
+                          ),
+                        ),
+                      ]),
+                      const SizedBox(height: 16),
+
+                      // ── Email ─────────────────────────────────────────────────
+                      _buildFormField(
+                        controller: emailController,
+                        label: '${l10n.email} *',
+                        hint: l10n.emailHint,
+                        icon: Icons.email,
+                        isDark: isDark,
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return l10n.emailRequired;
+                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(v.trim()))
+                            return l10n.emailInvalid;
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ── Téléphone ─────────────────────────────────────────────
+                      _buildFormField(
+                        controller: telephoneController,
+                        label: l10n.phoneOptional,
+                        hint: l10n.phoneHint,
+                        icon: Icons.phone,
+                        isDark: isDark,
+                        keyboardType: TextInputType.phone,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ── Centre + Chambre (ETUDIANT uniquement, obligatoire) ───
+                      if (isEtudiant) ...[
+                        DropdownButtonFormField<int>(
+                          value: selectedCentreId,
+                          decoration: _dropdownDecoration(
+                              '${l10n.center} *', Icons.location_city, isDark),
+                          dropdownColor: AppTheme.getCardBackground(context),
+                          style: TextStyle(color: AppTheme.getTextPrimary(context)),
+                          items: provider.centres.map((centre) => DropdownMenuItem<int>(
+                            value: centre.id,
+                            child: Text(centre.nom,
+                                style: TextStyle(color: AppTheme.getTextPrimary(context))),
+                          )).toList(),
+                          onChanged: (value) async {
+                            setState(() {
+                              selectedCentreId   = value;
+                              selectedLogementId = null;
+                              availableLogements = [];
+                            });
+                            if (value != null) {
+                              await provider.loadAvailableLogements(value);
+                              setState(() => availableLogements = provider.availableLogements);
+                            }
+                          },
+                          validator: (v) => v == null ? l10n.centerRequired : null,
+                        ),
+                        if (selectedCentreId != null) ...[
+                          const SizedBox(height: 16),
+                          DropdownButtonFormField<int>(
+                            value: selectedLogementId,
+                            decoration: _dropdownDecoration(
+                                '${l10n.room} *', Icons.home, isDark),
+                            dropdownColor: AppTheme.getCardBackground(context),
+                            style: TextStyle(color: AppTheme.getTextPrimary(context)),
+                            items: availableLogements.isEmpty
+                                ? [DropdownMenuItem<int>(
+                              value: null,
+                              child: Text(l10n.noHousingAvailable,
+                                  style: TextStyle(color: AppTheme.getTextTertiary(context))),
+                            )]
+                                : availableLogements.map((l) => DropdownMenuItem<int>(
+                              value: l['id'],
+                              child: Text(
+                                '${l10n.room} ${l['numero_chambre']} — ${l['type_chambre']} (${l['prix_mensuel']} FCFA/mois)',
+                                style: TextStyle(color: AppTheme.getTextPrimary(context)),
+                              ),
+                            )).toList(),
+                            onChanged: (v) => setState(() => selectedLogementId = v),
+                            validator: (v) => v == null
+                                ? 'La chambre est obligatoire pour un étudiant'
+                                : null,
+                          ),
+                        ],
+                        const SizedBox(height: 16),
+                      ],
+
+                      // ── Mot de passe ─────────────────────────────────────────
+                      CheckboxListTile(
+                        value: generatePassword,
+                        onChanged: (v) => setState(() {
+                          generatePassword = v ?? true;
+                          if (generatePassword) {
+                            passwordController.clear();
+                            confirmPasswordController.clear();
+                          }
+                        }),
+                        title: Text(l10n.generatePassword,
+                            style: TextStyle(
+                                color: AppTheme.getTextPrimary(context), fontSize: 14)),
+                        controlAffinity: ListTileControlAffinity.leading,
+                        activeColor: Theme.of(context).colorScheme.primary,
+                        contentPadding: EdgeInsets.zero,
+                      ),
+                      if (!generatePassword) ...[
+                        const SizedBox(height: 8),
+                        _buildPasswordField(
+                          controller: passwordController,
+                          label: l10n.passwordLabel,
+                          hint: l10n.passwordHint,
+                          isVisible: isPasswordVisible,
+                          isDark: isDark,
+                          onToggle: () => setState(() => isPasswordVisible = !isPasswordVisible),
+                          validator: (v) {
+                            if (!generatePassword) {
+                              if (v == null || v.trim().isEmpty) return l10n.passwordRequired;
+                              if (v.length < 6) return l10n.passwordMinLength;
+                              if (!RegExp(r'[A-Z]').hasMatch(v)) return l10n.passwordUppercase;
+                              if (!RegExp(r'[0-9]').hasMatch(v)) return l10n.passwordDigit;
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildPasswordField(
+                          controller: confirmPasswordController,
+                          label: l10n.confirmPasswordLabel,
+                          hint: l10n.confirmPasswordHint,
+                          isVisible: isConfirmPasswordVisible,
+                          isDark: isDark,
+                          icon: Icons.lock_outline,
+                          onToggle: () => setState(
+                                  () => isConfirmPasswordVisible = !isConfirmPasswordVisible),
+                          validator: (v) {
+                            if (!generatePassword) {
+                              if (v == null || v.trim().isEmpty) return l10n.confirmPasswordRequired;
+                              if (v != passwordController.text) return l10n.passwordsMismatch;
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                      if (generatePassword) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.withOpacity(isDark ? 0.2 : 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Colors.blue.withOpacity(0.3)),
+                          ),
+                          child: Row(children: [
+                            const Icon(Icons.info_outline, color: Colors.blue, size: 20),
+                            const SizedBox(width: 12),
+                            Expanded(
+                                child: Text(l10n.securePasswordGenerated,
+                                    style: TextStyle(
+                                        fontSize: 12, color: Colors.blue.shade700))),
+                          ]),
+                        ),
+                      ],
+                      const SizedBox(height: 24),
+
+                      // ── Boutons ───────────────────────────────────────────────
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: isSaving ? null : () => Navigator.pop(context),
+                            child: Text(l10n.cancel,
+                                style: TextStyle(
+                                    color: AppTheme.getTextSecondary(context))),
+                          ),
+                          const SizedBox(width: 12),
+                          ElevatedButton.icon(
+                            onPressed: isSaving ? null : () async {
+                              if (formKey.currentState!.validate()) {
+                                // Vérifier chambre si étudiant
+                                if (isEtudiant && selectedLogementId == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                    content: const Text('Veuillez sélectionner une chambre'),
+                                    backgroundColor: Colors.orange,
+                                    behavior: SnackBarBehavior.floating,
+                                  ));
+                                  return;
+                                }
+                                final sm = ScaffoldMessenger.of(context);
+                                setState(() => isSaving = true);
+                                try {
+                                  await provider.createUser(
+                                    matricule: matriculeController.text.trim(),
+                                    nom: nomController.text.trim(),
+                                    prenom: prenomController.text.trim(),
+                                    email: emailController.text.trim(),
+                                    telephone: telephoneController.text.trim().isEmpty
+                                        ? null : telephoneController.text.trim(),
+                                    role: selectedRole,
+                                    statut: selectedStatut,
+                                    motDePasse: generatePassword
+                                        ? null : passwordController.text.trim(),
+                                    centreId: isEtudiant ? selectedCentreId : null,
+                                    logementId: isEtudiant ? selectedLogementId : null,
+                                    dateDebut: isEtudiant && selectedLogementId != null
+                                        ? DateTime.now().toIso8601String() : null,
+                                  );
+                                  Navigator.pop(context);
+                                  sm.showSnackBar(SnackBar(
+                                    content: Text(_createdMessage(selectedRole, l10n)),
+                                    backgroundColor: const Color(0xFF10B981),
+                                    behavior: SnackBarBehavior.floating,
+                                  ));
+                                } catch (e) {
+                                  setState(() => isSaving = false);
+                                  sm.showSnackBar(SnackBar(
+                                    content: Text('${l10n.error}: $e'),
+                                    backgroundColor: const Color(0xFFEF4444),
+                                    behavior: SnackBarBehavior.floating,
+                                  ));
+                                }
+                              }
+                            },
+                            icon: isSaving
+                                ? const SizedBox(
+                                width: 16, height: 16,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white))
+                                : const Icon(Icons.save, color: Colors.white),
+                            label: Text(
+                                isSaving ? l10n.creating : l10n.createUser,
+                                style: const TextStyle(color: Colors.white)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Theme.of(context).colorScheme.primary,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 14),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
 
@@ -2041,6 +2066,24 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
     telephoneController.dispose();
     passwordController.dispose();
     confirmPasswordController.dispose();
+  }
+
+// Helper — icône par rôle
+  IconData _roleIcon(String role) {
+    switch (role) {
+      case 'ADMIN':        return Icons.admin_panel_settings;
+      case 'GESTIONNAIRE': return Icons.manage_accounts;
+      default:             return Icons.school;
+    }
+  }
+
+// Helper — message de succès selon rôle
+  String _createdMessage(String role, AppLocalizations l10n) {
+    switch (role) {
+      case 'ADMIN':        return l10n.adminCreated;
+      case 'GESTIONNAIRE': return l10n.managerCreated;
+      default:             return l10n.studentCreated;
+    }
   }
 
   Future<void> _showEditUserDialog(

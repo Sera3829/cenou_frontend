@@ -728,6 +728,13 @@ class AppLocalizations {
   String get suspendedStatus => _t('Suspendu', 'Suspended');
   String get noCenter => _t('Aucun centre', 'No center');
   String get noHousing => _t('Aucun logement', 'No housing');
+  String get newAdmin      => _t('Nouvel administrateur', 'New administrator');
+  String get fillAdminInfo => _t('Renseigner les informations', 'Fill in the information');
+  String get newManager    => _t('Nouveau gestionnaire', 'New manager');
+  String get fillManagerInfo => _t('Renseigner les informations', 'Fill in the information');
+  String get createUser    => _t('Créer', 'Create');
+  String get adminCreated  => _t('Administrateur créé avec succès', 'Administrator created successfully');
+  String get managerCreated => _t('Gestionnaire créé avec succès', 'Manager created successfully');
 
   // Activités récentes
   String get justNow => _t('À l\'instant', 'Just now');

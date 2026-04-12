@@ -1,9 +1,9 @@
 // providers/web/annonce_admin_provider.dart
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:cenou_mobile/services/api_service.dart';
-import 'package:cenou_mobile/models/admin/annonce.dart';
-import 'package:cenou_mobile/models/admin/centre.dart';
+import '../../services/api_service.dart';
+import '../../models/admin/annonce.dart';
+import '../../models/admin/centre.dart';
 
 /// Gestionnaire d'administration pour la diffusion et le suivi des annonces institutionnelles.
 class AnnonceAdminProvider with ChangeNotifier {
