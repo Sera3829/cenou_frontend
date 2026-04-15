@@ -362,7 +362,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // ── Dialogue langue ────────────────────────────────────────────────────────
-  // ✅ Changement IMMÉDIAT — plus de dialog de redémarrage
+  // Changement IMMÉDIAT — plus de dialog de redémarrage
 
   void _showLanguageDialog(AppLocalizations l10n) {
     final isDark = Theme.of(context).brightness == Brightness.dark;

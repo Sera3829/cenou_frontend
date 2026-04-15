@@ -354,14 +354,16 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
     final confCtrl = TextEditingController();
     final formKey  = GlobalKey<FormState>();
 
+    bool oldVis  = false;
+    bool newVis  = false;
+    bool confVis = false;
+    bool isSaving = false;
+
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogCtx) => StatefulBuilder(
         builder: (ctx, setSt) {
-          bool oldVis = false, newVis = false, confVis = false;
-          bool isSaving = false;
-
           return Dialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
             backgroundColor: AppTheme.getCardBackground(context),
