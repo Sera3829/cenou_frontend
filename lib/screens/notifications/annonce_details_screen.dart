@@ -39,23 +39,54 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
         _errorMessage = null;
       });
 
-      final notificationProvider = Provider.of<NotificationProvider>(context, listen: false);
-      final annonce = await notificationProvider.getAnnonceById(widget.annonceId);
+      final provider = Provider.of<NotificationProvider>(context, listen: false);
+      final response = await provider.getAnnonceById(widget.annonceId);
+
+      print('RAW RESPONSE: $response');
+
+      Map<String, dynamic>? annonce;
+
+      if (response != null && response is Map<String, dynamic>) {
+
+        if (response['annonce'] is Map) {
+          annonce = Map<String, dynamic>.from(response['annonce']);
+        }
+        else if (response['data'] is Map) {
+          annonce = Map<String, dynamic>.from(response['data']);
+        }
+        else if (response.containsKey('titre')) {
+          annonce = Map<String, dynamic>.from(response);
+        }
+        else if (response.containsKey('data')) {
+          annonce = response['data'];
+        }
+        else if (response.containsKey('titre')) {
+          annonce = response;
+        }
+
+      }
+
+      if (annonce == null) {
+        throw Exception('Annonce introuvable dans la réponse');
+      }
+
+      print(' ANNONCE PARSÉE: ${annonce.keys}');
 
       setState(() {
-        _annonce = annonce;
+        _annonce = annonce!;
         _isLoading = false;
       });
-    } catch (e) {
-      print('Erreur lors du chargement de l\'annonce: $e');
 
-      final connectivityService = Provider.of<ConnectivityService>(context, listen: false);
+    } catch (e) {
+      print('ERREUR LOAD ANNONCE: $e');
+
+      final conn = Provider.of<ConnectivityService>(context, listen: false);
       final l10n = AppLocalizations.of(context);
 
       setState(() {
         _isLoading = false;
         _hasError = true;
-        _errorMessage = connectivityService.isOffline
+        _errorMessage = conn.isOffline
             ? l10n.announceNotAvailableOffline
             : l10n.cannotLoadAnnounce;
       });
@@ -138,6 +169,15 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
     // Indication visuelle si les données proviennent du cache (hors ligne)
     final isFromCache = connectivityService.isOffline;
 
+    // Sécurisation des champs
+    final cible = _annonce!['cible']?.toString() ?? 'TOUS';
+    final titre = _annonce!['titre']?.toString() ?? 'Sans titre';
+    final contenu = _annonce!['contenu']?.toString() ?? '';
+    final totalDestinataires = _annonce!['total_destinataires'];
+    final createdAt = _annonce!['created_at'];
+    final createdByNom = _annonce!['created_by_nom'];
+    final createdByPrenom = _annonce!['created_by_prenom'];
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -176,16 +216,16 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: _getTypeColor(_annonce!['cible']).withOpacity(isDark ? 0.2 : 0.1),
+              color: _getTypeColor(cible).withOpacity(isDark ? 0.2 : 0.1),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: _getTypeColor(_annonce!['cible']).withOpacity(isDark ? 0.4 : 0.3),
+                color: _getTypeColor(cible).withOpacity(isDark ? 0.4 : 0.3),
               ),
             ),
             child: Text(
-              _getTypeLabel(_annonce!['cible'], l10n),
+              _getTypeLabel(cible, l10n),
               style: TextStyle(
-                color: _getTypeColor(_annonce!['cible']),
+                color: _getTypeColor(cible),
                 fontWeight: FontWeight.w600,
                 fontSize: 12,
               ),
@@ -195,7 +235,7 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
 
           // Titre
           Text(
-            _annonce!['titre'],
+            titre,
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -205,19 +245,20 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
           const SizedBox(height: 8),
 
           // Date de publication
-          Text(
-            l10n.publishedOn(_formatDate(_annonce!['created_at'], l10n)),
-            style: TextStyle(
-              fontSize: 14,
-              color: isDark ? Colors.grey.shade400 : Colors.grey[600],
+          if (createdAt != null)
+            Text(
+              l10n.publishedOn(_formatDate(createdAt, l10n)),
+              style: TextStyle(
+                fontSize: 14,
+                color: isDark ? Colors.grey.shade400 : Colors.grey[600],
+              ),
             ),
-          ),
           const SizedBox(height: 4),
 
           // Auteur
-          if (_annonce!['created_by_nom'] != null)
+          if (createdByNom != null)
             Text(
-              l10n.byAuthor('${_annonce!['created_by_nom']} ${_annonce!['created_by_prenom'] ?? ''}'),
+              l10n.byAuthor('$createdByNom ${createdByPrenom ?? ''}'.trim()),
               style: TextStyle(
                 fontSize: 14,
                 color: isDark ? Colors.grey.shade400 : Colors.grey[600],
@@ -239,7 +280,7 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
               ],
             ),
             child: Text(
-              _annonce!['contenu'],
+              contenu,
               style: TextStyle(
                 fontSize: 16,
                 height: 1.5,
@@ -250,7 +291,7 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
           const SizedBox(height: 16),
 
           // Informations sur les destinataires
-          if (_annonce!['total_destinataires'] != null)
+          if (totalDestinataires != null)
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -269,7 +310,7 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    l10n.sentToNPeople(_annonce!['total_destinataires']),
+                    l10n.sentToNPeople(totalDestinataires),
                     style: TextStyle(
                       color: isDark ? Colors.blue.shade300 : Colors.blue,
                       fontSize: 14,
