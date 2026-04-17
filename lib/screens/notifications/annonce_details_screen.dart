@@ -48,8 +48,27 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
         throw Exception('Annonce introuvable');
       }
 
+      Map<String, dynamic>? annonce;
+
+// 🔥 Gérer plusieurs formats possibles
+      if (response is Map<String, dynamic>) {
+
+        if (response.containsKey('data')) {
+          annonce = response['data'];
+        } else if (response.containsKey('annonce')) {
+          annonce = response['annonce'];
+        } else {
+          annonce = response; // cas direct
+        }
+
+      }
+
+      if (annonce == null) {
+        throw Exception('Format de réponse invalide');
+      }
+
       setState(() {
-        _annonce = Map<String, dynamic>.from(response);
+        _annonce = Map<String, dynamic>.from(annonce!);
         _isLoading = false;
       });
 
@@ -149,7 +168,9 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
     final cible = _annonce!['cible']?.toString() ?? 'TOUS';
     final titre = _annonce!['titre']?.toString() ?? 'Sans titre';
     final contenu = _annonce!['contenu']?.toString() ?? '';
-    final totalDestinataires = _annonce!['total_destinataires'];
+    final totalDestinataires = int.tryParse(
+        _annonce!['total_destinataires']?.toString() ?? '0'
+    );
     final createdAt = _annonce!['created_at'];
     final createdByNom = _annonce!['created_by_nom'];
     final createdByPrenom = _annonce!['created_by_prenom'];
@@ -267,34 +288,30 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
           const SizedBox(height: 16),
 
           // Informations sur les destinataires
-          if (totalDestinataires != null)
+          if (totalDestinataires != null) ...[
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.blue.withOpacity(isDark ? 0.2 : 0.05),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                    color: Colors.blue.withOpacity(isDark ? 0.4 : 0.2)
+                  color: Colors.blue.withOpacity(isDark ? 0.4 : 0.2),
                 ),
               ),
               child: Row(
                 children: [
                   Icon(
-                      Icons.group,
-                      size: 16,
-                      color: isDark ? Colors.blue.shade300 : Colors.blue
+                    Icons.group,
+                    size: 16,
                   ),
                   const SizedBox(width: 8),
                   Text(
                     l10n.sentToNPeople(totalDestinataires),
-                    style: TextStyle(
-                      color: isDark ? Colors.blue.shade300 : Colors.blue,
-                      fontSize: 14,
-                    ),
                   ),
                 ],
               ),
             ),
+          ]
         ],
       ),
     );
