@@ -50,7 +50,7 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
 
       Map<String, dynamic>? annonce;
 
-// 🔥 Gérer plusieurs formats possibles
+      // Gérer plusieurs formats possibles
       if (response is Map<String, dynamic>) {
 
         if (response.containsKey('data')) {
