@@ -44,36 +44,12 @@ class _AnnonceDetailsScreenState extends State<AnnonceDetailsScreen> {
 
       print('RAW RESPONSE: $response');
 
-      Map<String, dynamic>? annonce;
-
-      if (response != null && response is Map<String, dynamic>) {
-
-        if (response['annonce'] is Map) {
-          annonce = Map<String, dynamic>.from(response['annonce']);
-        }
-        else if (response['data'] is Map) {
-          annonce = Map<String, dynamic>.from(response['data']);
-        }
-        else if (response.containsKey('titre')) {
-          annonce = Map<String, dynamic>.from(response);
-        }
-        else if (response.containsKey('data')) {
-          annonce = response['data'];
-        }
-        else if (response.containsKey('titre')) {
-          annonce = response;
-        }
-
+      if (response == null) {
+        throw Exception('Annonce introuvable');
       }
-
-      if (annonce == null) {
-        throw Exception('Annonce introuvable dans la réponse');
-      }
-
-      print(' ANNONCE PARSÉE: ${annonce.keys}');
 
       setState(() {
-        _annonce = annonce!;
+        _annonce = Map<String, dynamic>.from(response);
         _isLoading = false;
       });
 
