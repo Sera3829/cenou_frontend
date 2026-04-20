@@ -10,106 +10,218 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Cenou Room">
-  <link rel="apple-touch-icon" href="icons/icon_192.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
 
   <!-- Favicon -->
-  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon_32.png">
-  <link rel="icon" type="image/png" sizes="16x16" href="icons/favicon_16.png">
-  <link rel="shortcut icon" href="icons/favicon_32.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
+  <link rel="shortcut icon" href="favicon.png">
 
   <title>Cenou Room</title>
   <link rel="manifest" href="manifest.json">
 
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: #1E3A8A; }
+
+    body { background: #0f2460; }
 
     #mobile-block {
       display: none;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 100vh;
-      background: #1E3A8A;
+      min-height: 100vh;
+      background: linear-gradient(160deg, #1E3A8A 0%, #0f2460 50%, #172554 100%);
       color: white;
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Arial, sans-serif;
       text-align: center;
-      padding: 24px;
+      padding: 32px 24px;
     }
-    #mobile-block img {
-      width: 96px; height: 96px;
-      border-radius: 22px;
+
+    .logo-wrap {
+      position: relative;
+      margin-bottom: 28px;
+    }
+    .logo-wrap img {
+      width: 100px;
+      height: 100px;
+      border-radius: 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+      display: block;
+    }
+    .logo-wrap::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 28px;
+      border: 2px solid rgba(255,255,255,0.2);
+      pointer-events: none;
+    }
+
+    #mobile-block h1 {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: -0.3px;
+    }
+    .tagline {
+      font-size: 12px;
+      opacity: 0.55;
+      margin-bottom: 32px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .card {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 20px;
+      padding: 24px 20px;
+      max-width: 340px;
+      width: 100%;
       margin-bottom: 24px;
     }
-    #mobile-block h1 { font-size: 22px; margin-bottom: 12px; font-weight: bold; }
-    #mobile-block p  { font-size: 15px; opacity: 0.85; max-width: 320px; line-height: 1.6; }
-    #mobile-block .badge {
-      margin-top: 28px;
-      padding: 12px 20px;
-      background: rgba(255,255,255,0.15);
-      border: 1px solid rgba(255,255,255,0.3);
-      border-radius: 12px;
+    .card .icon-row {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      font-size: 38px;
+      margin-bottom: 16px;
+    }
+    .card h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 10px;
+    }
+    .card p {
       font-size: 14px;
+      opacity: 0.72;
+      line-height: 1.7;
+    }
+
+    .compat {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 28px;
+      justify-content: center;
+    }
+    .compat-item {
+      background: rgba(255,255,255,0.09);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 12px;
+      padding: 10px 18px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .compat-item .em { font-size: 20px; }
+
+    .btn-download {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      background: white;
+      color: #1E3A8A;
+      font-weight: 700;
+      font-size: 15px;
+      padding: 14px 28px;
+      border-radius: 14px;
+      text-decoration: none;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      margin-bottom: 12px;
+    }
+    .btn-download .dl-em { font-size: 20px; }
+
+    .dl-hint {
+      font-size: 12px;
+      opacity: 0.4;
     }
   </style>
 </head>
 
 <body>
 
-<!-- Écran de blocage mobile (caché par défaut, affiché si téléphone détecté) -->
 <div id="mobile-block">
-  <img src="icons/icon_192.png" alt="Cenou Room">
+
+  <div class="logo-wrap">
+    <img src="./icons/icon-192.png"
+         alt="Cenou Room"
+         onerror="this.onerror=null;this.style.display='none';document.getElementById('logo-fallback').style.display='flex';">
+    <div id="logo-fallback" style="
+      display:none; width:100px; height:100px; border-radius:24px;
+      background:linear-gradient(135deg,#3B82F6,#1E3A8A);
+      align-items:center; justify-content:center;
+      font-size:42px; box-shadow:0 8px 32px rgba(0,0,0,0.35);">
+      🏠
+    </div>
+  </div>
+
   <h1>Cenou Room</h1>
-  <p>
-    Cette application de gestion est réservée aux ordinateurs.<br>
-    Veuillez utiliser l'application mobile Cenou Room.
-  </p>
-  <div class="badge">📱 Téléchargez l'application Cenou Room</div>
+  <div class="tagline">Gestion de résidences universitaires</div>
+
+  <div class="card">
+    <div class="icon-row">
+      <span>🖥️</span>
+      <span>📐</span>
+    </div>
+    <h2>Application réservée aux grands écrans</h2>
+    <p>
+      Ce tableau de bord est optimisé pour les ordinateurs et les tablettes.<br>
+      Téléchargez l'application mobile pour utiliser Cenou Room sur votre téléphone.
+    </p>
+  </div>
+
+  <div class="compat">
+    <div class="compat-item">
+      <span class="em">🖥️</span>
+      <span>Ordinateur</span>
+    </div>
+    <div class="compat-item">
+      <span class="em">📱</span>
+      <span>Tablette</span>
+    </div>
+  </div>
+
+  <a class="btn-download"
+     href="https://github.com/Sera3829/Hacker-News-app/releases/download/v1.0.0/Hacker.apk"
+     download>
+    <span class="dl-em">⬇️</span>
+    Télécharger l'application
+  </a>
+  <div class="dl-hint">Android APK · Cenou Room Mobile</div>
+
 </div>
 
-<!-- Détection mobile et blocage -->
 <script>
   (function () {
-    var ua         = navigator.userAgent || navigator.vendor || window.opera;
-    var uaLower    = ua.toLowerCase();
-
-    // Téléphones (pas tablettes)
-    var isPhone    = /iphone|ipod|(android.*mobile)|windows phone|blackberry|iemobile|opera mini/i.test(uaLower);
-
-    // iPads (autorisés comme les PC)
-    var isIpad     = /ipad/i.test(uaLower) ||
-                     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-    // Petit écran portrait = probablement un téléphone
-    var isSmall    = window.screen.width < 768 && window.screen.height < 1024;
-
+    var ua      = navigator.userAgent || navigator.vendor || window.opera;
+    var uaLower = ua.toLowerCase();
+    var isPhone = /iphone|ipod|(android.*mobile)|windows phone|blackberry|iemobile|opera mini/i.test(uaLower);
+    var isIpad  = /ipad/i.test(uaLower) ||
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var isSmall = window.screen.width < 768 && window.screen.height < 1024;
     var shouldBlock = (isPhone && !isIpad) || (isSmall && !isIpad);
-
     if (shouldBlock) {
       document.getElementById('mobile-block').style.display = 'flex';
-      // Empêche Flutter de démarrer
       window._flutter_web_auto_start = false;
     }
   })();
 </script>
 
-<!-- Chargement Flutter uniquement sur non-mobile -->
 <script>
   (function () {
-    var ua         = navigator.userAgent || navigator.vendor || window.opera;
-    var uaLower    = ua.toLowerCase();
-
-    var isPhone    = /iphone|ipod|(android.*mobile)|windows phone|blackberry|iemobile|opera mini/i.test(uaLower);
-    var isIpad     = /ipad/i.test(uaLower) ||
-                     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    var isSmall    = window.screen.width < 768 && window.screen.height < 1024;
-
+    var ua      = navigator.userAgent || navigator.vendor || window.opera;
+    var uaLower = ua.toLowerCase();
+    var isPhone = /iphone|ipod|(android.*mobile)|windows phone|blackberry|iemobile|opera mini/i.test(uaLower);
+    var isIpad  = /ipad/i.test(uaLower) ||
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var isSmall = window.screen.width < 768 && window.screen.height < 1024;
     var shouldBlock = (isPhone && !isIpad) || (isSmall && !isIpad);
-
     if (!shouldBlock) {
-      var s    = document.createElement('script');
-      s.src    = 'flutter_bootstrap.js';
-      s.async  = true;
+      var s   = document.createElement('script');
+      s.src   = 'flutter_bootstrap.js';
+      s.async = true;
       document.body.appendChild(s);
     }
   })();
