@@ -5,226 +5,466 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Cenou Room - Gestion de résidences universitaires CENOU">
-
-  <!-- iOS meta tags & icons -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Cenou Room">
   <link rel="apple-touch-icon" href="icons/icon-192.png">
-
-  <!-- Favicon -->
   <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
   <link rel="shortcut icon" href="favicon.png">
-
-  <title>Cenou Room</title>
+  <title>Cenou Room — Dashboard</title>
   <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
 
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-    body { background: #0f2460; }
+    :root {
+      --blue-deep:    #0C1E5B;
+      --blue-mid:     #1A3A8F;
+      --blue-accent:  #3B82F6;
+      --blue-light:   #60A5FA;
+      --white:        #FFFFFF;
+      --white-60:     rgba(255,255,255,0.60);
+      --white-20:     rgba(255,255,255,0.20);
+      --white-10:     rgba(255,255,255,0.10);
+      --white-06:     rgba(255,255,255,0.06);
+      --green:        #10B981;
+      --green-light:  #34D399;
+    }
 
+    body {
+      background: var(--blue-deep);
+      font-family: 'DM Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Lang toggle ── */
+    #lang-btn {
+      display: none;
+      position: fixed;
+      top: 18px; right: 18px;
+      z-index: 999;
+      align-items: center;
+      gap: 6px;
+      background: var(--white-10);
+      border: 1px solid var(--white-20);
+      color: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 14px 7px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      letter-spacing: 0.4px;
+      transition: background 0.15s;
+    }
+    #lang-btn:hover  { background: var(--white-20); }
+    #lang-btn .flag  { font-size: 16px; line-height: 1; }
+
+    /* ── Page wrapper ── */
     #mobile-block {
       display: none;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
       min-height: 100vh;
-      background: linear-gradient(160deg, #1E3A8A 0%, #0f2460 50%, #172554 100%);
-      color: white;
-      font-family: 'Segoe UI', Arial, sans-serif;
-      text-align: center;
-      padding: 32px 24px;
+      padding: 56px 20px 48px;
+      background:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(59,130,246,0.28) 0%, transparent 70%),
+        linear-gradient(175deg, #1A3A8F 0%, #0C1E5B 45%, #060E2B 100%);
     }
 
+    /* ── Logo ── */
+    .logo-area {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 28px;
+      animation: fadeDown 0.45s ease both;
+    }
     .logo-wrap {
       position: relative;
-      margin-bottom: 28px;
+      width: 86px; height: 86px;
+      margin-bottom: 14px;
     }
-    .logo-wrap img {
-      width: 100px;
-      height: 100px;
-      border-radius: 24px;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.35);
-      display: block;
-    }
-    .logo-wrap::after {
+    .logo-wrap::before {
       content: '';
       position: absolute;
-      inset: -4px;
-      border-radius: 28px;
-      border: 2px solid rgba(255,255,255,0.2);
-      pointer-events: none;
+      inset: -3px;
+      border-radius: 26px;
+      background: linear-gradient(135deg, var(--blue-accent), var(--blue-light));
+      opacity: 0.30;
     }
-
-    #mobile-block h1 {
-      font-size: 26px;
-      font-weight: 700;
-      margin-bottom: 6px;
-      letter-spacing: -0.3px;
+    .logo-wrap img {
+      position: relative;
+      width: 86px; height: 86px;
+      border-radius: 22px;
+      display: block;
+      box-shadow: 0 10px 36px rgba(0,0,0,0.45), 0 0 0 1px var(--white-10);
     }
-    .tagline {
-      font-size: 12px;
-      opacity: 0.55;
-      margin-bottom: 32px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-
-    .card {
-      background: rgba(255,255,255,0.07);
-      border: 1px solid rgba(255,255,255,0.14);
-      border-radius: 20px;
-      padding: 24px 20px;
-      max-width: 340px;
-      width: 100%;
-      margin-bottom: 24px;
-    }
-    .card .icon-row {
+    .logo-fallback {
+      position: relative;
+      width: 86px; height: 86px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, var(--blue-accent), var(--blue-mid));
       display: flex;
+      align-items: center;
       justify-content: center;
-      gap: 16px;
-      font-size: 38px;
-      margin-bottom: 16px;
+      font-size: 36px;
+      box-shadow: 0 10px 36px rgba(0,0,0,0.45);
     }
-    .card h2 {
-      font-size: 16px;
+    .brand-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 27px;
+      color: var(--white);
+      letter-spacing: -0.2px;
+      margin-bottom: 4px;
+    }
+    .brand-sub {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      color: var(--white-60);
+    }
+
+    /* ── Audience pills ── */
+    .pills {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 26px;
+      animation: fadeDown 0.45s 0.08s ease both;
+    }
+    .pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-size: 11.5px;
       font-weight: 600;
-      margin-bottom: 10px;
+      letter-spacing: 0.2px;
+    }
+    .pill-dot { width: 6px; height: 6px; border-radius: 50%; }
+    .pill-blue   { background: rgba(59,130,246,0.18); border: 1px solid rgba(59,130,246,0.32); color: var(--blue-light); }
+    .pill-blue   .pill-dot { background: var(--blue-light); }
+    .pill-green  { background: rgba(16,185,129,0.14); border: 1px solid rgba(16,185,129,0.28); color: var(--green-light); }
+    .pill-green  .pill-dot { background: var(--green-light); }
+
+    /* ── Cards ── */
+    .card {
+      background: var(--white-06);
+      border: 1px solid var(--white-10);
+      border-radius: 22px;
+      padding: 22px 20px;
+      max-width: 356px;
+      width: 100%;
+      backdrop-filter: blur(10px);
+    }
+    .card + .card { margin-top: 12px; }
+    .card-admin   { animation: fadeUp 0.45s 0.12s ease both; }
+    .card-student { animation: fadeUp 0.45s 0.20s ease both; }
+
+    .card-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.3px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 14px;
+    }
+    .badge-blue   { background: rgba(59,130,246,0.15); color: var(--blue-light); }
+    .badge-green  { background: rgba(16,185,129,0.12); color: var(--green-light); }
+
+    .card-icon { font-size: 30px; margin-bottom: 10px; display: block; }
+
+    .card h3 {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--white);
+      margin-bottom: 8px;
+      line-height: 1.35;
     }
     .card p {
-      font-size: 14px;
-      opacity: 0.72;
-      line-height: 1.7;
+      font-size: 13px;
+      line-height: 1.65;
+      color: var(--white-60);
+    }
+    .card p strong { color: var(--white); font-weight: 600; }
+
+    /* ── Device chips ── */
+    .chips {
+      display: flex;
+      gap: 7px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .chip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--white-10);
+      border: 1px solid var(--white-20);
+      border-radius: 7px;
+      padding: 4px 10px;
+      font-size: 11.5px;
+      color: var(--white-60);
+      font-weight: 500;
     }
 
-    .compat {
+    /* ── Features list (student) ── */
+    .features {
+      list-style: none;
+      margin-top: 12px;
       display: flex;
-      gap: 10px;
-      margin-bottom: 28px;
-      justify-content: center;
+      flex-direction: column;
+      gap: 7px;
     }
-    .compat-item {
-      background: rgba(255,255,255,0.09);
-      border: 1px solid rgba(255,255,255,0.14);
-      border-radius: 12px;
-      padding: 10px 18px;
-      font-size: 13px;
+    .features li {
       display: flex;
       align-items: center;
       gap: 8px;
+      font-size: 12.5px;
+      color: var(--white-60);
     }
-    .compat-item .em { font-size: 20px; }
+    .feat-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--green-light);
+      flex-shrink: 0;
+    }
+    .features li strong { color: var(--white); font-weight: 600; }
 
-    .btn-download {
-      display: inline-flex;
+    /* ── Download button ── */
+    .download-wrap {
+      max-width: 356px;
+      width: 100%;
+      margin-top: 20px;
+      animation: fadeUp 0.45s 0.28s ease both;
+    }
+    .btn-dl {
+      display: flex;
       align-items: center;
-      gap: 10px;
-      background: white;
-      color: #1E3A8A;
+      justify-content: center;
+      gap: 11px;
+      background: var(--white);
+      color: var(--blue-deep);
+      font-family: 'DM Sans', sans-serif;
       font-weight: 700;
       font-size: 15px;
-      padding: 14px 28px;
-      border-radius: 14px;
+      padding: 16px 24px;
+      border-radius: 16px;
       text-decoration: none;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-      margin-bottom: 12px;
+      width: 100%;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.08);
+      transition: transform 0.12s, box-shadow 0.12s;
+      margin-bottom: 10px;
     }
-    .btn-download .dl-em { font-size: 20px; }
+    .btn-dl:active { transform: scale(0.975); box-shadow: 0 4px 14px rgba(0,0,0,0.22); }
+    .btn-dl-icon { font-size: 20px; }
 
-    .dl-hint {
-      font-size: 12px;
-      opacity: 0.4;
+    .dl-meta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+    }
+    .dl-tag {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--white-60);
+      font-weight: 500;
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
   </style>
 </head>
 
 <body>
 
+<button id="lang-btn" onclick="toggleLang()">
+  <span class="flag" id="lang-flag">🇬🇧</span>
+  <span id="lang-label">English</span>
+</button>
+
 <div id="mobile-block">
 
-  <div class="logo-wrap">
-    <img src="./icons/icon-192.png"
-         alt="Cenou Room"
-         onerror="this.onerror=null;this.style.display='none';document.getElementById('logo-fallback').style.display='flex';">
-    <div id="logo-fallback" style="
-      display:none; width:100px; height:100px; border-radius:24px;
-      background:linear-gradient(135deg,#3B82F6,#1E3A8A);
-      align-items:center; justify-content:center;
-      font-size:42px; box-shadow:0 8px 32px rgba(0,0,0,0.35);">
-      🏠
+  <!-- Logo -->
+  <div class="logo-area">
+    <div class="logo-wrap">
+      <img src="./icons/icon-192.png" alt="Cenou Room"
+           id="logo-img"
+           onerror="this.style.display='none';document.getElementById('logo-fb').style.display='flex';">
+      <div id="logo-fb" class="logo-fallback" style="display:none;">🏠</div>
+    </div>
+    <div class="brand-name">Cenou Room</div>
+    <div class="brand-sub" id="t-sub">Résidences CENOU</div>
+  </div>
+
+  <!-- Audience pills -->
+  <div class="pills">
+    <div class="pill pill-blue">
+      <span class="pill-dot"></span>
+      <span id="t-p-admin">Admins · Gestionnaires</span>
+    </div>
+    <div class="pill pill-green">
+      <span class="pill-dot"></span>
+      <span id="t-p-student">Étudiants</span>
     </div>
   </div>
 
-  <h1>Cenou Room</h1>
-  <div class="tagline">Gestion de résidences universitaires</div>
-
-  <div class="card">
-    <div class="icon-row">
-      <span>🖥️</span>
-      <span>📐</span>
-    </div>
-    <h2>Application réservée aux grands écrans</h2>
-    <p>
-      Ce tableau de bord admin est optimisé pour les ordinateurs et les tablettes.<br>
-      Téléchargez l'application mobile pour utiliser Cenou Room Mobile (version résident/étudiant) sur votre téléphone.
+  <!-- Card admin -->
+  <div class="card card-admin">
+    <div class="card-badge badge-blue">🖥️ &nbsp;<span id="t-badge-admin">Dashboard Admin</span></div>
+    <h3 id="t-admin-h">Accès sur ordinateur ou tablette uniquement</h3>
+    <p id="t-admin-p">
+      Ce tableau de bord est réservé aux <strong>administrateurs et gestionnaires</strong> du CENOU.
+      Son interface est conçue pour les grands écrans et ne peut pas s'afficher correctement sur mobile.
     </p>
-  </div>
-
-  <div class="compat">
-    <div class="compat-item">
-      <span class="em">🖥️</span>
-      <span>Ordinateur</span>
-    </div>
-    <div class="compat-item">
-      <span class="em">📱</span>
-      <span>Tablette</span>
+    <div class="chips">
+      <div class="chip">🖥️ <span id="t-c1">Ordinateur</span></div>
+      <div class="chip">💻 <span id="t-c2">Laptop</span></div>
+      <div class="chip">📐 <span id="t-c3">Tablette</span></div>
     </div>
   </div>
 
-  <a class="btn-download"
-     href="https://github.com/Sera3829/Hacker-News-app/releases/download/v1.0.0/Hacker.apk"
-     download>
-    <span class="dl-em">⬇️</span>
-    Télécharger l'application
-  </a>
-  <div class="dl-hint">Android APK · Cenou Room Mobile</div>
+  <!-- Card student -->
+  <div class="card card-student">
+    <div class="card-badge badge-green">📱 &nbsp;<span id="t-badge-student">Application Mobile</span></div>
+    <h3 id="t-student-h">Vous êtes étudiant(e) ? ou vous voulez juste voir les interfaces ?</h3>
+    <p id="t-student-p">L'application mobile vous permet de :</p>
+    <ul class="features">
+      <li><span class="feat-dot"></span><strong id="t-f1">Paiements</strong> &nbsp;— <span id="t-f1b">Initier et suivre vos loyers</span></li>
+      <li><span class="feat-dot"></span><strong id="t-f2">Signalements</strong> &nbsp;— <span id="t-f2b">Signaler un problème dans votre chambre</span></li>
+      <li><span class="feat-dot"></span><strong id="t-f3">Notifications</strong> &nbsp;— <span id="t-f3b">Recevoir les annonces du CENOU</span></li>
+      <li><span class="feat-dot"></span><strong id="t-f4">Profil</strong> &nbsp;— <span id="t-f4b">Consulter votre logement et votre compte</span></li>
+    </ul>
+  </div>
+
+  <!-- Download -->
+  <div class="download-wrap">
+    <a class="btn-dl"
+       href="https://github.com/Sera3829/Hacker-News-app/releases/download/v1.0.0/Hacker.apk"
+       download>
+      <span class="btn-dl-icon">⬇️</span>
+      <span id="t-dl">Télécharger Cenou Room Mobile</span>
+    </a>
+    <div class="dl-meta">
+      <div class="dl-tag">🤖 <span id="t-os">Android</span></div>
+      <div class="dl-tag">🔓 <span id="t-free">Gratuit</span></div>
+      <div class="dl-tag">📦 <span id="t-apk">APK direct</span></div>
+    </div>
+  </div>
 
 </div>
 
+<!-- ── Detection mobile ── -->
 <script>
   (function () {
-    var ua      = navigator.userAgent || navigator.vendor || window.opera;
-    var uaLower = ua.toLowerCase();
-    var isPhone = /iphone|ipod|(android.*mobile)|windows phone|blackberry|iemobile|opera mini/i.test(uaLower);
-    var isIpad  = /ipad/i.test(uaLower) ||
-                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    var isSmall = window.screen.width < 768 && window.screen.height < 1024;
-    var shouldBlock = (isPhone && !isIpad) || (isSmall && !isIpad);
-    if (shouldBlock) {
+    var ua = navigator.userAgent || navigator.vendor || window.opera;
+    var low = ua.toLowerCase();
+    var isPhone  = /iphone|ipod|(android.*mobile)|windows phone|blackberry|iemobile|opera mini/i.test(low);
+    var isIpad   = /ipad/i.test(low) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var isSmall  = window.screen.width < 768 && window.screen.height < 1024;
+    var block    = (isPhone && !isIpad) || (isSmall && !isIpad);
+    if (block) {
       document.getElementById('mobile-block').style.display = 'flex';
+      document.getElementById('lang-btn').style.display     = 'flex';
       window._flutter_web_auto_start = false;
     }
   })();
 </script>
 
+<!-- ── Flutter loader (non-mobile) ── -->
 <script>
   (function () {
-    var ua      = navigator.userAgent || navigator.vendor || window.opera;
-    var uaLower = ua.toLowerCase();
-    var isPhone = /iphone|ipod|(android.*mobile)|windows phone|blackberry|iemobile|opera mini/i.test(uaLower);
-    var isIpad  = /ipad/i.test(uaLower) ||
-                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var ua = navigator.userAgent || navigator.vendor || window.opera;
+    var low = ua.toLowerCase();
+    var isPhone = /iphone|ipod|(android.*mobile)|windows phone|blackberry|iemobile|opera mini/i.test(low);
+    var isIpad  = /ipad/i.test(low) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     var isSmall = window.screen.width < 768 && window.screen.height < 1024;
-    var shouldBlock = (isPhone && !isIpad) || (isSmall && !isIpad);
-    if (!shouldBlock) {
-      var s   = document.createElement('script');
-      s.src   = 'flutter_bootstrap.js';
+    if (!((isPhone && !isIpad) || (isSmall && !isIpad))) {
+      var s = document.createElement('script');
+      s.src = 'flutter_bootstrap.js';
       s.async = true;
       document.body.appendChild(s);
     }
   })();
+</script>
+
+<!-- ── Lang switch ── -->
+<script>
+  var _lang = 'fr';
+  var T = {
+    fr: {
+      sub:'Résidences CENOU', pAdmin:'Admins · Gestionnaires', pStudent:'Étudiants',
+      badgeAdmin:'Dashboard Admin', adminH:'Accès sur ordinateur ou tablette uniquement',
+      adminP:'Ce tableau de bord est réservé aux <strong>administrateurs et gestionnaires</strong> du CENOU. Son interface est conçue pour les grands écrans et ne peut pas s\'afficher correctement sur mobile.',
+      c1:'Ordinateur', c2:'Laptop', c3:'Tablette',
+      badgeStudent:'Application Mobile', studentH:'Vous êtes étudiant(e) ? ou vous voulez juste voir les interfaces ?',
+      studentP:'L\'application mobile vous permet de :',
+      f1:'Paiements', f1b:'Initier et suivre vos loyers',
+      f2:'Signalements', f2b:'Signaler un problème dans votre chambre',
+      f3:'Notifications', f3b:'Recevoir les annonces du CENOU',
+      f4:'Profil', f4b:'Consulter votre logement et votre compte',
+      dl:'Télécharger Cenou Room Mobile', os:'Android', free:'Gratuit', apk:'APK direct',
+      flag:'🇬🇧', lbl:'English'
+    },
+    en: {
+      sub:'CENOU Residences', pAdmin:'Admins · Managers', pStudent:'Students',
+      badgeAdmin:'Admin Dashboard', adminH:'Desktop & tablet access only',
+      adminP:'This dashboard is reserved for <strong>CENOU administrators and managers</strong>. The interface is built for large screens and cannot display correctly on mobile.',
+      c1:'Desktop', c2:'Laptop', c3:'Tablet',
+      badgeStudent:'Mobile App', studentH:'Are you a student? or do you just want to see the interfaces',
+      studentP:'The mobile app lets you:',
+      f1:'Payments', f1b:'Initiate and track your rent',
+      f2:'Reports', f2b:'Report an issue in your room',
+      f3:'Notifications', f3b:'Receive CENOU announcements',
+      f4:'Profile', f4b:'View your housing and account',
+      dl:'Download Cenou Room Mobile', os:'Android', free:'Free', apk:'Direct APK',
+      flag:'🇫🇷', lbl:'Français'
+    }
+  };
+
+  function set(id, val, html) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (html) el.innerHTML = val; else el.textContent = val;
+  }
+
+  function toggleLang() {
+    _lang = _lang === 'fr' ? 'en' : 'fr';
+    var t = T[_lang];
+    set('t-sub', t.sub); set('t-p-admin', t.pAdmin); set('t-p-student', t.pStudent);
+    set('t-badge-admin', t.badgeAdmin); set('t-admin-h', t.adminH);
+    set('t-admin-p', t.adminP, true);
+    set('t-c1', t.c1); set('t-c2', t.c2); set('t-c3', t.c3);
+    set('t-badge-student', t.badgeStudent); set('t-student-h', t.studentH);
+    set('t-student-p', t.studentP);
+    set('t-f1', t.f1); set('t-f1b', t.f1b);
+    set('t-f2', t.f2); set('t-f2b', t.f2b);
+    set('t-f3', t.f3); set('t-f3b', t.f3b);
+    set('t-f4', t.f4); set('t-f4b', t.f4b);
+    set('t-dl', t.dl); set('t-os', t.os); set('t-free', t.free); set('t-apk', t.apk);
+    set('lang-flag', t.flag); set('lang-label', t.lbl);
+  }
 </script>
 
 </body>
