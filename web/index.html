@@ -4,6 +4,10 @@
   <base href="$FLUTTER_BASE_HREF">
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+
+  <!-- ✅ VIEWPORT — indispensable pour les mobiles -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
   <meta name="description" content="Cenou Room - Gestion de résidences universitaires CENOU">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
@@ -16,282 +20,271 @@
   <link rel="manifest" href="manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
 
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --blue-deep:    #0C1E5B;
-      --blue-mid:     #1A3A8F;
-      --blue-accent:  #3B82F6;
-      --blue-light:   #60A5FA;
-      --white:        #FFFFFF;
-      --white-60:     rgba(255,255,255,0.60);
-      --white-20:     rgba(255,255,255,0.20);
-      --white-10:     rgba(255,255,255,0.10);
-      --white-06:     rgba(255,255,255,0.06);
-      --green:        #10B981;
-      --green-light:  #34D399;
+      --blue-deep:   #0B1D57;
+      --blue-mid:    #1A3A8F;
+      --blue-accent: #3B82F6;
+      --blue-light:  #60A5FA;
+      --w:           #FFFFFF;
+      --w60:         rgba(255,255,255,.60);
+      --w30:         rgba(255,255,255,.30);
+      --w15:         rgba(255,255,255,.15);
+      --w08:         rgba(255,255,255,.08);
+      --w05:         rgba(255,255,255,.05);
+      --green:       #10B981;
+      --green-l:     #34D399;
     }
 
-    body {
+    html, body {
+      height: 100%;
       background: var(--blue-deep);
       font-family: 'DM Sans', sans-serif;
       -webkit-font-smoothing: antialiased;
+      /* Prevent text size inflation on iOS */
+      -webkit-text-size-adjust: 100%;
     }
 
-    /* ── Lang toggle ── */
-    #lang-btn {
-      display: none;
-      position: fixed;
-      top: 18px; right: 18px;
-      z-index: 999;
-      align-items: center;
-      gap: 6px;
-      background: var(--white-10);
-      border: 1px solid var(--white-20);
-      color: var(--white);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 12px;
-      font-weight: 600;
-      padding: 7px 14px 7px 10px;
-      border-radius: 999px;
-      cursor: pointer;
-      backdrop-filter: blur(8px);
-      letter-spacing: 0.4px;
-      transition: background 0.15s;
-    }
-    #lang-btn:hover  { background: var(--white-20); }
-    #lang-btn .flag  { font-size: 16px; line-height: 1; }
-
-    /* ── Page wrapper ── */
+    /* ══════════════════════════════════════════
+       MOBILE BLOCK — occupe tout l'écran proprement
+    ══════════════════════════════════════════ */
     #mobile-block {
       display: none;
       flex-direction: column;
       align-items: center;
+      width: 100%;
       min-height: 100vh;
-      padding: 56px 20px 48px;
+      padding: 0 16px 24px;
       background:
-        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(59,130,246,0.28) 0%, transparent 70%),
-        linear-gradient(175deg, #1A3A8F 0%, #0C1E5B 45%, #060E2B 100%);
+        radial-gradient(ellipse 100% 45% at 50% 0%, rgba(59,130,246,.25) 0%, transparent 65%),
+        linear-gradient(170deg, #1A3A8F 0%, #0B1D57 40%, #060D2C 100%);
+      overflow-x: hidden;
     }
 
-    /* ── Logo ── */
-    .logo-area {
+    /* ── Top bar (logo + lang) ── */
+    .top-bar {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      margin-bottom: 28px;
-      animation: fadeDown 0.45s ease both;
+      justify-content: space-between;
+      width: 100%;
+      padding: 18px 0 16px;
     }
-    .logo-wrap {
-      position: relative;
-      width: 86px; height: 86px;
-      margin-bottom: 14px;
+    .top-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-    .logo-wrap::before {
-      content: '';
-      position: absolute;
-      inset: -3px;
-      border-radius: 26px;
-      background: linear-gradient(135deg, var(--blue-accent), var(--blue-light));
-      opacity: 0.30;
+    .top-logo img, .top-logo .logo-fb {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      flex-shrink: 0;
     }
-    .logo-wrap img {
-      position: relative;
-      width: 86px; height: 86px;
-      border-radius: 22px;
-      display: block;
-      box-shadow: 0 10px 36px rgba(0,0,0,0.45), 0 0 0 1px var(--white-10);
-    }
-    .logo-fallback {
-      position: relative;
-      width: 86px; height: 86px;
-      border-radius: 22px;
+    .logo-fb {
       background: linear-gradient(135deg, var(--blue-accent), var(--blue-mid));
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 36px;
-      box-shadow: 0 10px 36px rgba(0,0,0,0.45);
+      font-size: 20px;
     }
-    .brand-name {
-      font-family: 'DM Serif Display', serif;
-      font-size: 27px;
-      color: var(--white);
+    .top-logo-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+    }
+    .top-logo-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--w);
       letter-spacing: -0.2px;
-      margin-bottom: 4px;
     }
-    .brand-sub {
-      font-size: 11px;
+    .top-logo-sub {
+      font-size: 10px;
       font-weight: 500;
-      letter-spacing: 1.8px;
+      color: var(--w60);
+      letter-spacing: 0.8px;
       text-transform: uppercase;
-      color: var(--white-60);
     }
 
-    /* ── Audience pills ── */
+    /* ── Lang button — inline dans la top bar ── */
+    #lang-btn {
+      display: none;
+      align-items: center;
+      gap: 5px;
+      background: var(--w08);
+      border: 1px solid var(--w15);
+      color: var(--w);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 6px 11px 6px 8px;
+      border-radius: 999px;
+      cursor: pointer;
+      backdrop-filter: blur(6px);
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    #lang-btn:active { background: var(--w15); }
+    #lang-btn .flag  { font-size: 14px; line-height: 1; }
+
+    /* ── Pills row ── */
     .pills {
       display: flex;
-      gap: 8px;
-      margin-bottom: 26px;
-      animation: fadeDown 0.45s 0.08s ease both;
+      gap: 6px;
+      margin-bottom: 14px;
+      animation: fadeUp .4s .05s ease both;
     }
     .pill {
       display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 5px 12px;
+      gap: 5px;
+      padding: 4px 10px;
       border-radius: 999px;
-      font-size: 11.5px;
+      font-size: 11px;
       font-weight: 600;
-      letter-spacing: 0.2px;
     }
-    .pill-dot { width: 6px; height: 6px; border-radius: 50%; }
-    .pill-blue   { background: rgba(59,130,246,0.18); border: 1px solid rgba(59,130,246,0.32); color: var(--blue-light); }
-    .pill-blue   .pill-dot { background: var(--blue-light); }
-    .pill-green  { background: rgba(16,185,129,0.14); border: 1px solid rgba(16,185,129,0.28); color: var(--green-light); }
-    .pill-green  .pill-dot { background: var(--green-light); }
+    .pill-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .pill-blue  { background: rgba(59,130,246,.16); border: 1px solid rgba(59,130,246,.30); color: var(--blue-light); }
+    .pill-blue  .pill-dot { background: var(--blue-light); }
+    .pill-green { background: rgba(16,185,129,.13); border: 1px solid rgba(16,185,129,.26); color: var(--green-l); }
+    .pill-green .pill-dot { background: var(--green-l); }
 
     /* ── Cards ── */
     .card {
-      background: var(--white-06);
-      border: 1px solid var(--white-10);
-      border-radius: 22px;
-      padding: 22px 20px;
-      max-width: 356px;
       width: 100%;
-      backdrop-filter: blur(10px);
+      background: var(--w05);
+      border: 1px solid var(--w08);
+      border-radius: 18px;
+      padding: 16px;
+      backdrop-filter: blur(8px);
     }
-    .card + .card { margin-top: 12px; }
-    .card-admin   { animation: fadeUp 0.45s 0.12s ease both; }
-    .card-student { animation: fadeUp 0.45s 0.20s ease both; }
+    .card + .card { margin-top: 10px; }
+    .card-admin   { animation: fadeUp .4s .10s ease both; }
+    .card-student { animation: fadeUp .4s .18s ease both; }
 
-    .card-badge {
+    /* Badge */
+    .badge {
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      font-size: 10px;
+      gap: 4px;
+      font-size: 9.5px;
       font-weight: 700;
-      letter-spacing: 1.3px;
+      letter-spacing: 1.1px;
       text-transform: uppercase;
-      padding: 4px 10px;
-      border-radius: 6px;
-      margin-bottom: 14px;
+      padding: 3px 8px;
+      border-radius: 5px;
+      margin-bottom: 10px;
     }
-    .badge-blue   { background: rgba(59,130,246,0.15); color: var(--blue-light); }
-    .badge-green  { background: rgba(16,185,129,0.12); color: var(--green-light); }
-
-    .card-icon { font-size: 30px; margin-bottom: 10px; display: block; }
+    .badge-blue  { background: rgba(59,130,246,.14); color: var(--blue-light); }
+    .badge-green { background: rgba(16,185,129,.11); color: var(--green-l); }
 
     .card h3 {
-      font-size: 15px;
+      font-size: 14px;
       font-weight: 700;
-      color: var(--white);
-      margin-bottom: 8px;
+      color: var(--w);
+      margin-bottom: 7px;
       line-height: 1.35;
     }
     .card p {
-      font-size: 13px;
-      line-height: 1.65;
-      color: var(--white-60);
+      font-size: 12.5px;
+      line-height: 1.60;
+      color: var(--w60);
     }
-    .card p strong { color: var(--white); font-weight: 600; }
+    .card p strong { color: var(--w); font-weight: 600; }
 
-    /* ── Device chips ── */
+    /* Device chips */
     .chips {
       display: flex;
-      gap: 7px;
-      margin-top: 14px;
+      gap: 6px;
+      margin-top: 12px;
       flex-wrap: wrap;
     }
     .chip {
       display: flex;
       align-items: center;
-      gap: 4px;
-      background: var(--white-10);
-      border: 1px solid var(--white-20);
-      border-radius: 7px;
-      padding: 4px 10px;
-      font-size: 11.5px;
-      color: var(--white-60);
+      gap: 3px;
+      background: var(--w08);
+      border: 1px solid var(--w15);
+      border-radius: 6px;
+      padding: 3px 9px;
+      font-size: 11px;
+      color: var(--w60);
       font-weight: 500;
     }
 
-    /* ── Features list (student) ── */
+    /* Feature list */
     .features {
       list-style: none;
-      margin-top: 12px;
+      margin-top: 10px;
       display: flex;
       flex-direction: column;
-      gap: 7px;
+      gap: 6px;
     }
     .features li {
       display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 12.5px;
-      color: var(--white-60);
+      align-items: flex-start;
+      gap: 7px;
+      font-size: 12px;
+      color: var(--w60);
+      line-height: 1.45;
     }
     .feat-dot {
       width: 5px; height: 5px;
       border-radius: 50%;
-      background: var(--green-light);
+      background: var(--green-l);
       flex-shrink: 0;
+      margin-top: 4px;
     }
-    .features li strong { color: var(--white); font-weight: 600; }
+    .features li strong { color: var(--w); font-weight: 600; }
 
-    /* ── Download button ── */
+    /* ── Download ── */
     .download-wrap {
-      max-width: 356px;
       width: 100%;
-      margin-top: 20px;
-      animation: fadeUp 0.45s 0.28s ease both;
+      margin-top: 14px;
+      animation: fadeUp .4s .26s ease both;
     }
     .btn-dl {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 11px;
-      background: var(--white);
+      gap: 9px;
+      background: var(--w);
       color: var(--blue-deep);
       font-family: 'DM Sans', sans-serif;
       font-weight: 700;
-      font-size: 15px;
-      padding: 16px 24px;
-      border-radius: 16px;
+      font-size: 14px;
+      padding: 14px 20px;
+      border-radius: 14px;
       text-decoration: none;
       width: 100%;
-      box-shadow: 0 8px 30px rgba(0,0,0,0.28), 0 0 0 1px rgba(255,255,255,0.08);
-      transition: transform 0.12s, box-shadow 0.12s;
-      margin-bottom: 10px;
+      box-shadow: 0 6px 24px rgba(0,0,0,.28);
+      transition: transform .12s, box-shadow .12s;
+      margin-bottom: 9px;
     }
-    .btn-dl:active { transform: scale(0.975); box-shadow: 0 4px 14px rgba(0,0,0,0.22); }
-    .btn-dl-icon { font-size: 20px; }
+    .btn-dl:active { transform: scale(.975); box-shadow: 0 3px 12px rgba(0,0,0,.22); }
 
     .dl-meta {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 18px;
+      gap: 14px;
     }
     .dl-tag {
       display: flex;
       align-items: center;
-      gap: 4px;
-      font-size: 11px;
-      color: var(--white-60);
+      gap: 3px;
+      font-size: 10.5px;
+      color: var(--w60);
       font-weight: 500;
     }
 
     /* ── Animations ── */
-    @keyframes fadeDown {
-      from { opacity: 0; transform: translateY(-10px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(12px); }
+      from { opacity: 0; transform: translateY(10px); }
       to   { opacity: 1; transform: translateY(0); }
     }
   </style>
@@ -299,26 +292,29 @@
 
 <body>
 
-<button id="lang-btn" onclick="toggleLang()">
-  <span class="flag" id="lang-flag">🇬🇧</span>
-  <span id="lang-label">English</span>
-</button>
-
+<!-- ═══ MOBILE BLOCK ═══ -->
 <div id="mobile-block">
 
-  <!-- Logo -->
-  <div class="logo-area">
-    <div class="logo-wrap">
+  <!-- Top bar : logo + bouton langue -->
+  <div class="top-bar">
+    <div class="top-logo">
       <img src="./icons/icon-192.png" alt="Cenou Room"
            id="logo-img"
            onerror="this.style.display='none';document.getElementById('logo-fb').style.display='flex';">
-      <div id="logo-fb" class="logo-fallback" style="display:none;">🏠</div>
+      <div id="logo-fb" class="logo-fb" style="display:none;">🏠</div>
+      <div class="top-logo-text">
+        <span class="top-logo-name">Cenou Room</span>
+        <span class="top-logo-sub" id="t-sub">Résidences CENOU</span>
+      </div>
     </div>
-    <div class="brand-name">Cenou Room</div>
-    <div class="brand-sub" id="t-sub">Résidences CENOU</div>
+
+    <button id="lang-btn" onclick="toggleLang()">
+      <span class="flag" id="lang-flag">🇬🇧</span>
+      <span id="lang-label">English</span>
+    </button>
   </div>
 
-  <!-- Audience pills -->
+  <!-- Pills -->
   <div class="pills">
     <div class="pill pill-blue">
       <span class="pill-dot"></span>
@@ -332,12 +328,9 @@
 
   <!-- Card admin -->
   <div class="card card-admin">
-    <div class="card-badge badge-blue">🖥️ &nbsp;<span id="t-badge-admin">Dashboard Admin</span></div>
-    <h3 id="t-admin-h">Accès sur ordinateur ou tablette uniquement</h3>
-    <p id="t-admin-p">
-      Ce tableau de bord est réservé aux <strong>administrateurs et gestionnaires</strong> du CENOU.
-      Son interface est conçue pour les grands écrans et ne peut pas s'afficher correctement sur mobile.
-    </p>
+    <div class="badge badge-blue">🖥️&nbsp;<span id="t-badge-admin">Dashboard Admin</span></div>
+    <h3 id="t-admin-h">Réservé aux grands écrans</h3>
+    <p id="t-admin-p">Ce tableau de bord est conçu pour les <strong>administrateurs et gestionnaires</strong> du CENOU. Il nécessite un ordinateur ou une tablette — il ne peut pas s'afficher correctement sur mobile.</p>
     <div class="chips">
       <div class="chip">🖥️ <span id="t-c1">Ordinateur</span></div>
       <div class="chip">💻 <span id="t-c2">Laptop</span></div>
@@ -347,14 +340,14 @@
 
   <!-- Card student -->
   <div class="card card-student">
-    <div class="card-badge badge-green">📱 &nbsp;<span id="t-badge-student">Application Mobile</span></div>
-    <h3 id="t-student-h">Vous êtes étudiant(e) ? ou vous voulez juste voir les interfaces ?</h3>
+    <div class="badge badge-green">📱&nbsp;<span id="t-badge-student">Application Mobile</span></div>
+    <h3 id="t-student-h">Étudiant(e) ou curieux ? Téléchargez l'app</h3>
     <p id="t-student-p">L'application mobile vous permet de :</p>
     <ul class="features">
-      <li><span class="feat-dot"></span><strong id="t-f1">Paiements</strong> &nbsp;— <span id="t-f1b">Initier et suivre vos loyers</span></li>
-      <li><span class="feat-dot"></span><strong id="t-f2">Signalements</strong> &nbsp;— <span id="t-f2b">Signaler un problème dans votre chambre</span></li>
-      <li><span class="feat-dot"></span><strong id="t-f3">Notifications</strong> &nbsp;— <span id="t-f3b">Recevoir les annonces du CENOU</span></li>
-      <li><span class="feat-dot"></span><strong id="t-f4">Profil</strong> &nbsp;— <span id="t-f4b">Consulter votre logement et votre compte</span></li>
+      <li><span class="feat-dot"></span><strong id="t-f1">Paiements</strong>&nbsp;— <span id="t-f1b">Initier et suivre vos loyers</span></li>
+      <li><span class="feat-dot"></span><strong id="t-f2">Signalements</strong>&nbsp;— <span id="t-f2b">Signaler un problème dans votre chambre</span></li>
+      <li><span class="feat-dot"></span><strong id="t-f3">Notifications</strong>&nbsp;— <span id="t-f3b">Recevoir les annonces du CENOU</span></li>
+      <li><span class="feat-dot"></span><strong id="t-f4">Profil</strong>&nbsp;— <span id="t-f4b">Consulter votre logement et votre compte</span></li>
     </ul>
   </div>
 
@@ -363,8 +356,7 @@
     <a class="btn-dl"
        href="https://github.com/Sera3829/Hacker-News-app/releases/download/v1.0.0/Hacker.apk"
        download>
-      <span class="btn-dl-icon">⬇️</span>
-      <span id="t-dl">Télécharger Cenou Room Mobile</span>
+      ⬇️&nbsp;<span id="t-dl">Télécharger Cenou Room Mobile</span>
     </a>
     <div class="dl-meta">
       <div class="dl-tag">🤖 <span id="t-os">Android</span></div>
@@ -375,15 +367,15 @@
 
 </div>
 
-<!-- ── Detection mobile ── -->
+<!-- ── Détection mobile ── -->
 <script>
   (function () {
-    var ua = navigator.userAgent || navigator.vendor || window.opera;
+    var ua  = navigator.userAgent || navigator.vendor || window.opera;
     var low = ua.toLowerCase();
-    var isPhone  = /iphone|ipod|(android.*mobile)|windows phone|blackberry|iemobile|opera mini/i.test(low);
-    var isIpad   = /ipad/i.test(low) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    var isSmall  = window.screen.width < 768 && window.screen.height < 1024;
-    var block    = (isPhone && !isIpad) || (isSmall && !isIpad);
+    var isPhone = /iphone|ipod|(android.*mobile)|windows phone|blackberry|iemobile|opera mini/i.test(low);
+    var isIpad  = /ipad/i.test(low) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var isSmall = window.screen.width < 768 && window.screen.height < 1024;
+    var block   = (isPhone && !isIpad) || (isSmall && !isIpad);
     if (block) {
       document.getElementById('mobile-block').style.display = 'flex';
       document.getElementById('lang-btn').style.display     = 'flex';
@@ -392,58 +384,62 @@
   })();
 </script>
 
-<!-- ── Flutter loader (non-mobile) ── -->
+<!-- ── Flutter (non-mobile uniquement) ── -->
 <script>
   (function () {
-    var ua = navigator.userAgent || navigator.vendor || window.opera;
+    var ua  = navigator.userAgent || navigator.vendor || window.opera;
     var low = ua.toLowerCase();
     var isPhone = /iphone|ipod|(android.*mobile)|windows phone|blackberry|iemobile|opera mini/i.test(low);
     var isIpad  = /ipad/i.test(low) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     var isSmall = window.screen.width < 768 && window.screen.height < 1024;
     if (!((isPhone && !isIpad) || (isSmall && !isIpad))) {
-      var s = document.createElement('script');
-      s.src = 'flutter_bootstrap.js';
+      var s   = document.createElement('script');
+      s.src   = 'flutter_bootstrap.js';
       s.async = true;
       document.body.appendChild(s);
     }
   })();
 </script>
 
-<!-- ── Lang switch ── -->
+<!-- ── Traductions FR / EN ── -->
 <script>
   var _lang = 'fr';
   var T = {
     fr: {
       sub:'Résidences CENOU', pAdmin:'Admins · Gestionnaires', pStudent:'Étudiants',
-      badgeAdmin:'Dashboard Admin', adminH:'Accès sur ordinateur ou tablette uniquement',
-      adminP:'Ce tableau de bord est réservé aux <strong>administrateurs et gestionnaires</strong> du CENOU. Son interface est conçue pour les grands écrans et ne peut pas s\'afficher correctement sur mobile.',
+      badgeAdmin:'Dashboard Admin',
+      adminH:'Réservé aux grands écrans',
+      adminP:'Ce tableau de bord est conçu pour les <strong>administrateurs et gestionnaires</strong> du CENOU. Il nécessite un ordinateur ou une tablette — il ne peut pas s\'afficher correctement sur mobile.',
       c1:'Ordinateur', c2:'Laptop', c3:'Tablette',
-      badgeStudent:'Application Mobile', studentH:'Vous êtes étudiant(e) ? ou vous voulez juste voir les interfaces ?',
+      badgeStudent:'Application Mobile',
+      studentH:'Étudiant(e) ou curieux ? Téléchargez l\'app',
       studentP:'L\'application mobile vous permet de :',
-      f1:'Paiements', f1b:'Initier et suivre vos loyers',
-      f2:'Signalements', f2b:'Signaler un problème dans votre chambre',
+      f1:'Paiements',     f1b:'Initier et suivre vos loyers',
+      f2:'Signalements',  f2b:'Signaler un problème dans votre chambre',
       f3:'Notifications', f3b:'Recevoir les annonces du CENOU',
-      f4:'Profil', f4b:'Consulter votre logement et votre compte',
+      f4:'Profil',        f4b:'Consulter votre logement et votre compte',
       dl:'Télécharger Cenou Room Mobile', os:'Android', free:'Gratuit', apk:'APK direct',
       flag:'🇬🇧', lbl:'English'
     },
     en: {
       sub:'CENOU Residences', pAdmin:'Admins · Managers', pStudent:'Students',
-      badgeAdmin:'Admin Dashboard', adminH:'Desktop & tablet access only',
-      adminP:'This dashboard is reserved for <strong>CENOU administrators and managers</strong>. The interface is built for large screens and cannot display correctly on mobile.',
+      badgeAdmin:'Admin Dashboard',
+      adminH:'Large screen required',
+      adminP:'This dashboard is designed for <strong>CENOU administrators and managers</strong>. It requires a computer or tablet — it cannot display correctly on a phone.',
       c1:'Desktop', c2:'Laptop', c3:'Tablet',
-      badgeStudent:'Mobile App', studentH:'Are you a student? or do you just want to see the interfaces',
+      badgeStudent:'Mobile App',
+      studentH:'Student or just curious? Download the app',
       studentP:'The mobile app lets you:',
-      f1:'Payments', f1b:'Initiate and track your rent',
-      f2:'Reports', f2b:'Report an issue in your room',
-      f3:'Notifications', f3b:'Receive CENOU announcements',
-      f4:'Profile', f4b:'View your housing and account',
+      f1:'Payments',       f1b:'Initiate and track your rent',
+      f2:'Reports',        f2b:'Report an issue in your room',
+      f3:'Notifications',  f3b:'Receive CENOU announcements',
+      f4:'Profile',        f4b:'View your housing and account',
       dl:'Download Cenou Room Mobile', os:'Android', free:'Free', apk:'Direct APK',
       flag:'🇫🇷', lbl:'Français'
     }
   };
 
-  function set(id, val, html) {
+  function $s(id, val, html) {
     var el = document.getElementById(id);
     if (!el) return;
     if (html) el.innerHTML = val; else el.textContent = val;
@@ -452,18 +448,18 @@
   function toggleLang() {
     _lang = _lang === 'fr' ? 'en' : 'fr';
     var t = T[_lang];
-    set('t-sub', t.sub); set('t-p-admin', t.pAdmin); set('t-p-student', t.pStudent);
-    set('t-badge-admin', t.badgeAdmin); set('t-admin-h', t.adminH);
-    set('t-admin-p', t.adminP, true);
-    set('t-c1', t.c1); set('t-c2', t.c2); set('t-c3', t.c3);
-    set('t-badge-student', t.badgeStudent); set('t-student-h', t.studentH);
-    set('t-student-p', t.studentP);
-    set('t-f1', t.f1); set('t-f1b', t.f1b);
-    set('t-f2', t.f2); set('t-f2b', t.f2b);
-    set('t-f3', t.f3); set('t-f3b', t.f3b);
-    set('t-f4', t.f4); set('t-f4b', t.f4b);
-    set('t-dl', t.dl); set('t-os', t.os); set('t-free', t.free); set('t-apk', t.apk);
-    set('lang-flag', t.flag); set('lang-label', t.lbl);
+    $s('t-sub', t.sub);        $s('t-p-admin', t.pAdmin);   $s('t-p-student', t.pStudent);
+    $s('t-badge-admin', t.badgeAdmin); $s('t-admin-h', t.adminH);
+    $s('t-admin-p', t.adminP, true);
+    $s('t-c1', t.c1); $s('t-c2', t.c2); $s('t-c3', t.c3);
+    $s('t-badge-student', t.badgeStudent); $s('t-student-h', t.studentH);
+    $s('t-student-p', t.studentP);
+    $s('t-f1', t.f1); $s('t-f1b', t.f1b);
+    $s('t-f2', t.f2); $s('t-f2b', t.f2b);
+    $s('t-f3', t.f3); $s('t-f3b', t.f3b);
+    $s('t-f4', t.f4); $s('t-f4b', t.f4b);
+    $s('t-dl', t.dl); $s('t-os', t.os); $s('t-free', t.free); $s('t-apk', t.apk);
+    $s('lang-flag', t.flag); $s('lang-label', t.lbl);
   }
 </script>
 
