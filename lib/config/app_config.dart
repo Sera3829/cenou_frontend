@@ -1,5 +1,4 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AppConfig {
   /// Détection de la plateforme d'exécution (Web vs Mobile).
@@ -41,5 +40,5 @@ class AppConfig {
   static const Duration receiveTimeout = Duration(seconds: 30);
 
   /// État du mode de débogage.
-  static const bool debugMode = true;
+  static bool get debugMode => kDebugMode;
 }

@@ -19,7 +19,7 @@ class ApiService {
 
   /// Initialise le service (aucun token en mémoire).
   Future<void> init() async {
-    print('ApiService initialisé (mode sans mémoire)');
+    if (kDebugMode) print('ApiService initialisé (mode sans mémoire)');
   }
 
   // ==================== GESTION DES HEADERS ====================
@@ -40,13 +40,13 @@ class ApiService {
   /// Met à jour le jeton dans le stockage persistant.
   Future<void> setToken(String token) async {
     await _storageService.saveToken(token);
-    print('Token sauvegardé dans storage');
+    if (kDebugMode) print('Token sauvegardé dans storage');
   }
 
   /// Supprime le jeton du stockage.
   Future<void> clearToken() async {
     await _storageService.deleteToken();
-    print('Token supprimé du storage');
+    if (kDebugMode) print('Token supprimé du storage');
   }
 
   // ==================== MÉTHODES HTTP GÉNÉRIQUES ====================
@@ -59,13 +59,13 @@ class ApiService {
         uri = uri.replace(queryParameters: params);
       }
       final headers = await _getAuthHeaders();
-      print('GET: $uri');
+      if (kDebugMode) print('GET: $uri');
       final response = await http
           .get(uri, headers: headers)
           .timeout(AppConfig.connectionTimeout);
       return _handleResponse(response);
     } catch (e) {
-      print('GET Error: $e');
+      if (kDebugMode) print('GET Error: $e');
       throw _handleError(e);
     }
   }
@@ -75,36 +75,33 @@ class ApiService {
     try {
       final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
       final headers = await _getAuthHeaders();
-      print('POST: $url');
-      if (body != null) {
-        print('Body: $body');
-      }
+      if (kDebugMode) print('POST: $url');
       final response = await http.post(
         url,
         headers: headers,
         body: body != null ? json.encode(body) : null,
       ).timeout(AppConfig.connectionTimeout);
-      print('Response Status: ${response.statusCode}');
+      if (kDebugMode) print('Response Status: ${response.statusCode}');
       final contentType = response.headers['content-type'] ?? '';
       if (contentType.contains('application/pdf') ||
           contentType.contains('application/vnd.ms-excel') ||
           contentType.contains('application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') ||
           contentType.contains('application/octet-stream')) {
-        print('Réponse binaire détectée, retour brut');
+        if (kDebugMode) print('Réponse binaire détectée, retour brut');
         return response;
       }
       return _handleResponse(response);
     } on TimeoutException catch (e) {
-      print('Timeout: $e');
+      if (kDebugMode) print('Timeout: $e');
       throw Exception('Timeout: Le serveur ne répond pas');
     } catch (e) {
       if (e.toString().contains('SocketException') ||
           e.toString().contains('ClientException') ||
           e.toString().contains('XMLHttpRequest')) {
-        print('Network error: $e');
+        if (kDebugMode) print('Network error: $e');
         throw Exception('Pas de connexion internet ou serveur inaccessible');
       }
-      print('POST Error: $e');
+      if (kDebugMode) print('POST Error: $e');
       rethrow;
     }
   }
@@ -114,10 +111,7 @@ class ApiService {
     try {
       final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
       final headers = await _getAuthHeaders();
-      print('PUT: $url');
-      if (body != null) {
-        print('Body: $body');
-      }
+      if (kDebugMode) print('PUT: $url');
       final response = await http.put(
         url,
         headers: headers,
@@ -125,7 +119,7 @@ class ApiService {
       ).timeout(AppConfig.connectionTimeout);
       return _handleResponse(response);
     } catch (e) {
-      print('PUT Error: $e');
+      if (kDebugMode) print('PUT Error: $e');
       throw _handleError(e);
     }
   }
@@ -135,13 +129,13 @@ class ApiService {
     try {
       final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
       final headers = await _getAuthHeaders();
-      print('DELETE: $url');
+      if (kDebugMode) print('DELETE: $url');
       final response = await http
           .delete(url, headers: headers)
           .timeout(AppConfig.connectionTimeout);
       return _handleResponse(response);
     } catch (e) {
-      print('DELETE Error: $e');
+      if (kDebugMode) print('DELETE Error: $e');
       throw _handleError(e);
     }
   }
@@ -155,9 +149,9 @@ class ApiService {
     try {
       final url = Uri.parse('${AppConfig.apiBaseUrl}$endpoint');
       final token = await _storageService.getToken();
-      print('POST Multipart: $url');
-      print('Fields: $fields');
-      print('Files: ${files.length}');
+      if (kDebugMode) print('POST Multipart: $url');
+      if (kDebugMode) print('Fields: $fields');
+      if (kDebugMode) print('Files: ${files.length}');
       final request = http.MultipartRequest('POST', url);
       if (token != null) {
         request.headers['Authorization'] = 'Bearer $token';
@@ -169,7 +163,7 @@ class ApiService {
       final response = await http.Response.fromStream(streamedResponse);
       return _handleResponse(response);
     } catch (e) {
-      print('Multipart Error: $e');
+      if (kDebugMode) print('Multipart Error: $e');
       throw _handleError(e);
     }
   }
@@ -241,13 +235,13 @@ class ApiService {
     required String identifiant,
     required String motDePasse,
   }) async {
-    print('Debut loginAdmin');
+    if (kDebugMode) print('Debut loginAdmin');
     final response = await login(
       identifiant: identifiant,
       motDePasse: motDePasse,
       requireAdmin: true,
     );
-    print('Admin login réussi: ${response['user']['role']}');
+    if (kDebugMode) print('Admin login réussi: ${response['user']['role']}');
     return response;
   }
 
@@ -259,7 +253,7 @@ class ApiService {
   }) async {
     try {
       final url = Uri.parse('${AppConfig.apiBaseUrl}/api/auth/login');
-      print('LOGIN: $url');
+      if (kDebugMode) print('LOGIN: $url');
       final response = await http.post(
         url,
         headers: {
@@ -285,7 +279,7 @@ class ApiService {
       }
       return result;
     } catch (e) {
-      print('Login Error: $e');
+      if (kDebugMode) print('Login Error: $e');
       throw _handleError(e);
     }
   }
@@ -300,7 +294,7 @@ class ApiService {
       final userRole = result['user']['role'];
       return ['ADMIN', 'GESTIONNAIRE'].contains(userRole);
     } catch (e) {
-      print('Check admin status error: $e');
+      if (kDebugMode) print('Check admin status error: $e');
       return false;
     }
   }
@@ -398,12 +392,12 @@ class ApiService {
       'statut': statut,
       if (commentaire != null) 'commentaire_resolution': commentaire,
     };
-    print('Body avant envoi: $bodyData');
+    if (kDebugMode) print('Body avant envoi: $bodyData');
     final response = await put(
       '/api/signalements/admin/$signalementId/statut',
       body: bodyData,
     );
-    print('Réponse API: $response');
+    if (kDebugMode) print('Réponse API: $response');
     return response as Map<String, dynamic>;
   }
 
@@ -428,14 +422,14 @@ class ApiService {
 
   /// Traite la réponse HTTP et convertit en objet Dart.
   dynamic _handleResponse(http.Response response) {
-    print('Response Status: ${response.statusCode}');
-    print('Response Body: ${response.body}');
+    if (kDebugMode) print('Response Status: ${response.statusCode}');
+    if (kDebugMode) print('Response Body: ${response.body}');
     if (response.statusCode >= 200 && response.statusCode < 300) {
       if (response.body.isEmpty) return {};
       try {
         return json.decode(response.body);
       } catch (e) {
-        print("Avertissement: Réponse non JSON pour un statut 2xx");
+        if (kDebugMode) print("Avertissement: Réponse non JSON pour un statut 2xx");
         return {"data": response.body};
       }
     } else {
@@ -454,12 +448,12 @@ class ApiService {
             ? response.body
             : 'Erreur HTTP ${response.statusCode}';
       }
-      print('Backend error message: "$errorMessage"');
+      if (kDebugMode) print('Backend error message: "$errorMessage"');
       final uri = response.request?.url.toString() ?? '';
       if (response.statusCode == 400) {
         throw ApiException(errorMessage, 400, details);
       } else if (response.statusCode == 401) {
-        print('Token expiré détecté → déconnexion automatique');
+        if (kDebugMode) print('Token expiré détecté → déconnexion automatique');
         onUnauthorized?.call();
         if (uri.contains('/api/auth/login')) {
           throw ApiException(errorMessage, 401);

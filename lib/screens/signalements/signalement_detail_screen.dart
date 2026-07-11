@@ -4,7 +4,6 @@ import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
-import '../../app_config.dart';
 import '../../config/theme.dart';
 import '../../models/signalement.dart';
 import '../../providers/signalement_provider.dart';
