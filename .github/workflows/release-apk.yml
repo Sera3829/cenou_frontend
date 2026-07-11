@@ -71,13 +71,32 @@ jobs:
             echo "::error::Secret ANDROID_KEYSTORE_BASE64 manquant — voir CENOU-keys/keystore-base64.txt."
             exit 1
           fi
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d ' \n\r' | base64 -d > "$RUNNER_TEMP/cenou-release.jks"
-          # Validation immédiate : le keystore s'ouvre avec le mot de passe fourni
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d ' \n\r' | base64 -d > "$RUNNER_TEMP/cenou-release.jks" 2>/dev/null || {
+            echo "::error::ANDROID_KEYSTORE_BASE64 n'est pas du base64 valide — recopier TOUT le contenu de keystore-base64.txt (une seule longue ligne)."; exit 1; }
+
+          # Le fichier décodé doit correspondre exactement au keystore d'origine
+          # (empreinte non secrète, calculée sur le fichier local de référence)
+          EXPECTED_SHA256="a75906db1b7562cac365561780b116f714d46f68116870c27b9d3add3275ce96"
+          ACTUAL_SHA256=$(sha256sum "$RUNNER_TEMP/cenou-release.jks" | cut -d' ' -f1)
+          ACTUAL_SIZE=$(stat -c%s "$RUNNER_TEMP/cenou-release.jks")
+          echo "Keystore décodé : $ACTUAL_SIZE octets (attendu : 2175), sha256=$ACTUAL_SHA256"
+          if [ "$ACTUAL_SHA256" != "$EXPECTED_SHA256" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 incomplet ou altéré — recopier TOUT le contenu de keystore-base64.txt sans espace ni retour à la ligne ajouté."
+            exit 1
+          fi
+
+          # Le mot de passe ouvre-t-il le keystore ?
+          keytool -list -keystore "$RUNNER_TEMP/cenou-release.jks" \
+            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" > /dev/null 2>&1 || {
+            echo "::error::ANDROID_KEYSTORE_PASSWORD incorrect — copier UNIQUEMENT la valeur après 'storePassword=' dans key.properties.txt (sans le préfixe)."; exit 1; }
+
+          # L'alias existe-t-il ?
           keytool -list -keystore "$RUNNER_TEMP/cenou-release.jks" \
             -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
-            -alias "${{ secrets.ANDROID_KEY_ALIAS }}" > /dev/null || {
-            echo "::error::Keystore illisible — vérifier ANDROID_KEYSTORE_BASE64 / PASSWORD / ALIAS"; exit 1; }
-          echo "✅ Keystore valide"
+            -alias "${{ secrets.ANDROID_KEY_ALIAS }}" > /dev/null 2>&1 || {
+            echo "::error::ANDROID_KEY_ALIAS incorrect — la valeur doit être exactement : cenou"; exit 1; }
+
+          echo "✅ Keystore valide (fichier, mot de passe et alias corrects)"
 
       - name: Build APK (release, split par ABI)
         env:
