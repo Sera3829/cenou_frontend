@@ -56,6 +56,12 @@ jobs:
             exit 1
           fi
           printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
+          # Validation immédiate : JSON bien formé et bon package
+          python3 -m json.tool android/app/google-services.json > /dev/null || {
+            echo "::error::GOOGLE_SERVICES_JSON n'est pas un JSON valide (collage incomplet ?)"; exit 1; }
+          grep -q '"package_name": *"com.cenou.mobile"' android/app/google-services.json || {
+            echo "::error::GOOGLE_SERVICES_JSON ne contient pas l'app Android com.cenou.mobile"; exit 1; }
+          echo "✅ google-services.json valide"
 
       - name: Restaurer la clé de signature
         env:
@@ -65,7 +71,13 @@ jobs:
             echo "::error::Secret ANDROID_KEYSTORE_BASE64 manquant — voir CENOU-keys/keystore-base64.txt."
             exit 1
           fi
-          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/cenou-release.jks"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d ' \n\r' | base64 -d > "$RUNNER_TEMP/cenou-release.jks"
+          # Validation immédiate : le keystore s'ouvre avec le mot de passe fourni
+          keytool -list -keystore "$RUNNER_TEMP/cenou-release.jks" \
+            -storepass "${{ secrets.ANDROID_KEYSTORE_PASSWORD }}" \
+            -alias "${{ secrets.ANDROID_KEY_ALIAS }}" > /dev/null || {
+            echo "::error::Keystore illisible — vérifier ANDROID_KEYSTORE_BASE64 / PASSWORD / ALIAS"; exit 1; }
+          echo "✅ Keystore valide"
 
       - name: Build APK (release, split par ABI)
         env:
