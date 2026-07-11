@@ -1,4 +1,5 @@
 # Build et publication automatique de l'APK Android à chaque push sur main.
+# (Secrets configurés le 11/07/2026.)
 #
 # À chaque push :
 #   1. Build release signé : flutter build apk --split-per-abi --release
