@@ -57,3 +57,6 @@ node_modules/
 *.class
 *.lock
 .vercel
+
+# Flutter SDK cloné par build.sh (Vercel)
+flutter/
