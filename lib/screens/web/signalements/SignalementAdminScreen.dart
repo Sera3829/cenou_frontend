@@ -1377,7 +1377,9 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                         _dlgItem(l10n.comment, s.commentaireResolution!),
                       if (s.photos.isNotEmpty) ...[
                         const SizedBox(height: 16),
-                        _dlgSection('${l10n.photosCount} (${s.photos.length})', Icons.photo_library),
+                        // photosCount est une méthode : sans l'appeler, Dart
+                        // affichait "Closure '...' of Instance of ..." dans le titre
+                        _dlgSection('Photos (${s.photos.length})', Icons.photo_library),
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 12,
