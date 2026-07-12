@@ -22,6 +22,8 @@ on:
     branches: [main]
     paths-ignore:
       - '**.md'
+      - 'screenshots/**'
+      - 'LICENSE'
   workflow_dispatch:
 
 permissions:

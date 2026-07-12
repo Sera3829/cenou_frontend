@@ -11,6 +11,41 @@ Application **Flutter** du système Cenou Room (CENOU — Burkina Faso) : une se
 - **APK Android** : [Cenou.Room.apk (v1.0.0)](https://github.com/Sera3829/cenou_frontend/releases/download/v1.0.0/Cenou.Room.apk)
 - **Backend associé** : [cenou_backend](https://github.com/Sera3829/cenou_backend) (https://cenou-backend.onrender.com)
 
+## Aperçu
+
+### 📱 Application mobile (étudiants)
+
+| Connexion | Accueil | Paiements | Reçu de paiement | Signalements |
+|:---:|:---:|:---:|:---:|:---:|
+| ![Connexion](screenshots/mobile/connexion.jpg) | ![Accueil](screenshots/mobile/accueil.jpg) | ![Paiements](screenshots/mobile/paiements.jpg) | ![Détail paiement](screenshots/mobile/detail-paiement.jpg) | ![Signalements](screenshots/mobile/signalements.jpg) |
+
+| Détail signalement | Notifications | Profil | Paramètres | Inscription |
+|:---:|:---:|:---:|:---:|:---:|
+| ![Détail signalement](screenshots/mobile/detail-signalement.jpg) | ![Notifications](screenshots/mobile/notifications.jpg) | ![Profil](screenshots/mobile/profil.jpg) | ![Paramètres](screenshots/mobile/parametres.jpg) | ![Inscription](screenshots/mobile/inscription.jpg) |
+
+### 🖥️ Dashboard web (admins & gestionnaires)
+
+**Vue d'ensemble** — statistiques temps réel, revenus mensuels, répartition des signalements :
+
+![Dashboard](screenshots/web/dashboard.png)
+
+| Gestion des paiements | Gestion des signalements |
+|:---:|:---:|
+| ![Paiements](screenshots/web/paiements.png) | ![Signalements](screenshots/web/signalements.png) |
+
+| Gestion des utilisateurs | Annonces ciblées |
+|:---:|:---:|
+| ![Utilisateurs](screenshots/web/utilisateurs.png) | ![Annonces](screenshots/web/annonces.png) |
+
+<details>
+<summary>➕ Plus de captures (rapports, paramètres, détail signalement)</summary>
+
+![Rapports](screenshots/web/rapports.png)
+![Paramètres](screenshots/web/parametres.png)
+![Détail signalement](screenshots/web/detail-signalement.png)
+
+</details>
+
 ## Démarrage rapide
 
 Prérequis : [Flutter SDK](https://docs.flutter.dev/get-started/install) (canal **stable**).
