@@ -1691,6 +1691,7 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
           }
 
           final isEtudiant = selectedRole == 'ETUDIANT';
+          final isGestionnaire = selectedRole == 'GESTIONNAIRE';
 
           return Dialog(
             backgroundColor: AppTheme.getCardBackground(context),
@@ -1754,11 +1755,14 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                           )).toList(),
                           onChanged: (v) => setState(() {
                             selectedRole = v!;
-                            // Réinitialiser centre/chambre si non étudiant
+                            // La chambre ne concerne que l'étudiant ; le centre
+                            // reste pertinent pour étudiant ET gestionnaire.
                             if (selectedRole != 'ETUDIANT') {
-                              selectedCentreId   = null;
                               selectedLogementId = null;
                               availableLogements = [];
+                            }
+                            if (selectedRole == 'ADMIN') {
+                              selectedCentreId = null;
                             }
                           }),
                         ),
@@ -1898,6 +1902,27 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                         const SizedBox(height: 16),
                       ],
 
+                      // ── Centre (GESTIONNAIRE, obligatoire) ────────────────────
+                      // Un gestionnaire est rattaché à un centre : il ne verra
+                      // que les données de ce centre (cloisonnement backend).
+                      if (isGestionnaire) ...[
+                        DropdownButtonFormField<int>(
+                          value: selectedCentreId,
+                          decoration: _dropdownDecoration(
+                              '${l10n.center} *', Icons.location_city, isDark),
+                          dropdownColor: AppTheme.getCardBackground(context),
+                          style: TextStyle(color: AppTheme.getTextPrimary(context)),
+                          items: provider.centres.map((centre) => DropdownMenuItem<int>(
+                            value: centre.id,
+                            child: Text(centre.nom,
+                                style: TextStyle(color: AppTheme.getTextPrimary(context))),
+                          )).toList(),
+                          onChanged: (value) => setState(() => selectedCentreId = value),
+                          validator: (v) => v == null ? l10n.centerRequired : null,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+
                       // ── Mot de passe ─────────────────────────────────────────
                       CheckboxListTile(
                         value: generatePassword,
@@ -2011,7 +2036,11 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
                                     statut: selectedStatut,
                                     motDePasse: generatePassword
                                         ? null : passwordController.text.trim(),
-                                    centreId: isEtudiant ? selectedCentreId : null,
+                                    // Le centre est envoyé pour un étudiant
+                                    // (via son logement) ET pour un gestionnaire
+                                    // (rattachement direct pour le cloisonnement)
+                                    centreId: (isEtudiant || isGestionnaire)
+                                        ? selectedCentreId : null,
                                     logementId: isEtudiant ? selectedLogementId : null,
                                     dateDebut: isEtudiant && selectedLogementId != null
                                         ? DateTime.now().toIso8601String() : null,
