@@ -343,6 +343,50 @@ class ApiService {
     return response as Map<String, dynamic>;
   }
 
+  // ── Pavillons ──────────────────────────────────────────────────────────
+
+  /// Pavillons d'un centre (avec statistiques).
+  Future<Map<String, dynamic>> getCentrePavillons(int centreId) async {
+    final response = await get('/api/centres/$centreId/pavillons');
+    return response as Map<String, dynamic>;
+  }
+
+  /// Crée un pavillon dans un centre.
+  Future<Map<String, dynamic>> createPavillon(int centreId, Map<String, dynamic> body) async {
+    final response = await post('/api/centres/$centreId/pavillons', body: body);
+    return response as Map<String, dynamic>;
+  }
+
+  /// Met à jour un pavillon.
+  Future<Map<String, dynamic>> updatePavillon(int pavillonId, Map<String, dynamic> body) async {
+    final response = await put('/api/pavillons/$pavillonId', body: body);
+    return response as Map<String, dynamic>;
+  }
+
+  /// Supprime un pavillon.
+  Future<Map<String, dynamic>> deletePavillon(int pavillonId) async {
+    final response = await delete('/api/pavillons/$pavillonId');
+    return response as Map<String, dynamic>;
+  }
+
+  /// Chambres d'un pavillon.
+  Future<Map<String, dynamic>> getPavillonLogements(int pavillonId) async {
+    final response = await get('/api/pavillons/$pavillonId/logements');
+    return response as Map<String, dynamic>;
+  }
+
+  /// Crée une chambre dans un pavillon.
+  Future<Map<String, dynamic>> createPavillonLogement(int pavillonId, Map<String, dynamic> body) async {
+    final response = await post('/api/pavillons/$pavillonId/logements', body: body);
+    return response as Map<String, dynamic>;
+  }
+
+  /// Création en masse de chambres dans un pavillon.
+  Future<Map<String, dynamic>> bulkCreateLogements(int pavillonId, Map<String, dynamic> body) async {
+    final response = await post('/api/pavillons/$pavillonId/logements/bulk', body: body);
+    return response as Map<String, dynamic>;
+  }
+
   /// Met à jour une chambre.
   Future<Map<String, dynamic>> updateLogement(int logementId, Map<String, dynamic> body) async {
     final response = await put('/api/logements/$logementId', body: body);

@@ -905,13 +905,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final prenom = auth.user?.prenom ?? '';
     final greeting = prenom.isNotEmpty ? '${l10n.hello} $prenom' : l10n.welcomeDashboard;
 
-    // Date du jour, localisée (ex. « mardi 17 juillet »).
-    final now = DateTime.now();
-    final dateLongue = DateFormat('EEEE d MMMM', l10n.locale.languageCode).format(now);
-    final dateCapitalisee = dateLongue.isEmpty
-        ? ''
-        : dateLongue[0].toUpperCase() + dateLongue.substring(1);
-
     return Container(
       padding: EdgeInsets.symmetric(
           horizontal: isWide ? 28 : 20, vertical: isWide ? 24 : 20),
@@ -953,35 +946,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           const SizedBox(width: 16),
-          // À droite : pastille date (large écran) + bouton actualiser.
-          // Remplace l'ancienne grande icône décorative.
-          if (isWide) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white.withOpacity(0.18)),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.calendar_today_rounded,
-                      size: 16, color: Colors.white.withOpacity(0.9)),
-                  const SizedBox(width: 10),
-                  Text(
-                    dateCapitalisee,
-                    style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-          ],
           // Bouton actualiser — icône seule, discret et net
+          // (la date est déjà présente dans la barre supérieure)
           Material(
             color: Colors.white.withOpacity(0.15),
             borderRadius: BorderRadius.circular(12),

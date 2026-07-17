@@ -5,6 +5,7 @@ class CentreAdmin {
   final String ville;
   final String? adresse;
   final int capaciteTotale;
+  final int totalPavillons;
   final int totalLogements;
   final int logementsOccupes;
   final int logementsDisponibles;
@@ -17,6 +18,7 @@ class CentreAdmin {
     required this.ville,
     this.adresse,
     required this.capaciteTotale,
+    required this.totalPavillons,
     required this.totalLogements,
     required this.logementsOccupes,
     required this.logementsDisponibles,
@@ -38,11 +40,54 @@ class CentreAdmin {
       ville: (json['ville'] ?? '') as String,
       adresse: json['adresse'] as String?,
       capaciteTotale: _toInt(json['capacite_totale']),
+      totalPavillons: _toInt(json['total_pavillons']),
       totalLogements: _toInt(json['total_logements']),
       logementsOccupes: _toInt(json['logements_occupes']),
       logementsDisponibles: _toInt(json['logements_disponibles']),
       logementsMaintenance: _toInt(json['logements_maintenance']),
       residents: _toInt(json['residents']),
+    );
+  }
+}
+
+/// Pavillon d'un centre, avec statistiques d'occupation des chambres.
+class Pavillon {
+  final int id;
+  final int centreId;
+  final String nom;
+  final int capacite;
+  final int totalLogements;
+  final int logementsOccupes;
+  final int logementsDisponibles;
+  final int logementsMaintenance;
+
+  Pavillon({
+    required this.id,
+    required this.centreId,
+    required this.nom,
+    required this.capacite,
+    required this.totalLogements,
+    required this.logementsOccupes,
+    required this.logementsDisponibles,
+    required this.logementsMaintenance,
+  });
+
+  double get tauxOccupation =>
+      totalLogements == 0 ? 0 : (logementsOccupes / totalLogements) * 100;
+
+  static int _toInt(dynamic v) =>
+      v == null ? 0 : (v is int ? v : int.tryParse(v.toString()) ?? 0);
+
+  factory Pavillon.fromJson(Map<String, dynamic> json) {
+    return Pavillon(
+      id: json['id'] as int,
+      centreId: _toInt(json['centre_id']),
+      nom: (json['nom'] ?? '') as String,
+      capacite: _toInt(json['capacite']),
+      totalLogements: _toInt(json['total_logements']),
+      logementsOccupes: _toInt(json['logements_occupes']),
+      logementsDisponibles: _toInt(json['logements_disponibles']),
+      logementsMaintenance: _toInt(json['logements_maintenance']),
     );
   }
 }

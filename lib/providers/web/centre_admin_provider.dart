@@ -2,35 +2,55 @@ import 'package:flutter/foundation.dart';
 import 'package:cenou_mobile/services/api_service.dart';
 import '../../models/admin/centre_admin.dart';
 
-/// État de l'espace « Centres » (admin) : liste des centres et chambres
-/// du centre sélectionné, avec les opérations de création/édition/suppression.
+/// État de l'espace « Centres » (admin), navigation à trois niveaux :
+/// Centres → Pavillons du centre → Chambres du pavillon.
 class CentreAdminProvider extends ChangeNotifier {
   final ApiService _apiService = ApiService();
 
+  // Niveau 1 — centres
   List<CentreAdmin> _centres = [];
   bool _isLoading = false;
   String? _error;
 
+  // Niveau 2 — pavillons du centre sélectionné
   int? _selectedCentreId;
+  List<Pavillon> _pavillons = [];
+  bool _isLoadingPavillons = false;
+
+  // Niveau 3 — chambres du pavillon sélectionné
+  int? _selectedPavillonId;
   List<Chambre> _chambres = [];
   bool _isLoadingChambres = false;
 
   List<CentreAdmin> get centres => _centres;
   bool get isLoading => _isLoading;
   String? get error => _error;
+
   int? get selectedCentreId => _selectedCentreId;
+  List<Pavillon> get pavillons => _pavillons;
+  bool get isLoadingPavillons => _isLoadingPavillons;
+
+  int? get selectedPavillonId => _selectedPavillonId;
   List<Chambre> get chambres => _chambres;
   bool get isLoadingChambres => _isLoadingChambres;
 
   CentreAdmin? get selectedCentre {
-    if (_selectedCentreId == null) return null;
     for (final c in _centres) {
       if (c.id == _selectedCentreId) return c;
     }
     return null;
   }
 
-  // ── Centres ──────────────────────────────────────────────────────────────
+  Pavillon? get selectedPavillon {
+    for (final p in _pavillons) {
+      if (p.id == _selectedPavillonId) return p;
+    }
+    return null;
+  }
+
+  String _clean(Object e) => e.toString().replaceFirst('Exception: ', '');
+
+  // ── Niveau 1 : centres ─────────────────────────────────────────────────
 
   Future<void> loadCentres() async {
     _isLoading = true;
@@ -41,7 +61,7 @@ class CentreAdminProvider extends ChangeNotifier {
       final list = (response['data'] as List? ?? []);
       _centres = list.map((e) => CentreAdmin.fromJson(e as Map<String, dynamic>)).toList();
     } catch (e) {
-      _error = e.toString();
+      _error = _clean(e);
       if (kDebugMode) print('Erreur loadCentres: $e');
     } finally {
       _isLoading = false;
@@ -49,61 +69,96 @@ class CentreAdminProvider extends ChangeNotifier {
     }
   }
 
-  Future<String?> createCentre(Map<String, dynamic> body) async {
-    try {
-      await _apiService.createCentre(body);
-      await loadCentres();
-      return null;
-    } catch (e) {
-      return _clean(e);
-    }
-  }
+  Future<String?> createCentre(Map<String, dynamic> body) => _wrap(() async {
+        await _apiService.createCentre(body);
+        await loadCentres();
+      });
 
-  Future<String?> updateCentre(int id, Map<String, dynamic> body) async {
-    try {
-      await _apiService.updateCentre(id, body);
-      await loadCentres();
-      return null;
-    } catch (e) {
-      return _clean(e);
-    }
-  }
+  Future<String?> updateCentre(int id, Map<String, dynamic> body) => _wrap(() async {
+        await _apiService.updateCentre(id, body);
+        await loadCentres();
+      });
 
-  Future<String?> deleteCentre(int id) async {
-    try {
-      await _apiService.deleteCentre(id);
-      if (_selectedCentreId == id) {
-        _selectedCentreId = null;
-        _chambres = [];
-      }
-      await loadCentres();
-      return null;
-    } catch (e) {
-      return _clean(e);
-    }
-  }
+  Future<String?> deleteCentre(int id) => _wrap(() async {
+        await _apiService.deleteCentre(id);
+        if (_selectedCentreId == id) clearCentreSelection();
+        await loadCentres();
+      });
 
-  // ── Chambres du centre sélectionné ────────────────────────────────────────
+  // ── Niveau 2 : pavillons ───────────────────────────────────────────────
 
   Future<void> selectCentre(int centreId) async {
     _selectedCentreId = centreId;
+    _selectedPavillonId = null;
+    _pavillons = [];
+    _chambres = [];
+    notifyListeners();
+    await loadPavillons();
+  }
+
+  void clearCentreSelection() {
+    _selectedCentreId = null;
+    _selectedPavillonId = null;
+    _pavillons = [];
+    _chambres = [];
+    notifyListeners();
+  }
+
+  Future<void> loadPavillons() async {
+    if (_selectedCentreId == null) return;
+    _isLoadingPavillons = true;
+    notifyListeners();
+    try {
+      final response = await _apiService.getCentrePavillons(_selectedCentreId!);
+      final list = (response['data'] as List? ?? []);
+      _pavillons = list.map((e) => Pavillon.fromJson(e as Map<String, dynamic>)).toList();
+    } catch (e) {
+      if (kDebugMode) print('Erreur loadPavillons: $e');
+    } finally {
+      _isLoadingPavillons = false;
+      notifyListeners();
+    }
+  }
+
+  Future<String?> createPavillon(Map<String, dynamic> body) => _wrap(() async {
+        await _apiService.createPavillon(_selectedCentreId!, body);
+        await loadPavillons();
+        await loadCentres();
+      });
+
+  Future<String?> updatePavillon(int id, Map<String, dynamic> body) => _wrap(() async {
+        await _apiService.updatePavillon(id, body);
+        await loadPavillons();
+      });
+
+  Future<String?> deletePavillon(int id) => _wrap(() async {
+        await _apiService.deletePavillon(id);
+        if (_selectedPavillonId == id) clearPavillonSelection();
+        await loadPavillons();
+        await loadCentres();
+      });
+
+  // ── Niveau 3 : chambres ────────────────────────────────────────────────
+
+  Future<void> selectPavillon(int pavillonId) async {
+    _selectedPavillonId = pavillonId;
     _chambres = [];
     notifyListeners();
     await loadChambres();
   }
 
-  void clearSelection() {
-    _selectedCentreId = null;
+  void clearPavillonSelection() {
+    _selectedPavillonId = null;
     _chambres = [];
     notifyListeners();
   }
 
   Future<void> loadChambres() async {
-    if (_selectedCentreId == null) return;
+    if (_selectedPavillonId == null) return;
     _isLoadingChambres = true;
     notifyListeners();
     try {
-      final response = await _apiService.getCentreLogements(_selectedCentreId!);
+      final response = await _apiService.getPavillonLogements(_selectedPavillonId!);
       final list = (response['data'] as List? ?? []);
       _chambres = list.map((e) => Chambre.fromJson(e as Map<String, dynamic>)).toList();
     } catch (e) {
@@ -114,40 +169,46 @@ class CentreAdminProvider extends ChangeNotifier {
     }
   }
 
-  Future<String?> createChambre(Map<String, dynamic> body) async {
-    if (_selectedCentreId == null) return 'Aucun centre sélectionné';
+  /// Rafraîchit chambres + pavillons + centres (les stats remontent).
+  Future<void> _refreshChambres() async {
+    await loadChambres();
+    await loadPavillons();
+    await loadCentres();
+  }
+
+  Future<String?> createChambre(Map<String, dynamic> body) => _wrap(() async {
+        await _apiService.createPavillonLogement(_selectedPavillonId!, body);
+        await _refreshChambres();
+      });
+
+  /// Création en masse — retourne le message de résultat (créées/ignorées) en cas de succès.
+  Future<({String? error, String? message})> bulkCreateChambres(Map<String, dynamic> body) async {
     try {
-      await _apiService.createLogement(_selectedCentreId!, body);
-      await loadChambres();
-      await loadCentres(); // rafraîchit les stats du centre
+      final res = await _apiService.bulkCreateLogements(_selectedPavillonId!, body);
+      await _refreshChambres();
+      return (error: null, message: res['message'] as String?);
+    } catch (e) {
+      return (error: _clean(e), message: null);
+    }
+  }
+
+  Future<String?> updateChambre(int id, Map<String, dynamic> body) => _wrap(() async {
+        await _apiService.updateLogement(id, body);
+        await _refreshChambres();
+      });
+
+  Future<String?> deleteChambre(int id) => _wrap(() async {
+        await _apiService.deleteLogement(id);
+        await _refreshChambres();
+      });
+
+  /// Exécute une action ; retourne null si succès, le message d'erreur sinon.
+  Future<String?> _wrap(Future<void> Function() action) async {
+    try {
+      await action();
       return null;
     } catch (e) {
       return _clean(e);
     }
   }
-
-  Future<String?> updateChambre(int logementId, Map<String, dynamic> body) async {
-    try {
-      await _apiService.updateLogement(logementId, body);
-      await loadChambres();
-      await loadCentres();
-      return null;
-    } catch (e) {
-      return _clean(e);
-    }
-  }
-
-  Future<String?> deleteChambre(int logementId) async {
-    try {
-      await _apiService.deleteLogement(logementId);
-      await loadChambres();
-      await loadCentres();
-      return null;
-    } catch (e) {
-      return _clean(e);
-    }
-  }
-
-  /// Retire le préfixe « Exception: » des messages d'erreur pour l'affichage.
-  String _clean(Object e) => e.toString().replaceFirst('Exception: ', '');
 }

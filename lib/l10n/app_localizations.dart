@@ -407,6 +407,32 @@ class AppLocalizations {
       _t('Voulez-vous vraiment supprimer cette chambre ?', 'Delete this room?');
   String get create             => _t('Créer', 'Create');
   String get vacant             => _t('Libre', 'Vacant');
+  // ── Pavillons ──────────────────────────────────────────────────────────────
+  String get pavillons          => _t('Pavillons', 'Wings');
+  String get pavillon           => _t('Pavillon', 'Wing');
+  String get newPavillon        => _t('Nouveau pavillon', 'New wing');
+  String get editPavillon       => _t('Modifier le pavillon', 'Edit wing');
+  String get deletePavillon     => _t('Supprimer le pavillon', 'Delete wing');
+  String get pavillonName       => _t('Nom du pavillon', 'Wing name');
+  String get pavillonCapacity   => _t('Capacité (nb de chambres)', 'Capacity (rooms)');
+  String get managePavillon     => _t('Gérer les chambres', 'Manage rooms');
+  String get noPavillonsYet     => _t('Aucun pavillon dans ce centre', 'No wings in this center yet');
+  String get addFirstPavillon   => _t('Créez le premier pavillon', 'Create the first wing');
+  String get pavillonCreated    => _t('Pavillon créé', 'Wing created');
+  String get pavillonUpdated    => _t('Pavillon mis à jour', 'Wing updated');
+  String get pavillonDeleted    => _t('Pavillon supprimé', 'Wing deleted');
+  String get deletePavillonConfirm =>
+      _t('Voulez-vous vraiment supprimer ce pavillon et ses chambres libres ?',
+         'Delete this wing and its vacant rooms?');
+  // ── Création de chambres en masse ────────────────────────────────────────
+  String get bulkCreate         => _t('Créer en masse', 'Bulk create');
+  String get bulkCreateRooms    => _t('Créer des chambres en masse', 'Bulk create rooms');
+  String get roomPrefix         => _t('Préfixe', 'Prefix');
+  String get roomPrefixHint     => _t('Ex : C-, CH-', 'e.g. C-, CH-');
+  String get startNumber        => _t('Numéro de départ', 'Start number');
+  String get roomsCount         => _t('Nombre de chambres', 'Number of rooms');
+  String get numberPadding      => _t('Chiffres (zéros)', 'Digits (zero-pad)');
+  String get preview            => _t('Aperçu', 'Preview');
 
   String get cacheBadge => _t('Cache', 'Cache');
   String get markAllRead => _t('Tout marquer lu', 'Mark all read');
