@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:local_auth/local_auth.dart';
 import '../../config/theme.dart';
+import '../../config/app_version.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/preference_service.dart';
 import '../../services/language_service.dart';
@@ -275,11 +276,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildAppInfo(AuthProvider auth, bool isDark,
       ResponsiveConfig config, AppLocalizations l10n) {
-    if (auth.sessionId == null) {
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => auth.generateSessionId());
-    }
     final labelSize = config.responsive(small: 11, medium: 12, large: 13);
+
+    // Version affichée : « 1.1.0 (a1b2c3d) » si le commit est injecté au build.
+    final versionLabel = AppVersion.commit.isNotEmpty
+        ? '${AppVersion.version} (${AppVersion.commit})'
+        : AppVersion.version;
 
     return Container(
       padding: EdgeInsets.all(
@@ -296,18 +298,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontSize: labelSize + 2, fontWeight: FontWeight.w600,
                 color: isDark ? Colors.white : Colors.black87)),
         const SizedBox(height: 12),
-        _infoRow(l10n.version,     '1.0.0',       isDark, labelSize),
-        const SizedBox(height: 5),
-        _infoRow(l10n.lastUpdate,  '25/03/2026',  isDark, labelSize),
-        const SizedBox(height: 5),
-        _infoRow(l10n.build,       '2026.1.8.001', isDark, labelSize),
-        const SizedBox(height: 5),
-        _infoRow(l10n.session,
-            auth.sessionId?.substring(0, 8) ?? '---', isDark, labelSize),
-        const SizedBox(height: 5),
-        _infoRow(l10n.mode,
-            auth.isAdmin ? l10n.modeAdmin : l10n.modeMobile,
-            isDark, labelSize),
+        _infoRow(l10n.version, versionLabel, isDark, labelSize),
+        // La date de mise à jour n'apparaît que si elle est réelle
+        // (injectée au build) — jamais de valeur codée en dur.
+        if (AppVersion.lastUpdate != null) ...[
+          const SizedBox(height: 5),
+          _infoRow(l10n.lastUpdate, AppVersion.lastUpdate!, isDark, labelSize),
+        ],
         const SizedBox(height: 5),
         _infoRow(l10n.copyright, l10n.copyrightVal, isDark, labelSize),
       ]),

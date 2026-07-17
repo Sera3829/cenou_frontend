@@ -182,23 +182,28 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
 
     Color typeColor;
     IconData typeIcon;
+    String typeLabel;
 
     switch (type) {
       case 'PAIEMENT':
         typeColor = AppTheme.successColor;
         typeIcon = Icons.payment;
+        typeLabel = l10n.notifTypePaiement;
         break;
       case 'SIGNALEMENT':
         typeColor = AppTheme.warningColor;
         typeIcon = Icons.report_problem;
+        typeLabel = l10n.notifTypeSignalement;
         break;
       case 'ANNONCE':
         typeColor = AppTheme.infoColor;
         typeIcon = Icons.campaign;
+        typeLabel = l10n.notifTypeAnnonce;
         break;
       default:
         typeColor = Colors.grey;
         typeIcon = Icons.notifications;
+        typeLabel = l10n.notifTypeAutre;
     }
 
     return Dismissible(
@@ -281,14 +286,23 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         elevation: isRead ? (isDark ? 2 : 0) : (isDark ? 4 : 2),
         color: isRead
             ? (isDark ? const Color(0xFF1E1E1E) : Colors.white)
-            : typeColor.withOpacity(isDark ? 0.15 : 0.05),
+            : typeColor.withOpacity(isDark ? 0.12 : 0.04),
+        // Un seul signal fort pour le non-lu : un bandeau d'accent à gauche,
+        // dans la couleur du type. Plus lisible que d'empiler teinte + bordure.
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
-          side: isRead
-              ? BorderSide.none
-              : BorderSide(color: typeColor.withOpacity(isDark ? 0.4 : 0.3), width: 1),
         ),
-        child: InkWell(
+        clipBehavior: Clip.antiAlias,
+        child: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              left: BorderSide(
+                color: isRead ? Colors.transparent : typeColor,
+                width: 4,
+              ),
+            ),
+          ),
+          child: InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () async {
             // Marquer comme lue selon le mode (en ligne ou hors ligne)
@@ -341,12 +355,24 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                       const SizedBox(height: 8),
-                      Text(
-                        _formatDate(notification['createdAt'], l10n),
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? Colors.grey.shade500 : Colors.grey[500],
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            typeLabel,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: typeColor,
+                            ),
+                          ),
+                          Text(
+                            '  ·  ${_formatDate(notification['createdAt'], l10n)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark ? Colors.grey.shade500 : Colors.grey[500],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -362,6 +388,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   ),
               ],
             ),
+          ),
           ),
         ),
       ),

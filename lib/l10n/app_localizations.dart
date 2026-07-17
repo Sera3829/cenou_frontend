@@ -371,6 +371,11 @@ class AppLocalizations {
   String get notifications    => _t('Notifications', 'Notifications');
   String get cacheBadge => _t('Cache', 'Cache');
   String get markAllRead => _t('Tout marquer lu', 'Mark all read');
+  // Libellés de type de notification
+  String get notifTypePaiement    => _t('Paiement', 'Payment');
+  String get notifTypeSignalement => _t('Signalement', 'Report');
+  String get notifTypeAnnonce     => _t('Annonce', 'Announcement');
+  String get notifTypeAutre       => _t('Info', 'Info');
   String get allMarkedAsRead => _t('Toutes les notifications marquées comme lues', 'All notifications marked as read');
   String get unreadCount => _t('non lue(s)', 'unread'); // Peut être paramétré
   String unreadCountText(int count) => _t('$count non lue(s)', '$count unread');

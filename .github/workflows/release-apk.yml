@@ -108,7 +108,15 @@ jobs:
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           flutter pub get
-          flutter build apk --split-per-abi --release
+          # Métadonnées de version injectées (voir lib/config/app_version.dart) :
+          # la date reflète ce build, donc « dernière mise à jour » = ce push.
+          BUILD_DATE=$(date -u +%Y-%m-%d)
+          GIT_SHA=$(git rev-parse --short HEAD)
+          APP_VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: *//' | cut -d'+' -f1)
+          flutter build apk --split-per-abi --release \
+            --dart-define=BUILD_DATE="$BUILD_DATE" \
+            --dart-define=GIT_SHA="$GIT_SHA" \
+            --dart-define=APP_VERSION="$APP_VERSION"
 
       - name: Publier Cenou.Room.apk (release v1.0.0)
         env:
