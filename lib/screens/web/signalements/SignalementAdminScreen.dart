@@ -27,7 +27,6 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
 
   // Contrôleurs pour le scroll
   final ScrollController _scrollController = ScrollController();
-  final ScrollController _tableHScrollCtrl = ScrollController();
 
   @override
   void initState() {
@@ -39,7 +38,6 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
   void dispose() {
     _searchController.dispose();
     _scrollController.dispose();
-    _tableHScrollCtrl.dispose();
     super.dispose();
   }
 
@@ -83,16 +81,7 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
                   ),
                 ),
 
-                // ③ Barre de scroll horizontal — STICKY (pinned: true)
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _HScrollBarDelegate(
-                    hScrollCtrl: _tableHScrollCtrl,
-                    isDark: isDark,
-                  ),
-                ),
-
-                // ④ Tableau (en-têtes + lignes + pagination)
+                // ③ Tableau (en-têtes + lignes + pagination)
                 SliverToBoxAdapter(
                   child: _buildSignalementsList(isDark, l10n),
                 ),
@@ -687,17 +676,12 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
           return _buildEmptyState(isDark, l10n);
         }
 
-        final screenWidth = MediaQuery.of(context).size.width;
-        final sidebarWidth = screenWidth > 900 ? 220.0 : 0.0;
-        final availableWidth = screenWidth - sidebarWidth - 48;
-        final tableWidth = availableWidth > 800 ? availableWidth : 800.0;
-
-        final colEtudiant    = tableWidth * 0.20;
-        final colDescription = tableWidth * 0.22;
-        final colType        = tableWidth * 0.12;
-        final colStatut      = tableWidth * 0.13;
-        final colDate        = tableWidth * 0.14;
-        final colActions     = tableWidth * 0.13;
+        // Table fluide : colonnes en flex, plus de scroll horizontal.
+        // Description et Date se masquent sur les petits écrans.
+        return LayoutBuilder(builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final showDate = w >= 1100;
+        final showDescription = w >= 900;
 
         return Container(
           margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
@@ -713,79 +697,56 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
           ),
           child: Column(
             children: [
-              // Tableau scrollable horizontalement — MÊME controller que la barre sticky
-              SingleChildScrollView(
-                controller: _tableHScrollCtrl,
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: tableWidth,
-                  child: Column(
-                    children: [
-                      // En-tête
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20, vertical: 16),
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? Colors.grey.shade900.withOpacity(0.5)
-                              : const Color(0xFFF8FAFC),
-                          borderRadius: const BorderRadius.only(
-                            topLeft: Radius.circular(12),
-                            topRight: Radius.circular(12),
-                          ),
-                          border: Border(
-                            bottom: BorderSide(
-                              color: AppTheme.getBorderColor(context),
-                              width: 1,
-                            ),
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            SizedBox(
-                                width: colEtudiant,
-                                child: _headerText(l10n.student)),
-                            SizedBox(
-                                width: colDescription,
-                                child: _headerText(l10n.description)),
-                            SizedBox(width: colType, child: _headerText(l10n.type)),
-                            SizedBox(
-                                width: colStatut,
-                                child: _headerText(l10n.status)),
-                            SizedBox(width: colDate, child: _headerText(l10n.date)),
-                            SizedBox(
-                                width: colActions,
-                                child: _headerText(l10n.actions)),
-                          ],
-                        ),
-                      ),
-                      // Lignes
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: provider.signalements.length,
-                        itemBuilder: (context, index) => _buildRow(
-                          provider.signalements[index],
-                          provider,
-                          index,
-                          isDark,
-                          l10n,
-                          colEtudiant: colEtudiant,
-                          colDescription: colDescription,
-                          colType: colType,
-                          colStatut: colStatut,
-                          colDate: colDate,
-                          colActions: colActions,
-                        ),
-                      ),
-                    ],
+              // En-tête
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? Colors.grey.shade900.withOpacity(0.5)
+                      : const Color(0xFFF8FAFC),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12),
                   ),
+                  border: Border(
+                    bottom: BorderSide(
+                      color: AppTheme.getBorderColor(context),
+                      width: 1,
+                    ),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(flex: 22, child: _headerText(l10n.student)),
+                    if (showDescription)
+                      Expanded(flex: 26, child: _headerText(l10n.description)),
+                    Expanded(flex: 14, child: _headerText(l10n.type)),
+                    Expanded(flex: 15, child: _headerText(l10n.status)),
+                    if (showDate) Expanded(flex: 15, child: _headerText(l10n.date)),
+                    SizedBox(width: 96, child: _headerText(l10n.actions)),
+                  ],
+                ),
+              ),
+              // Lignes
+              ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: provider.signalements.length,
+                itemBuilder: (context, index) => _buildRow(
+                  provider.signalements[index],
+                  provider,
+                  index,
+                  isDark,
+                  l10n,
+                  showDescription: showDescription,
+                  showDate: showDate,
                 ),
               ),
               _buildPagination(provider, isDark, l10n),
             ],
           ),
         );
+        });
       },
     );
   }
@@ -807,12 +768,8 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
       int index,
       bool isDark,
       AppLocalizations l10n, {
-        required double colEtudiant,
-        required double colDescription,
-        required double colType,
-        required double colStatut,
-        required double colDate,
-        required double colActions,
+        required bool showDescription,
+        required bool showDate,
       }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -832,8 +789,8 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
       child: Row(
         children: [
           // Étudiant
-          SizedBox(
-            width: colEtudiant,
+          Expanded(
+            flex: 22,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -878,24 +835,28 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
               ],
             ),
           ),
-          // Description
-          SizedBox(
-            width: colDescription,
-            child: Text(
-              s.description.length > 100
-                  ? '${s.description.substring(0, 100)}...'
-                  : s.description,
-              style: TextStyle(
-                color: AppTheme.getTextSecondary(context),
-                fontSize: 13,
+          // Description (masquée sur petit écran)
+          if (showDescription)
+            Expanded(
+              flex: 26,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 12),
+                child: Text(
+                  s.description.length > 100
+                      ? '${s.description.substring(0, 100)}...'
+                      : s.description,
+                  style: TextStyle(
+                    color: AppTheme.getTextSecondary(context),
+                    fontSize: 13,
+                  ),
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
             ),
-          ),
           // Type - badge aligné à gauche, taille au contenu
-          SizedBox(
-            width: colType,
+          Expanded(
+            flex: 14,
             child: Align(
               alignment: Alignment.centerLeft,
               child: Container(
@@ -921,8 +882,8 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
             ),
           ),
           // Statut - badge aligné à gauche, taille au contenu
-          SizedBox(
-            width: colStatut,
+          Expanded(
+            flex: 15,
             child: Align(
               alignment: Alignment.centerLeft,
               child: Container(
@@ -947,20 +908,21 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
               ),
             ),
           ),
-          // Date
-          SizedBox(
-            width: colDate,
-            child: Text(
-              _formatDate(s.createdAt, l10n),
-              style: TextStyle(
-                color: AppTheme.getTextSecondary(context),
-                fontSize: 13,
+          // Date (masquée sur petit écran)
+          if (showDate)
+            Expanded(
+              flex: 15,
+              child: Text(
+                _formatDate(s.createdAt, l10n),
+                style: TextStyle(
+                  color: AppTheme.getTextSecondary(context),
+                  fontSize: 13,
+                ),
               ),
             ),
-          ),
-          // Actions - alignées à gauche
+          // Actions - largeur fixe
           SizedBox(
-            width: colActions,
+            width: 96,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
@@ -1921,153 +1883,5 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
       'AUTRE': Color(0xFF64748B),
     };
     return map[t] ?? const Color(0xFF64748B);
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// _HScrollBarDelegate — barre de scroll horizontal sticky
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _HScrollBarDelegate extends SliverPersistentHeaderDelegate {
-  final ScrollController hScrollCtrl;
-  final bool isDark;
-
-  const _HScrollBarDelegate({
-    required this.hScrollCtrl,
-    required this.isDark,
-  });
-
-  static const double _barHeight = 48.0;
-
-  @override double get minExtent => _barHeight;
-  @override double get maxExtent => _barHeight;
-
-  @override
-  bool shouldRebuild(_HScrollBarDelegate old) =>
-      old.isDark != isDark || old.hScrollCtrl != hScrollCtrl;
-
-  void _nudge(double delta) {
-    if (!hScrollCtrl.hasClients) return;
-    final target = (hScrollCtrl.offset + delta).clamp(
-      0.0,
-      hScrollCtrl.position.maxScrollExtent,
-    );
-    hScrollCtrl.animateTo(
-      target,
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOut,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    final isDarkCtx = Theme.of(context).brightness == Brightness.dark;
-    final primary   = Theme.of(context).colorScheme.primary;
-
-    return Container(
-      height: _barHeight,
-      decoration: BoxDecoration(
-        color: isDarkCtx ? const Color(0xFF1A1A2E) : const Color(0xFFF0F4FF),
-        border: Border(
-          top:    BorderSide(color: AppTheme.getBorderColor(context)),
-          bottom: BorderSide(color: AppTheme.getBorderColor(context)),
-        ),
-        boxShadow: overlapsContent
-            ? [BoxShadow(
-          color:  Colors.black.withOpacity(isDarkCtx ? 0.2 : 0.08),
-          offset: const Offset(0, 3),
-          blurRadius: 6,
-        )]
-            : null,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Row(children: [
-          Icon(Icons.swap_horiz_rounded, size: 18, color: primary),
-          const SizedBox(width: 10),
-          Expanded(
-            child: AnimatedBuilder(
-              animation: hScrollCtrl,
-              builder: (context, _) {
-                double progress = 0.0;
-                if (hScrollCtrl.hasClients) {
-                  final max = hScrollCtrl.position.maxScrollExtent;
-                  if (max > 0) {
-                    progress = (hScrollCtrl.offset / max).clamp(0.0, 1.0);
-                  }
-                }
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Scroll horizontal',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.4,
-                        color: isDarkCtx
-                            ? Colors.white38
-                            : Colors.black38,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 5,
-                        backgroundColor: isDarkCtx
-                            ? Colors.white12
-                            : Colors.black.withOpacity(0.08),
-                        valueColor: AlwaysStoppedAnimation<Color>(primary),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: 10),
-          _ArrowBtn(
-            icon:      Icons.chevron_left,
-            tooltip:   'Défiler à gauche',
-            onPressed: () => _nudge(-160),
-          ),
-          const SizedBox(width: 4),
-          _ArrowBtn(
-            icon:      Icons.chevron_right,
-            tooltip:   'Défiler à droite',
-            onPressed: () => _nudge(160),
-          ),
-        ]),
-      ),
-    );
-  }
-}
-
-class _ArrowBtn extends StatelessWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onPressed;
-  const _ArrowBtn({
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 30,
-      height: 30,
-      child: IconButton(
-        padding:   EdgeInsets.zero,
-        icon:      Icon(icon, size: 20),
-        color:     Theme.of(context).colorScheme.primary,
-        onPressed: onPressed,
-        tooltip:   tooltip,
-      ),
-    );
   }
 }

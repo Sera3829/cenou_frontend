@@ -42,7 +42,6 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
   // ScrollController partagé entre le CustomScrollView et la barre sticky
   final ScrollController _scrollController = ScrollController();
   // ScrollController du tableau horizontal (barre sticky + tableau partagent le même)
-  final ScrollController _tableHScrollCtrl = ScrollController();
 
   @override
   void initState() {
@@ -53,7 +52,6 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
-    _tableHScrollCtrl.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -103,16 +101,7 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                   ),
                 ),
 
-                // ③ Barre de scroll horizontal — STICKY (pinned: true)
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _HScrollBarDelegate(
-                    hScrollCtrl: _tableHScrollCtrl,
-                    isDark: isDark,
-                  ),
-                ),
-
-                // ④ Tableau (en-têtes + lignes + pagination)
+                // ③ Tableau (en-têtes + lignes + pagination)
                 SliverToBoxAdapter(
                   child: _buildPaiementsList(isDark, l10n),
                 ),
@@ -617,17 +606,13 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
           return _buildEmptyState(isDark, l10n);
         }
 
-        final screenWidth = MediaQuery.of(context).size.width;
-        final sidebarWidth = screenWidth > 900 ? 220.0 : 0.0;
-        final availableWidth = screenWidth - sidebarWidth - 48;
-        final tableWidth = availableWidth > 700 ? availableWidth : 700.0;
-
-        final colEtudiant = tableWidth * 0.20;
-        final colMontant  = tableWidth * 0.14;
-        final colStatut   = tableWidth * 0.14;
-        final colMode     = tableWidth * 0.16;
-        final colDate     = tableWidth * 0.16;
-        final colActions  = tableWidth * 0.13;
+        // Table fluide : colonnes en flex, plus de scroll horizontal.
+        // Mode et Date se masquent sur les petits écrans (LayoutBuilder =
+        // largeur réelle du contenu, sidebar déjà déduite).
+        return LayoutBuilder(builder: (context, constraints) {
+        final w = constraints.maxWidth;
+        final showDate = w >= 1100;
+        final showMode = w >= 900;
 
         return Container(
           margin: const EdgeInsets.fromLTRB(24, 0, 24, 24),
@@ -642,65 +627,49 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
             ],
           ),
           child: Column(children: [
-            // Tableau scrollable horizontalement — MÊME controller que la barre sticky
-            SingleChildScrollView(
-              controller: _tableHScrollCtrl,
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: tableWidth,
-                child: Column(children: [
-                  // En-têtes
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 16),
-                    decoration: BoxDecoration(
-                      color: isDark
-                          ? Colors.grey.shade900.withOpacity(0.5)
-                          : const Color(0xFFF8FAFC),
-                      borderRadius: const BorderRadius.only(
-                          topLeft: Radius.circular(12),
-                          topRight: Radius.circular(12)),
-                      border: Border(
-                          bottom: BorderSide(
-                              color: AppTheme.getBorderColor(context),
-                              width: 1)),
-                    ),
-                    child: Row(children: [
-                      SizedBox(width: colEtudiant, child: _headerText(l10n.student)),
-                      SizedBox(width: colMontant,  child: _headerText(l10n.amount)),
-                      SizedBox(width: colStatut,   child: _headerText(l10n.status)),
-                      SizedBox(width: colMode,     child: _headerText(l10n.mode)),
-                      SizedBox(width: colDate,     child: _headerText(l10n.date)),
-                      SizedBox(width: colActions,  child: _headerText(l10n.actions)),
-                    ]),
-                  ),
-                  // Lignes
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: provider.paiements.length,
-                    itemBuilder: (context, index) =>
-                        _buildPaiementRow(
-                          provider.paiements[index],
-                          provider,
-                          index,
-                          isDark,
-                          l10n,
-                          colEtudiant: colEtudiant,
-                          colMontant: colMontant,
-                          colStatut: colStatut,
-                          colMode: colMode,
-                          colDate: colDate,
-                          colActions: colActions,
-                        ),
-                  ),
-                ]),
+            // En-têtes
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? Colors.grey.shade900.withOpacity(0.5)
+                    : const Color(0xFFF8FAFC),
+                borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(12),
+                    topRight: Radius.circular(12)),
+                border: Border(
+                    bottom: BorderSide(
+                        color: AppTheme.getBorderColor(context), width: 1)),
+              ),
+              child: Row(children: [
+                Expanded(flex: 24, child: _headerText(l10n.student)),
+                Expanded(flex: 15, child: _headerText(l10n.amount)),
+                Expanded(flex: 15, child: _headerText(l10n.status)),
+                if (showMode) Expanded(flex: 16, child: _headerText(l10n.mode)),
+                if (showDate) Expanded(flex: 16, child: _headerText(l10n.date)),
+                SizedBox(width: 96, child: _headerText(l10n.actions)),
+              ]),
+            ),
+            // Lignes
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: provider.paiements.length,
+              itemBuilder: (context, index) => _buildPaiementRow(
+                provider.paiements[index],
+                provider,
+                index,
+                isDark,
+                l10n,
+                showMode: showMode,
+                showDate: showDate,
               ),
             ),
-            // Pagination (pleine largeur, hors scroll horizontal)
+            // Pagination (pleine largeur)
             _buildPagination(provider, isDark, l10n),
           ]),
         );
+        });
       },
     );
   }
@@ -721,12 +690,8 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
       int index,
       bool isDark,
       AppLocalizations l10n, {
-        required double colEtudiant,
-        required double colMontant,
-        required double colStatut,
-        required double colMode,
-        required double colDate,
-        required double colActions,
+        required bool showMode,
+        required bool showDate,
       }) {
     return Container(
       padding:
@@ -742,8 +707,8 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                 color: AppTheme.getBorderColor(context), width: 1)),
       ),
       child: Row(children: [
-        SizedBox(
-          width: colEtudiant,
+        Expanded(
+          flex: 24,
           child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -771,8 +736,8 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                   ),
               ]),
         ),
-        SizedBox(
-          width: colMontant,
+        Expanded(
+          flex: 15,
           child: Text(
             '${_formatMontant(paiement.montant, l10n)} F',
             style: TextStyle(
@@ -783,8 +748,8 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                     : const Color(0xFFEF4444)),
           ),
         ),
-        SizedBox(
-          width: colStatut,
+        Expanded(
+          flex: 15,
           child: Align(
             alignment: Alignment.centerLeft,
             child: Container(
@@ -804,34 +769,38 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: _getStatutColor(paiement.statut)),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ),
         ),
-        SizedBox(
-          width: colMode,
-          child: Text(_getModeLabel(paiement.modePaiement, l10n),
+        if (showMode)
+          Expanded(
+            flex: 16,
+            child: Text(_getModeLabel(paiement.modePaiement, l10n),
+                style: TextStyle(
+                    color: AppTheme.getTextSecondary(context),
+                    fontSize: 13),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis),
+          ),
+        if (showDate)
+          Expanded(
+            flex: 16,
+            child: Text(
+              paiement.datePaiement != null
+                  ? DateFormat('dd/MM/yy HH:mm',
+                  l10n.locale.languageCode)
+                  .format(paiement.datePaiement!)
+                  : 'N/A',
               style: TextStyle(
                   color: AppTheme.getTextSecondary(context),
                   fontSize: 13),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis),
-        ),
-        SizedBox(
-          width: colDate,
-          child: Text(
-            paiement.datePaiement != null
-                ? DateFormat('dd/MM/yy HH:mm',
-                l10n.locale.languageCode)
-                .format(paiement.datePaiement!)
-                : 'N/A',
-            style: TextStyle(
-                color: AppTheme.getTextSecondary(context),
-                fontSize: 13),
+            ),
           ),
-        ),
         SizedBox(
-          width: colActions,
+          width: 96,
           child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
@@ -1550,163 +1519,5 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
         }
       }
     }
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// _HScrollBarDelegate — barre de scroll horizontal sticky
-//
-// S'affiche AU-DESSUS des en-têtes du tableau.
-// Colle en haut du viewport dès qu'elle sort de l'écran (pinned: true).
-// Partage le même ScrollController (_tableHScrollCtrl) que le tableau,
-// donc bouger la barre fait bouger le tableau et vice-versa.
-// ═══════════════════════════════════════════════════════════════════════════
-
-class _HScrollBarDelegate extends SliverPersistentHeaderDelegate {
-  final ScrollController hScrollCtrl;
-  final bool isDark;
-
-  const _HScrollBarDelegate({
-    required this.hScrollCtrl,
-    required this.isDark,
-  });
-
-  static const double _barHeight = 48.0;
-
-  @override double get minExtent => _barHeight;
-  @override double get maxExtent => _barHeight;
-
-  @override
-  bool shouldRebuild(_HScrollBarDelegate old) =>
-      old.isDark != isDark || old.hScrollCtrl != hScrollCtrl;
-
-  void _nudge(double delta) {
-    if (!hScrollCtrl.hasClients) return;
-    final target = (hScrollCtrl.offset + delta).clamp(
-      0.0,
-      hScrollCtrl.position.maxScrollExtent,
-    );
-    hScrollCtrl.animateTo(
-      target,
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOut,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    final isDarkCtx = Theme.of(context).brightness == Brightness.dark;
-    final primary   = Theme.of(context).colorScheme.primary;
-
-    return Container(
-      height: _barHeight,
-      decoration: BoxDecoration(
-        color: isDarkCtx ? const Color(0xFF1A1A2E) : const Color(0xFFF0F4FF),
-        border: Border(
-          top:    BorderSide(color: AppTheme.getBorderColor(context)),
-          bottom: BorderSide(color: AppTheme.getBorderColor(context)),
-        ),
-        boxShadow: overlapsContent
-            ? [BoxShadow(
-          color:  Colors.black.withOpacity(isDarkCtx ? 0.2 : 0.08),
-          offset: const Offset(0, 3),
-          blurRadius: 6,
-        )]
-            : null,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Row(children: [
-          Icon(Icons.swap_horiz_rounded, size: 18, color: primary),
-          const SizedBox(width: 10),
-
-          // ── Barre de progression (lit le controller, ne crée PAS de ScrollView) ──
-          Expanded(
-            child: AnimatedBuilder(
-              animation: hScrollCtrl,
-              builder: (context, _) {
-                double progress = 0.0;
-                if (hScrollCtrl.hasClients) {
-                  final max = hScrollCtrl.position.maxScrollExtent;
-                  if (max > 0) {
-                    progress = (hScrollCtrl.offset / max).clamp(0.0, 1.0);
-                  }
-                }
-                return Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Scroll horizontal',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.4,
-                        color: isDarkCtx
-                            ? Colors.white38
-                            : Colors.black38,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 5,
-                        backgroundColor: isDarkCtx
-                            ? Colors.white12
-                            : Colors.black.withOpacity(0.08),
-                        valueColor: AlwaysStoppedAnimation<Color>(primary),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
-          ),
-
-          const SizedBox(width: 10),
-
-          // ── Flèches ──────────────────────────────────────────────────────
-          _ArrowBtn(
-            icon:      Icons.chevron_left,
-            tooltip:   'Défiler à gauche',
-            onPressed: () => _nudge(-160),
-          ),
-          const SizedBox(width: 4),
-          _ArrowBtn(
-            icon:      Icons.chevron_right,
-            tooltip:   'Défiler à droite',
-            onPressed: () => _nudge(160),
-          ),
-        ]),
-      ),
-    );
-  }
-}
-
-class _ArrowBtn extends StatelessWidget {
-  final IconData icon;
-  final String tooltip;
-  final VoidCallback onPressed;
-  const _ArrowBtn({
-    required this.icon,
-    required this.tooltip,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 30,
-      height: 30,
-      child: IconButton(
-        padding:   EdgeInsets.zero,
-        icon:      Icon(icon, size: 20),
-        color:     Theme.of(context).colorScheme.primary,
-        onPressed: onPressed,
-        tooltip:   tooltip,
-      ),
-    );
   }
 }
