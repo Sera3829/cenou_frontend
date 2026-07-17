@@ -129,7 +129,10 @@
       flex-shrink: 0;
     }
     #lang-btn:active { background: var(--w15); }
-    #lang-btn .flag  { font-size: 14px; line-height: 1; }
+    #lang-btn .flag  {
+      font-size: 10px; font-weight: 700; line-height: 1; letter-spacing: 0.5px;
+      background: var(--w15); border-radius: 4px; padding: 3px 5px;
+    }
 
     /* ── Pills row ── */
     .pills {
@@ -309,7 +312,7 @@
     </div>
 
     <button id="lang-btn" onclick="toggleLang()">
-      <span class="flag" id="lang-flag">🇬🇧</span>
+      <span class="flag" id="lang-flag">EN</span>
       <span id="lang-label">English</span>
     </button>
   </div>
@@ -419,7 +422,7 @@
       f3:'Notifications', f3b:'Recevoir les annonces du CENOU',
       f4:'Profil',        f4b:'Consulter votre logement et votre compte',
       dl:'Télécharger Cenou Room Mobile', os:'Android', free:'Gratuit', apk:'APK direct',
-      flag:'🇬🇧', lbl:'English'
+      flag:'EN', lbl:'English'
     },
     en: {
       sub:'CENOU Residences', pAdmin:'Admins · Managers', pStudent:'Students',
@@ -435,7 +438,7 @@
       f3:'Notifications',  f3b:'Receive CENOU announcements',
       f4:'Profile',        f4b:'View your housing and account',
       dl:'Download Cenou Room Mobile', os:'Android', free:'Free', apk:'Direct APK',
-      flag:'🇫🇷', lbl:'Français'
+      flag:'FR', lbl:'Français'
     }
   };
 

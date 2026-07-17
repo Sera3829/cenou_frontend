@@ -900,10 +900,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isWide = screenWidth > 900;
 
+    // Salutation personnalisée avec le prénom de l'admin connecté.
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final prenom = auth.user?.prenom ?? '';
+    final greeting = prenom.isNotEmpty ? '${l10n.hello} $prenom' : l10n.welcomeDashboard;
+
+    // Date du jour, localisée (ex. « mardi 17 juillet »).
+    final now = DateTime.now();
+    final dateLongue = DateFormat('EEEE d MMMM', l10n.locale.languageCode).format(now);
+    final dateCapitalisee = dateLongue.isEmpty
+        ? ''
+        : dateLongue[0].toUpperCase() + dateLongue.substring(1);
+
     return Container(
-      padding: EdgeInsets.all(isWide ? 28 : 20),
+      padding: EdgeInsets.symmetric(
+          horizontal: isWide ? 28 : 20, vertical: isWide ? 24 : 20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: isDark
               ? [const Color(0xFF0F172A), const Color(0xFF1E40AF)]
               : [const Color(0xFF1E3A8A), const Color(0xFF3B82F6)],
@@ -911,49 +926,85 @@ class _DashboardScreenState extends State<DashboardScreen> {
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l10n.welcomeDashboard,
+                  greeting,
                   style: TextStyle(
-                    fontSize: isWide ? 26 : 18,
+                    fontSize: isWide ? 24 : 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
+                    height: 1.2,
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 8),
                 Text(
                   l10n.manageResidencesRealtime,
                   style: TextStyle(
-                    fontSize: isWide ? 15 : 13,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                ElevatedButton.icon(
-                  onPressed: _loadDashboardData,
-                  icon: Icon(Icons.refresh_rounded, size: 18,
-                      color: isDark ? const Color(0xFF1E3A8A) : Colors.white),
-                  label: Text(l10n.refresh,
-                      style: TextStyle(
-                          color: isDark ? const Color(0xFF1E3A8A) : Colors.white)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: isDark ? Colors.white : Colors.white.withOpacity(0.9),
-                    foregroundColor: const Color(0xFF1E3A8A),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    elevation: 0,
+                    fontSize: isWide ? 14 : 13,
+                    color: Colors.white.withOpacity(0.85),
                   ),
                 ),
               ],
             ),
           ),
-          // Icône cachée sur petit écran
-          if (isWide)
-            Icon(Icons.insights_rounded, size: 100,
-                color: Colors.white.withOpacity(0.9)),
+          const SizedBox(width: 16),
+          // À droite : pastille date (large écran) + bouton actualiser.
+          // Remplace l'ancienne grande icône décorative.
+          if (isWide) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white.withOpacity(0.18)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.calendar_today_rounded,
+                      size: 16, color: Colors.white.withOpacity(0.9)),
+                  const SizedBox(width: 10),
+                  Text(
+                    dateCapitalisee,
+                    style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
+          // Bouton actualiser — icône seule, discret et net
+          Material(
+            color: Colors.white.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              onTap: _loadDashboardData,
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.refresh_rounded, size: 18, color: Colors.white),
+                    if (isWide) ...[
+                      const SizedBox(width: 8),
+                      Text(l10n.refresh,
+                          style: const TextStyle(
+                              color: Colors.white, fontWeight: FontWeight.w600)),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );

@@ -5,6 +5,7 @@ import '../../../services/language_service.dart';
 import '../../../services/preference_service.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../../../config/theme.dart';
+import '../../../config/app_version.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// Écran des paramètres pour l'administration.
@@ -62,21 +63,35 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 16),
+            // En-tête de page
+            Text(l10n.systemSettings,
+                style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.getTextPrimary(context))),
+            const SizedBox(height: 20),
+            // Deux colonnes sur grand écran, une seule sinon. Les cartes se
+            // dimensionnent à leur contenu (fini le ratio fixe qui tassait
+            // ou laissait du vide).
             LayoutBuilder(builder: (context, constraints) {
               final isWide = constraints.maxWidth > 800;
-              return GridView.count(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: isWide ? 2 : 1,
-                crossAxisSpacing: 20,
-                mainAxisSpacing: 20,
-                childAspectRatio: constraints.maxWidth > 1200 ? 1.8 : 1.5,
+              final left = [_buildPreferencesCard(l10n), _buildAccountCard(l10n)];
+              final right = [_buildNotificationsCard(l10n), _buildAppInfoCard(l10n)];
+
+              if (!isWide) {
+                return Column(
+                  children: [...left, ...right]
+                      .expand((c) => [c, const SizedBox(height: 20)])
+                      .toList()
+                    ..removeLast(),
+                );
+              }
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildPreferencesCard(l10n),
-                  _buildNotificationsCard(l10n),
-                  _buildAccountCard(l10n),
-                  _buildAppInfoCard(l10n),
+                  Expanded(child: _stack(left)),
+                  const SizedBox(width: 20),
+                  Expanded(child: _stack(right)),
                 ],
               );
             }),
@@ -85,6 +100,14 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
       ),
     );
   }
+
+  /// Empile verticalement des cartes avec un espacement uniforme.
+  Widget _stack(List<Widget> cards) => Column(
+        children: cards
+            .expand((c) => [c, const SizedBox(height: 20)])
+            .toList()
+          ..removeLast(),
+      );
 
   // ── Carte Préférences ──────────────────────────────────────────────────────
 
@@ -172,13 +195,20 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
       iconColor: const Color(0xFF8B5CF6),
       title: l10n.information,
       children: [
-        _buildInfoRow(l10n.version,    '1.0.0'),
+        _buildInfoRow(
+          l10n.version,
+          AppVersion.commit.isNotEmpty
+              ? '${AppVersion.version} (${AppVersion.commit})'
+              : AppVersion.version,
+        ),
+        // La date de mise à jour n'apparaît que si elle est réelle
+        // (injectée au build) — plus jamais de valeur codée en dur.
+        if (AppVersion.lastUpdate != null) ...[
+          const SizedBox(height: 12),
+          _buildInfoRow(l10n.lastUpdate, AppVersion.lastUpdate!),
+        ],
         const SizedBox(height: 12),
-        _buildInfoRow(l10n.lastUpdate, '07/01/2026'),
-        const SizedBox(height: 12),
-        _buildInfoRow(l10n.mode,       l10n.web),
-        const SizedBox(height: 12),
-        _buildInfoRow(l10n.copyright,  'CENOU'),
+        _buildInfoRow(l10n.copyright, 'CENOU'),
       ],
     );
   }
@@ -297,8 +327,8 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
 
   void _showLanguageDialog(AppLocalizations l10n) {
     final langs = [
-      {'code': 'fr', 'name': l10n.french,  'flag': '🇫🇷'},
-      {'code': 'en', 'name': l10n.english, 'flag': '🇺🇸'},
+      {'code': 'fr', 'name': l10n.french},
+      {'code': 'en', 'name': l10n.english},
     ];
     final langSvc = Provider.of<LanguageService>(context, listen: false);
 
@@ -316,7 +346,10 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
               const SizedBox(height: 16),
               ...langs.map((lang) => RadioListTile<String>(
                 title: Row(children: [
-                  Text(lang['flag'] as String),
+                  // Badge de code langue (FR/EN) — s'affiche instantanément,
+                  // contrairement aux emojis drapeaux qui exigeaient le
+                  // chargement d'une police emoji sur le web.
+                  _LangBadge(code: (lang['code'] as String).toUpperCase()),
                   const SizedBox(width: 12),
                   Text(lang['name'] as String,
                       style: TextStyle(
@@ -672,6 +705,33 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
 // ══════════════════════════════════════════════════════════════
 // Widget carte interne
 // ══════════════════════════════════════════════════════════════
+
+/// Badge compact de code langue (« FR », « EN ») — alternative sobre et
+/// instantanée aux emojis drapeaux (qui rendaient mal/lentement sur le web).
+class _LangBadge extends StatelessWidget {
+  final String code;
+  const _LangBadge({required this.code});
+
+  @override
+  Widget build(BuildContext context) {
+    final primary = Theme.of(context).colorScheme.primary;
+    return Container(
+      width: 34,
+      height: 26,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: primary.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: primary.withOpacity(0.25)),
+      ),
+      child: Text(
+        code,
+        style: TextStyle(
+            fontSize: 12, fontWeight: FontWeight.w700, color: primary),
+      ),
+    );
+  }
+}
 
 class _Card extends StatelessWidget {
   final bool isDark;
