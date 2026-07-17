@@ -111,6 +111,15 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                               route: '/admin/utilisateurs',
                               l10n: l10n,
                             ),
+                            // « Centres » : gestion réservée aux administrateurs
+                            if (authProvider.isAdmin)
+                              _buildMenuItem(
+                                index: 7,
+                                icon: Icons.apartment_rounded,
+                                label: l10n.centres,
+                                route: '/admin/centres',
+                                l10n: l10n,
+                              ),
                             _buildMenuItem(
                               index: 4,
                               icon: Icons.campaign_rounded,

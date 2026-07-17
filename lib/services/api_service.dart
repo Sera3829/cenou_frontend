@@ -305,6 +305,56 @@ class ApiService {
     return response as Map<String, dynamic>;
   }
 
+  // ==================== CENTRES & CHAMBRES (ADMIN) ====================
+
+  /// Liste des centres avec statistiques d'occupation (vue admin).
+  Future<Map<String, dynamic>> getCentresAdmin() async {
+    final response = await get('/api/centres/admin/all');
+    return response as Map<String, dynamic>;
+  }
+
+  /// Crée un centre.
+  Future<Map<String, dynamic>> createCentre(Map<String, dynamic> body) async {
+    final response = await post('/api/centres', body: body);
+    return response as Map<String, dynamic>;
+  }
+
+  /// Met à jour un centre.
+  Future<Map<String, dynamic>> updateCentre(int id, Map<String, dynamic> body) async {
+    final response = await put('/api/centres/$id', body: body);
+    return response as Map<String, dynamic>;
+  }
+
+  /// Supprime un centre.
+  Future<Map<String, dynamic>> deleteCentre(int id) async {
+    final response = await delete('/api/centres/$id');
+    return response as Map<String, dynamic>;
+  }
+
+  /// Chambres d'un centre (avec occupant éventuel).
+  Future<Map<String, dynamic>> getCentreLogements(int centreId) async {
+    final response = await get('/api/centres/$centreId/logements');
+    return response as Map<String, dynamic>;
+  }
+
+  /// Crée une chambre dans un centre.
+  Future<Map<String, dynamic>> createLogement(int centreId, Map<String, dynamic> body) async {
+    final response = await post('/api/centres/$centreId/logements', body: body);
+    return response as Map<String, dynamic>;
+  }
+
+  /// Met à jour une chambre.
+  Future<Map<String, dynamic>> updateLogement(int logementId, Map<String, dynamic> body) async {
+    final response = await put('/api/logements/$logementId', body: body);
+    return response as Map<String, dynamic>;
+  }
+
+  /// Supprime une chambre.
+  Future<Map<String, dynamic>> deleteLogement(int logementId) async {
+    final response = await delete('/api/logements/$logementId');
+    return response as Map<String, dynamic>;
+  }
+
   /// Récupère les données des graphiques du tableau de bord.
   Future<Map<String, dynamic>> getDashboardCharts(
       {String? period, int? centreId}) async {

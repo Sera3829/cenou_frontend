@@ -36,6 +36,8 @@ import 'providers/notification_provider.dart';
 import 'providers/web/paiement_admin_provider.dart' if (dart.library.html) 'providers/web/paiement_admin_provider.dart';
 import 'providers/web/signalement_admin_provider.dart' if (dart.library.html) 'providers/web/signalement_admin_provider.dart';
 import 'providers/web/UserAdminProvider.dart' if (dart.library.html) 'providers/web/UserAdminProvider.dart';
+import 'providers/web/centre_admin_provider.dart' if (dart.library.html) 'providers/web/centre_admin_provider.dart';
+import 'screens/web/centres/centre_admin_screen.dart' if (dart.library.html) 'screens/web/centres/centre_admin_screen.dart';
 import 'screens/web/annonces/annonce_admin_screen.dart' if (dart.library.html) 'screens/web/annonces/annonce_admin_screen.dart';
 import 'screens/web/auth/admin_login_screen.dart' if (dart.library.html) 'screens/web/auth/admin_login_screen.dart';
 import 'screens/web/dashboard/dashboard_screen.dart' if (dart.library.html) 'screens/web/dashboard/dashboard_screen.dart';
@@ -144,6 +146,7 @@ class _CenouAppState extends State<CenouApp> {
           ChangeNotifierProvider(create: (_) => PaiementAdminProvider()),
           ChangeNotifierProvider(create: (_) => SignalementAdminProvider()),
           ChangeNotifierProvider(create: (_) => UserAdminProvider()),
+          ChangeNotifierProvider(create: (_) => CentreAdminProvider()),
           ChangeNotifierProvider(create: (_) => AnnonceAdminProvider()),
           ChangeNotifierProvider(create: (_) => RapportProvider()),
         ],
@@ -202,6 +205,7 @@ class _CenouAppState extends State<CenouApp> {
         '/admin/paiements': (context) => const AdminGuard(child: PaiementAdminScreen()),
         '/admin/signalements': (context) => const AdminGuard(child: SignalementAdminScreen()),
         '/admin/utilisateurs': (context) => const AdminGuard(child: UserAdminScreen()),
+        '/admin/centres': (context) => const AdminGuard(child: CentreAdminScreen()),
         '/admin/rapports': (context) => const AdminGuard(child: RapportsScreen()),
         '/admin/annonces': (context) => const AdminGuard(child: AnnonceAdminScreen()),
         '/admin/settings': (context) => AdminGuard(

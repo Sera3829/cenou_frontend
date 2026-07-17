@@ -369,6 +369,45 @@ class AppLocalizations {
 
   // ── Notifications ──────────────────────────────────────────────────────────
   String get notifications    => _t('Notifications', 'Notifications');
+  // ── Espace Centres (admin) ────────────────────────────────────────────────
+  String get centres            => _t('Centres', 'Centers');
+  String get centresManagement  => _t('Gestion des centres', 'Center management');
+  String get newCentre          => _t('Nouveau centre', 'New center');
+  String get editCentre         => _t('Modifier le centre', 'Edit center');
+  String get deleteCentre       => _t('Supprimer le centre', 'Delete center');
+  String get centreName         => _t('Nom du centre', 'Center name');
+  String get centreCity         => _t('Ville', 'City');
+  String get centreAddress      => _t('Adresse', 'Address');
+  String get centreCapacity     => _t('Capacité totale', 'Total capacity');
+  String get rooms              => _t('Chambres', 'Rooms');
+  String get manageRooms        => _t('Gérer les chambres', 'Manage rooms');
+  String get newRoom            => _t('Nouvelle chambre', 'New room');
+  String get editRoom           => _t('Modifier la chambre', 'Edit room');
+  String get monthlyRentLabel   => _t('Loyer mensuel (FCFA)', 'Monthly rent (FCFA)');
+  String get roomStatus         => _t('Statut', 'Status');
+  String get occupant           => _t('Occupant', 'Occupant');
+  String get residentsLabel     => _t('Résidents', 'Residents');
+  String get available          => _t('Disponible', 'Available');
+  String get occupied           => _t('Occupée', 'Occupied');
+  String get maintenance        => _t('Maintenance', 'Maintenance');
+  String get noRoomsYet         => _t('Aucune chambre pour ce centre', 'No rooms in this center yet');
+  String get noCentresYet       => _t('Aucun centre', 'No centers yet');
+  String get addFirstRoom       => _t('Ajoutez la première chambre', 'Add the first room');
+  String get addFirstCentre     => _t('Créez votre premier centre', 'Create your first center');
+  String get centreCreated      => _t('Centre créé avec succès', 'Center created');
+  String get centreUpdated      => _t('Centre mis à jour', 'Center updated');
+  String get centreDeleted      => _t('Centre supprimé', 'Center deleted');
+  String get roomCreated        => _t('Chambre créée', 'Room created');
+  String get roomUpdated        => _t('Chambre mise à jour', 'Room updated');
+  String get roomDeleted        => _t('Chambre supprimée', 'Room deleted');
+  String get deleteCentreConfirm =>
+      _t('Voulez-vous vraiment supprimer ce centre ? Cette action est irréversible.',
+         'Delete this center? This cannot be undone.');
+  String get deleteRoomConfirm =>
+      _t('Voulez-vous vraiment supprimer cette chambre ?', 'Delete this room?');
+  String get create             => _t('Créer', 'Create');
+  String get vacant             => _t('Libre', 'Vacant');
+
   String get cacheBadge => _t('Cache', 'Cache');
   String get markAllRead => _t('Tout marquer lu', 'Mark all read');
   // Libellés de type de notification
