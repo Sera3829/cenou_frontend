@@ -28,6 +28,7 @@ import 'screens/notifications/notifications_screen.dart';
 import 'screens/settings/settings_screen.dart';
 import 'screens/web/settings/settings_admin_screen.dart';
 import 'services/notification_service.dart';
+import 'services/navigation_service.dart';
 import 'services/preference_service.dart';
 import 'services/language_service.dart';
 import 'services/connectivity_service.dart';
@@ -160,6 +161,7 @@ class _CenouAppState extends State<CenouApp> {
 
           return MaterialApp(
             title: appTitle,
+            navigatorKey: navigatorKey,
             theme: isWeb ? _buildWebTheme() : _getTheme(_currentTheme),
             darkTheme: isWeb ? _buildWebDarkTheme() : AppTheme.darkTheme,
             themeMode: _getThemeMode(_currentTheme),
@@ -196,7 +198,10 @@ class _CenouAppState extends State<CenouApp> {
         onThemeChanged: (theme) => updateTheme(theme),
       ),
       '/notifications': (context) => const NotificationsScreen(),
-      '/annonce-details': (context) => const AnnonceDetailsScreen(annonceId: 0),
+      '/annonce-details': (context) {
+        final id = ModalRoute.of(context)?.settings.arguments as int? ?? 0;
+        return AnnonceDetailsScreen(annonceId: id);
+      },
     };
 
     // Routes spécifiques au web (avec protection AdminGuard)

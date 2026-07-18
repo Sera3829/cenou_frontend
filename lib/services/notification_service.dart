@@ -1,7 +1,20 @@
+import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'api_service.dart';
 import 'storage_service.dart';
+import 'navigation_service.dart';
+
+/// Canal Android unique pour annonces & messages. DOIT correspondre au
+/// `channelId` envoyé par le backend (notificationBroadcastService : 'annonces')
+/// et être créé en importance HAUTE + son pour la bannière et le son système.
+const AndroidNotificationChannel kAnnoncesChannel = AndroidNotificationChannel(
+  'annonces',
+  'Annonces & messages',
+  description: 'Annonces et messages de l\'application CENOU',
+  importance: Importance.high,
+  playSound: true,
+);
 
 /// Service de gestion des notifications push et locales.
 class NotificationService {
@@ -54,6 +67,12 @@ class NotificationService {
         settings: initSettings,
         onDidReceiveNotificationResponse: _onNotificationTapped,
       );
+
+      // Crée le canal Android (importance haute + son) — indispensable pour la
+      // bannière et le son, y compris quand l'app est fermée (Android 8+).
+      await _localNotifications
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+          ?.createNotificationChannel(kAnnoncesChannel);
 
       print('Notifications locales initialisees');
 
@@ -114,74 +133,77 @@ class NotificationService {
     }
   }
 
-  /// Gère les notifications reçues au premier plan.
+  /// Gère les notifications reçues au premier plan : affiche une notification
+  /// locale (FCM n'en affiche pas automatiquement quand l'app est ouverte).
   Future<void> _handleForegroundMessage(RemoteMessage message) async {
     print('Notification recue (foreground): ${message.notification?.title}');
 
     final notification = message.notification;
+    if (notification == null) return;
 
-    if (notification != null) {
-      await _localNotifications.show(
-        id: notification.hashCode,
-        title: notification.title,
-        body: notification.body,
-        notificationDetails: NotificationDetails(
-          android: AndroidNotificationDetails(
-            'cenou_channel',
-            'CENOU Notifications',
-            channelDescription: 'Notifications de l\'application CENOU',
-            importance: Importance.high,
-            priority: Priority.high,
-            icon: '@mipmap/ic_launcher',
-          ),
-          iOS: const DarwinNotificationDetails(
-            presentAlert: true,
-            presentBadge: true,
-            presentSound: true,
-          ),
+    // Emporte les données de routage dans le payload pour le tap.
+    final payload = jsonEncode({
+      'type': message.data['type'],
+      'annonce_id': message.data['annonce_id'],
+      'notificationId': message.data['notificationId'],
+    });
+
+    await _localNotifications.show(
+      id: notification.hashCode,
+      title: notification.title,
+      body: notification.body,
+      notificationDetails: NotificationDetails(
+        android: AndroidNotificationDetails(
+          kAnnoncesChannel.id,
+          kAnnoncesChannel.name,
+          channelDescription: kAnnoncesChannel.description,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
         ),
-        payload: message.data['notificationId'],
-      );
-    }
+        iOS: const DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      payload: payload,
+    );
   }
 
-  /// Gère les notifications ouvertes alors que l'application est en arrière-plan.
+  /// Tap sur une notification système (app en arrière-plan ou fermée).
   void _handleBackgroundMessage(RemoteMessage message) {
     print('Notification ouverte (background): ${message.notification?.title}');
-
-    final type = message.data['type'];
-    final notificationId = message.data['notificationId'];
-
-    if (type != null && notificationId != null) {
-      _navigateToScreen(type, notificationId);
-    }
+    _navigateToScreen(message.data['type'], annonceId: message.data['annonce_id']);
   }
 
-  /// Gère le tap sur la notification locale.
+  /// Tap sur une notification locale (app au premier plan).
   void _onNotificationTapped(NotificationResponse response) {
     print('Notification tappee: ${response.payload}');
-
-    if (response.payload != null) {
-      // Navigation à implémenter selon le besoin
+    final raw = response.payload;
+    if (raw == null || raw.isEmpty) return;
+    try {
+      final data = jsonDecode(raw) as Map<String, dynamic>;
+      _navigateToScreen(data['type'] as String?, annonceId: data['annonce_id']?.toString());
+    } catch (_) {
+      _navigateToScreen(null);
     }
   }
 
-  /// Navigue vers l'écran correspondant au type de notification.
-  void _navigateToScreen(String type, String id) {
-    switch (type) {
-      case 'PAIEMENT':
-      // Navigation vers les détails du paiement
-        break;
-      case 'SIGNALEMENT':
-      // Navigation vers les détails du signalement
-        break;
-      case 'ANNONCE':
-      // Navigation vers les annonces
-        break;
-      default:
-      // Navigation vers l'écran d'accueil
-        break;
+  /// Navigue vers l'écran correspondant au type de notification, via la
+  /// clé de navigation globale (aucun BuildContext requis).
+  void _navigateToScreen(String? type, {String? annonceId}) {
+    final nav = navigatorKey.currentState;
+    if (nav == null) return;
+    if (type == 'ANNONCE') {
+      final id = int.tryParse(annonceId ?? '');
+      if (id != null && id > 0) {
+        nav.pushNamed('/annonce-details', arguments: id);
+        return;
+      }
     }
+    // Par défaut : ouvre la liste des notifications de l'app.
+    nav.pushNamed('/notifications');
   }
 
   /// Retourne le nombre de notifications non lues.
