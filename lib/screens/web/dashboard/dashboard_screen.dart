@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:cenou_mobile/providers/auth_provider.dart';
+import 'package:cenou_mobile/providers/web/messagerie_provider.dart';
 import 'package:cenou_mobile/services/api_service.dart';
 import 'package:intl/intl.dart';
 import '../../../models/admin/activity.dart';
 import '../../../config/theme.dart';
 import '../../../l10n/app_localizations.dart';
+import '../messagerie/messagerie_panel.dart';
 
 /// Disposition principale du tableau de bord avec une barre latérale et une barre supérieure.
 class DashboardLayout extends StatefulWidget {
@@ -25,6 +27,15 @@ class DashboardLayout extends StatefulWidget {
 
 class _DashboardLayoutState extends State<DashboardLayout> {
   @override
+  void initState() {
+    super.initState();
+    // Charge le compteur de messages non lus pour la cloche.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) context.read<MessagerieProvider>().loadInbox();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     final authProvider = Provider.of<AuthProvider>(context);
@@ -33,6 +44,8 @@ class _DashboardLayoutState extends State<DashboardLayout> {
 
     return Scaffold(
       backgroundColor: AppTheme.getDashboardBackground(context),
+      // Panneau de messagerie interne (ouvert depuis la cloche)
+      endDrawer: const MessageriePanel(),
       //  Drawer pour petit écran
       drawer: !isDesktop ? Drawer(
         child: _buildDesktopSidebar(authProvider, l10n),
@@ -653,15 +666,27 @@ class _DashboardLayoutState extends State<DashboardLayout> {
             const SizedBox(width: 16),
           ],
 
-          IconButton(
-            icon: Badge(
-              label: const Text('3'),
-              child: Icon(
-                Icons.notifications_none_rounded,
-                color: AppTheme.getTextSecondary(context),
-              ),
+          Builder(
+            builder: (context) => Consumer<MessagerieProvider>(
+              builder: (context, msg, _) {
+                final n = msg.unreadCount;
+                final bell = Icon(
+                  Icons.notifications_none_rounded,
+                  color: AppTheme.getTextSecondary(context),
+                );
+                return IconButton(
+                  tooltip: l10n.messagerie,
+                  icon: n > 0
+                      ? Badge(
+                          label: Text(n > 99 ? '99+' : '$n'),
+                          backgroundColor: AppTheme.errorColor,
+                          child: bell,
+                        )
+                      : bell,
+                  onPressed: () => Scaffold.of(context).openEndDrawer(),
+                );
+              },
             ),
-            onPressed: () {},
           ),
         ],
       ),

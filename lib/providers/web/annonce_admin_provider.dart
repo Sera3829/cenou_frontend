@@ -1,5 +1,4 @@
 // providers/web/annonce_admin_provider.dart
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../../services/api_service.dart';
 import '../../models/admin/annonce.dart';
@@ -33,11 +32,15 @@ class AnnonceAdminProvider with ChangeNotifier {
     notifyListeners();
 
     try {
-      // 1. Récupération du flux des annonces existantes
+      // 1. Récupération du flux des annonces existantes.
+      //    On ne garde que les annonces destinées aux étudiants ; les messages
+      //    internes du staff (cibles GESTIONNAIRES*) vivent dans la messagerie (cloche).
+      const ciblesEtudiants = {'TOUS', 'CENTRE_SPECIFIQUE', 'ETUDIANTS'};
       try {
         final annoncesResponse = await _apiService.get('/api/annonces/admin/all');
         _annonces = (annoncesResponse['data'] as List?)
             ?.map((json) => Annonce.fromJson(json))
+            .where((a) => ciblesEtudiants.contains(a.cible))
             .toList() ?? [];
       } catch (e) {
         _annonces = [];

@@ -433,6 +433,29 @@ class AppLocalizations {
   String get roomsCount         => _t('Nombre de chambres', 'Number of rooms');
   String get numberPadding      => _t('Chiffres (zéros)', 'Digits (zero-pad)');
   String get preview            => _t('Aperçu', 'Preview');
+  // ── Messagerie interne (cloche du dashboard) ─────────────────────────────
+  String get messagerie         => _t('Messagerie', 'Messaging');
+  String get messagerieSubtitle => _t('Communication interne du staff', 'Internal staff communication');
+  String get newMessage         => _t('Nouveau message', 'New message');
+  String get noMessagesYet      => _t('Aucun message', 'No messages');
+  String get noMessagesHint     => _t('Vos messages internes apparaîtront ici', 'Your internal messages will appear here');
+  String get composeMessage     => _t('Composer un message', 'Compose a message');
+  String get msgModeGeneral     => _t('Note générale', 'General note');
+  String get msgModeGeneralHint => _t('À tout le staff (admins et gestionnaires)', 'To all staff (admins and managers)');
+  String get msgModeCentre      => _t('Par centre', 'By center');
+  String get msgModeCentreHint  => _t('Aux gestionnaires d\'un centre', "To a center's managers");
+  String get msgModeDirect      => _t('Direct', 'Direct');
+  String get msgModeDirectHint  => _t('À des membres précis du staff', 'To specific staff members');
+  String get msgTitle           => _t('Titre', 'Title');
+  String get msgBody            => _t('Message', 'Message');
+  String get msgSend            => _t('Envoyer', 'Send');
+  String get msgRecipients      => _t('Destinataires', 'Recipients');
+  String get msgSearchStaff     => _t('Rechercher un membre…', 'Search a member…');
+  String get msgFrom            => _t('De', 'From');
+  String get msgSent            => _t('Message envoyé', 'Message sent');
+  String get msgSelectCentre    => _t('Choisir un centre', 'Choose a center');
+  String get msgNoRecipient     => _t('Sélectionnez au moins un destinataire', 'Select at least one recipient');
+  String get msgNoStaff         => _t('Aucun membre du staff', 'No staff member');
 
   String get cacheBadge => _t('Cache', 'Cache');
   String get markAllRead => _t('Tout marquer lu', 'Mark all read');

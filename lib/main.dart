@@ -19,6 +19,7 @@ import 'providers/auth_provider.dart';
 import 'providers/signalement_provider.dart';
 import 'providers/paiement_provider.dart';
 import 'providers/web/annonce_admin_provider.dart';
+import 'providers/web/messagerie_provider.dart';
 import 'providers/web/rapport_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
@@ -148,6 +149,7 @@ class _CenouAppState extends State<CenouApp> {
           ChangeNotifierProvider(create: (_) => UserAdminProvider()),
           ChangeNotifierProvider(create: (_) => CentreAdminProvider()),
           ChangeNotifierProvider(create: (_) => AnnonceAdminProvider()),
+          ChangeNotifierProvider(create: (_) => MessagerieProvider()),
           ChangeNotifierProvider(create: (_) => RapportProvider()),
         ],
       ],
