@@ -231,4 +231,13 @@ class SignalementProvider with ChangeNotifier {
       return '';
     }
   }
+
+  /// Vide l'état en mémoire (garde-fou anti-fuite entre sessions).
+  void reset() {
+    _signalements = [];
+    _isLoading = false;
+    _error = null;
+    _isFromCache = false;
+    notifyListeners();
+  }
 }

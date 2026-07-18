@@ -183,4 +183,15 @@ class AnnonceAdminProvider with ChangeNotifier {
   Future<void> refresh() async {
     await loadData();
   }
+
+  /// Vide l'état en mémoire (garde-fou anti-fuite entre sessions).
+  void reset() {
+    _annonces = [];
+    _centres = [];
+    _etudiants = [];
+    _isLoading = false;
+    _isSending = false;
+    _error = null;
+    notifyListeners();
+  }
 }

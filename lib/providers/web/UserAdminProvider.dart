@@ -310,4 +310,18 @@ class UserAdminProvider with ChangeNotifier {
     _error = null;
     safeNotify();
   }
+
+  /// Vide l'état en mémoire (garde-fou anti-fuite entre sessions).
+  void reset() {
+    _users = [];
+    _centres = [];
+    _availableLogements = [];
+    _isLoading = false;
+    _error = null;
+    _selectedRole = 'TOUS';
+    _selectedStatut = 'TOUS';
+    _searchQuery = '';
+    _totalItems = 0;
+    safeNotify();
+  }
 }

@@ -422,4 +422,17 @@ class PaiementAdminProvider with ChangeNotifier {
     if (value is num) return value.toInt();
     return null;
   }
+
+  /// Vide l'état en mémoire (garde-fou anti-fuite entre sessions).
+  void reset() {
+    _paiements = [];
+    _statistiques = null;
+    _filters = {};
+    _isLoading = false;
+    _error = null;
+    _currentPage = 1;
+    _totalPages = 1;
+    _totalItems = 0;
+    notifyListeners();
+  }
 }

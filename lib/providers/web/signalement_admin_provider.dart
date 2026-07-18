@@ -410,4 +410,22 @@ class SignalementAdminProvider with ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+
+  /// Vide l'état en mémoire (garde-fou anti-fuite entre sessions).
+  void reset() {
+    _signalements = [];
+    _isLoading = false;
+    _error = null;
+    _filterStatut = null;
+    _filterType = null;
+    _filterCentreId = null;
+    _filterDateFrom = null;
+    _filterDateTo = null;
+    _searchQuery = '';
+    _requestId = 0;
+    _currentPage = 1;
+    _totalPages = 1;
+    _totalItems = 0;
+    notifyListeners();
+  }
 }

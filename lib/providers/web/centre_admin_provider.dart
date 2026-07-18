@@ -227,4 +227,18 @@ class CentreAdminProvider extends ChangeNotifier {
       return _clean(e);
     }
   }
+
+  /// Vide l'état en mémoire (garde-fou anti-fuite entre sessions).
+  void reset() {
+    _centres = [];
+    _isLoading = false;
+    _error = null;
+    _selectedCentreId = null;
+    _pavillons = [];
+    _isLoadingPavillons = false;
+    _selectedPavillonId = null;
+    _chambres = [];
+    _isLoadingChambres = false;
+    notifyListeners();
+  }
 }

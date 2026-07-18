@@ -63,5 +63,13 @@ class RapportProvider with ChangeNotifier {
   Future<void> refresh() async {
     await loadCentres();
   }
+
+  /// Vide l'état en mémoire (garde-fou anti-fuite entre sessions).
+  void reset() {
+    _centres = [];
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
+  }
 }
 

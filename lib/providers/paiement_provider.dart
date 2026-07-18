@@ -205,6 +205,16 @@ class PaiementProvider with ChangeNotifier {
     ]);
   }
 
+  /// Vide l'état en mémoire (garde-fou anti-fuite entre sessions).
+  void reset() {
+    _paiements = [];
+    _pendingPaiementsList = [];
+    _isLoading = false;
+    _error = null;
+    _isFromCache = false;
+    notifyListeners();
+  }
+
   /// Force la synchronisation des données directement depuis l'API, ignorant le cache initial.
   Future<void> forceRefreshFromApi() async {
     if (!_connectivityService.isOnline) {
