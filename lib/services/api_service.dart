@@ -529,9 +529,11 @@ class ApiService {
     } else {
       String errorMessage = 'Une erreur est survenue';
       List<dynamic>? details;
+      Map<String, dynamic>? errorBody;
       try {
         if (response.body.isNotEmpty) {
           final errorData = json.decode(response.body);
+          if (errorData is Map<String, dynamic>) errorBody = errorData;
           errorMessage = errorData['error'] ??
               errorData['message'] ??
               'Une erreur est survenue';
@@ -545,7 +547,7 @@ class ApiService {
       if (kDebugMode) print('Backend error message: "$errorMessage"');
       final uri = response.request?.url.toString() ?? '';
       if (response.statusCode == 400) {
-        throw ApiException(errorMessage, 400, details);
+        throw ApiException(errorMessage, 400, details, errorBody);
       } else if (response.statusCode == 401) {
         if (kDebugMode) print('Token expiré détecté → déconnexion automatique');
         onUnauthorized?.call();
@@ -561,7 +563,7 @@ class ApiService {
       } else if (response.statusCode >= 500) {
         throw ApiException('Erreur serveur. Veuillez réessayer plus tard.', 500);
       } else {
-        throw ApiException(errorMessage, response.statusCode);
+        throw ApiException(errorMessage, response.statusCode, details, errorBody);
       }
     }
   }
@@ -585,7 +587,12 @@ class ApiException implements Exception {
   final String message;
   final int statusCode;
   final List<dynamic>? details;
-  ApiException(this.message, this.statusCode, [this.details]);
+  final Map<String, dynamic>? body; // corps JSON complet de l'erreur (code, extra…)
+  ApiException(this.message, this.statusCode, [this.details, this.body]);
+
+  /// Code métier renvoyé par le backend (ex : 'CAPACITE_DEPASSEE'), si présent.
+  String? get code => body?['code'] as String?;
+
   @override
   String toString() => message;
 }

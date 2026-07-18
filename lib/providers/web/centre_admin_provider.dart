@@ -176,19 +176,35 @@ class CentreAdminProvider extends ChangeNotifier {
     await loadCentres();
   }
 
-  Future<String?> createChambre(Map<String, dynamic> body) => _wrap(() async {
-        await _apiService.createPavillonLogement(_selectedPavillonId!, body);
-        await _refreshChambres();
-      });
+  /// Détecte l'erreur « capacité du pavillon dépassée » renvoyée par le backend.
+  bool _capaciteDepassee(Object e) =>
+      e is ApiException && e.code == 'CAPACITE_DEPASSEE';
 
-  /// Création en masse — retourne le message de résultat (créées/ignorées) en cas de succès.
-  Future<({String? error, String? message})> bulkCreateChambres(Map<String, dynamic> body) async {
+  /// Crée une chambre. `ajuster: true` relève la capacité du pavillon si besoin.
+  /// Retourne capaciteDepassee=true si le backend refuse pour cause de capacité.
+  Future<({String? error, String? message, bool capaciteDepassee})> createChambre(
+      Map<String, dynamic> body, {bool ajuster = false}) async {
     try {
-      final res = await _apiService.bulkCreateLogements(_selectedPavillonId!, body);
+      final payload = ajuster ? {...body, 'ajuster': true} : body;
+      await _apiService.createPavillonLogement(_selectedPavillonId!, payload);
       await _refreshChambres();
-      return (error: null, message: res['message'] as String?);
+      return (error: null, message: null, capaciteDepassee: false);
     } catch (e) {
-      return (error: _clean(e), message: null);
+      return (error: _clean(e), message: null, capaciteDepassee: _capaciteDepassee(e));
+    }
+  }
+
+  /// Création en masse — message de résultat (créées/ignorées) en cas de succès.
+  /// `ajuster: true` relève la capacité du pavillon pour absorber le lot.
+  Future<({String? error, String? message, bool capaciteDepassee})> bulkCreateChambres(
+      Map<String, dynamic> body, {bool ajuster = false}) async {
+    try {
+      final payload = ajuster ? {...body, 'ajuster': true} : body;
+      final res = await _apiService.bulkCreateLogements(_selectedPavillonId!, payload);
+      await _refreshChambres();
+      return (error: null, message: res['message'] as String?, capaciteDepassee: false);
+    } catch (e) {
+      return (error: _clean(e), message: null, capaciteDepassee: _capaciteDepassee(e));
     }
   }
 

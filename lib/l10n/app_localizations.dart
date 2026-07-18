@@ -424,6 +424,9 @@ class AppLocalizations {
   String get deletePavillonConfirm =>
       _t('Voulez-vous vraiment supprimer ce pavillon et ses chambres libres ?',
          'Delete this wing and its vacant rooms?');
+  String get occupancyShort     => _t('Occupation', 'Occupancy');
+  String get capacityExceeded   => _t('Capacité dépassée', 'Capacity exceeded');
+  String get adjustCapacity     => _t('Ajuster la capacité', 'Adjust capacity');
   // ── Création de chambres en masse ────────────────────────────────────────
   String get bulkCreate         => _t('Créer en masse', 'Bulk create');
   String get bulkCreateRooms    => _t('Créer des chambres en masse', 'Bulk create rooms');

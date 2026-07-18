@@ -161,7 +161,7 @@ class _CentreCard extends StatelessWidget {
         _menu(context, l10n.managePavillon, l10n.editCentre, l10n.deleteCentre, onOpen, onEdit, onDelete),
       ]),
       const Spacer(),
-      Text('${l10n.occupancyRate} · ${taux.toStringAsFixed(0)}%',
+      Text('${l10n.occupancyShort} · ${taux.toStringAsFixed(0)}%',
           style: TextStyle(fontSize: 12, color: AppTheme.getTextSecondary(context))),
       const SizedBox(height: 6),
       _bar(context, taux, tauxColor),
@@ -319,7 +319,7 @@ class _PavillonCard extends StatelessWidget {
         ),
       ]),
       const Spacer(),
-      Text('${l10n.occupancyRate} · ${taux.toStringAsFixed(0)}%',
+      Text('${l10n.occupancyShort} · ${taux.toStringAsFixed(0)}%',
           style: TextStyle(fontSize: 12, color: AppTheme.getTextSecondary(context))),
       const SizedBox(height: 6),
       _bar(context, taux, tauxColor),
@@ -463,16 +463,68 @@ class _PavillonDetail extends StatelessWidget {
     final result = await showDialog<Map<String, dynamic>>(
         context: context, builder: (_) => ChambreFormDialog(l10n: l10n));
     if (result == null || !context.mounted) return;
-    _feedback(context, await provider.createChambre(result), l10n.roomCreated);
+    await _submitRoom(context, result, ajuster: false);
+  }
+
+  Future<void> _submitRoom(BuildContext context, Map<String, dynamic> body,
+      {required bool ajuster}) async {
+    final r = await provider.createChambre(body, ajuster: ajuster);
+    if (!context.mounted) return;
+    if (r.capaciteDepassee) {
+      final ok = await _askAjuster(context, r.error!);
+      if (ok == true && context.mounted) await _submitRoom(context, body, ajuster: true);
+      return;
+    }
+    _feedback(context, r.error, l10n.roomCreated);
   }
 
   Future<void> _bulkCreate(BuildContext context) async {
     final result = await showDialog<Map<String, dynamic>>(
         context: context, builder: (_) => BulkChambreDialog(l10n: l10n));
     if (result == null || !context.mounted) return;
-    final r = await provider.bulkCreateChambres(result);
+    await _submitBulk(context, result, ajuster: false);
+  }
+
+  Future<void> _submitBulk(BuildContext context, Map<String, dynamic> body,
+      {required bool ajuster}) async {
+    final r = await provider.bulkCreateChambres(body, ajuster: ajuster);
     if (!context.mounted) return;
+    if (r.capaciteDepassee) {
+      final ok = await _askAjuster(context, r.error!);
+      if (ok == true && context.mounted) await _submitBulk(context, body, ajuster: true);
+      return;
+    }
     _feedbackMsg(context, r.error, r.message ?? l10n.roomCreated);
+  }
+
+  /// Dialogue « capacité dépassée » : propose d'ajuster la capacité du pavillon.
+  Future<bool?> _askAjuster(BuildContext context, String message) {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.getCardBackground(context),
+        title: Row(children: [
+          Icon(Icons.warning_amber_rounded, color: AppTheme.warningColor),
+          const SizedBox(width: 10),
+          Text(l10n.capacityExceeded,
+              style: TextStyle(color: AppTheme.getTextPrimary(context), fontSize: 18)),
+        ]),
+        content: Text(message, style: TextStyle(color: AppTheme.getTextSecondary(context))),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(l10n.cancel, style: TextStyle(color: AppTheme.getTextSecondary(context))),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(context, true),
+            icon: const Icon(Icons.tune_rounded, size: 18),
+            label: Text(l10n.adjustCapacity),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryColor, foregroundColor: Colors.white),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _editRoom(BuildContext context, Chambre chambre) async {
