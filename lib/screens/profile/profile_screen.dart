@@ -4,6 +4,7 @@ import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
 import '../../models/user.dart';
 import '../../utils/mobile_responsive.dart';
+import '../../utils/session_reset.dart';
 import '../../l10n/app_localizations.dart';
 
 /// Écran de profil — responsive mobile/tablette.
@@ -482,6 +483,8 @@ class ProfileScreen extends StatelessWidget {
 
     if (result != true || !context.mounted) return;
 
+    // Garde-fou anti-fuite : vide l'état des providers avant de déconnecter.
+    resetUserSession(context);
     try {
       await authProvider.logout();
     } catch (_) {}

@@ -201,6 +201,23 @@ class MessagerieProvider with ChangeNotifier {
     }
   }
 
+  /// Vide l'état en mémoire (garde-fou anti-fuite entre sessions) : messages,
+  /// compteur, file de synchro, référentiels, et arrête le polling.
+  void reset() {
+    _poll?.cancel();
+    _poll = null;
+    _messages = [];
+    _unreadCount = 0;
+    _isLoading = false;
+    _isSending = false;
+    _error = null;
+    _pendingRead.clear();
+    _centres = [];
+    _staff = [];
+    _refsLoaded = false;
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     _poll?.cancel();

@@ -4,6 +4,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../l10n/app_localizations.dart';
+import '../../utils/session_reset.dart';
 import '../../providers/auth_provider.dart';
 import 'package:local_auth_android/local_auth_android.dart';
 
@@ -139,6 +140,7 @@ class _BiometricLockScreenState extends State<BiometricLockScreen>
 
   void _fallbackToPassword() {
     // Déconnecter la session et renvoyer vers LoginScreen
+    resetUserSession(context); // garde-fou anti-fuite entre sessions
     Provider.of<AuthProvider>(context, listen: false).logout();
     widget.onFallback();
   }

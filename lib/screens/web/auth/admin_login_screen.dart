@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../utils/session_reset.dart';
 import '../../../l10n/app_localizations.dart';
 
 /// Écran de connexion pour l'administration web.
@@ -485,6 +486,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
                       );
 
                       if (success && context.mounted) {
+                        // Garde-fou : repart d'un état propre (aucune fuite de la session précédente).
+                        resetUserSession(context);
                         Navigator.pushReplacementNamed(
                             context, '/admin/dashboard');
                       }

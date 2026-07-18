@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../config/theme.dart';
 import '../../providers/auth_provider.dart';
+import '../../utils/session_reset.dart';
 import '../../utils/mobile_responsive.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
@@ -82,6 +83,8 @@ class _LoginScreenState extends State<LoginScreen>
       if (!mounted) return;
 
       if (success) {
+        // Garde-fou : repart d'un état propre (aucune fuite de la session précédente).
+        resetUserSession(context);
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) Navigator.pushReplacementNamed(context, '/home');
         });

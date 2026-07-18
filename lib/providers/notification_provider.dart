@@ -379,4 +379,15 @@ class NotificationProvider with ChangeNotifier {
     _error = null;
     notifyListeners();
   }
+
+  /// Vide l'état en mémoire (garde-fou anti-fuite entre sessions).
+  /// À appeler à la déconnexion : sinon le prochain utilisateur voit
+  /// brièvement le compteur/les notifications du précédent.
+  void reset() {
+    _notifications = [];
+    _error = null;
+    _isLoading = false;
+    _isFromCache = false;
+    notifyListeners();
+  }
 }

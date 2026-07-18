@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:cenou_mobile/providers/auth_provider.dart';
 import 'package:cenou_mobile/providers/web/messagerie_provider.dart';
+import 'package:cenou_mobile/utils/session_reset.dart';
 import 'package:cenou_mobile/services/api_service.dart';
 import 'package:intl/intl.dart';
 import '../../../models/admin/activity.dart';
@@ -573,6 +574,8 @@ class _DashboardLayoutState extends State<DashboardLayout> {
                       onPressed: () async {
                         Navigator.pop(dialogContext);
                         final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                        // Garde-fou anti-fuite entre sessions.
+                        resetUserSession(context);
                         await authProvider.logout();
                         if (context.mounted) {
                           Navigator.pushReplacementNamed(context, '/admin/login');
