@@ -146,17 +146,25 @@ class SkeletonDataTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Conteneur statique + intérieur (en-tête + lignes) en shimmer.
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.getCardBackground(context),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.getBorderColor(context)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Shimmer(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return LayoutBuilder(builder: (context, constraints) {
+      // Remplit la hauteur disponible quand elle est bornée (ex. écran users) ;
+      // sinon (dans un sliver, hauteur infinie) on garde `rows` par défaut.
+      var rowCount = rows;
+      if (constraints.maxHeight.isFinite && constraints.maxHeight > 120) {
+        final fit = ((constraints.maxHeight - 56) / 51).floor();
+        if (fit > rowCount) rowCount = fit;
+      }
+      return Container(
+        decoration: BoxDecoration(
+          color: AppTheme.getCardBackground(context),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.getBorderColor(context)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Shimmer(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // En-tête (formes seulement, pas de fond opaque -> ne masque rien)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
@@ -174,7 +182,7 @@ class SkeletonDataTable extends StatelessWidget {
               ),
             ),
             // Lignes
-            for (int r = 0; r < rows; r++)
+            for (int r = 0; r < rowCount; r++)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
                 child: Row(
@@ -208,10 +216,11 @@ class SkeletonDataTable extends StatelessWidget {
                   ],
                 ),
               ),
-          ],
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    });
   }
 }
 

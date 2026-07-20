@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:cenou_mobile/config/theme.dart';
 import 'package:cenou_mobile/l10n/app_localizations.dart';
 import 'package:cenou_mobile/models/admin/admin_user.dart';
-import 'package:cenou_mobile/providers/web/user_admin_provider.dart';
 import 'package:cenou_mobile/screens/web/utilisateurs/utils/user_display.dart';
-import 'user_form_dialog.dart';
 
 /// Fiche détaillée d'un utilisateur (lecture seule + bouton « Modifier »).
+/// [onEdit] : ouvre l'édition avec un contexte valide (le contexte du dialogue
+/// est invalide après sa fermeture).
 void showUserDetailsDialog(
-    BuildContext context, AdminUser user, UserAdminProvider provider, AppLocalizations l10n) {
+    BuildContext context, AdminUser user, AppLocalizations l10n,
+    {required VoidCallback onEdit}) {
   final isDark = Theme.of(context).brightness == Brightness.dark;
   showDialog(
     context: context,
@@ -127,7 +128,7 @@ void showUserDetailsDialog(
                   ElevatedButton.icon(
                     onPressed: () {
                       Navigator.pop(context);
-                      showEditUserDialog(context, user, provider, l10n);
+                      onEdit();
                     },
                     icon: const Icon(Icons.edit, size: 18, color: Colors.white),
                     label: Text(l10n.edit, style: const TextStyle(color: Colors.white)),

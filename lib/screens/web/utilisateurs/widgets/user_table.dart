@@ -214,7 +214,8 @@ class UserTable extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
                 IconButton(
-                  onPressed: () => showUserDetailsDialog(context, user, provider, l10n),
+                  onPressed: () => showUserDetailsDialog(context, user, l10n,
+                      onEdit: () => showEditUserDialog(context, user, provider, l10n)),
                   icon: Icon(Icons.visibility_outlined,
                       size: 20, color: AppTheme.getTextSecondary(context)),
                   tooltip: l10n.viewDetails,
@@ -319,7 +320,8 @@ class UserTable extends StatelessWidget {
   Future<void> _handleAction(BuildContext context, String action, AdminUser user) async {
     switch (action) {
       case 'details':
-        showUserDetailsDialog(context, user, provider, l10n);
+        showUserDetailsDialog(context, user, l10n,
+                      onEdit: () => showEditUserDialog(context, user, provider, l10n));
         break;
       case 'edit':
         showEditUserDialog(context, user, provider, l10n);

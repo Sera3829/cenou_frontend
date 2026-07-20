@@ -127,15 +127,19 @@ class RapportService {
       print('Generation du rapport financier: $format');
       print('Payload: $body');
 
-      // Envoyer la requête
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: json.encode(body),
-      );
+      // Envoyer la requête (timeout : évite un chargement infini si le serveur traîne)
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: json.encode(body),
+          )
+          .timeout(const Duration(seconds: 90),
+              onTimeout: () => throw Exception(
+                  'Le serveur met trop de temps à générer le rapport. Réessayez.'));
 
       print('Statut de la reponse: ${response.statusCode}');
 
@@ -224,14 +228,18 @@ class RapportService {
 
       print('Generation du rapport d\'occupation: $format');
 
-      final response = await http.post(
-        url,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: json.encode(body),
-      );
+      final response = await http
+          .post(
+            url,
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: json.encode(body),
+          )
+          .timeout(const Duration(seconds: 90),
+              onTimeout: () => throw Exception(
+                  'Le serveur met trop de temps à générer le rapport. Réessayez.'));
 
       print('Statut de la reponse: ${response.statusCode}');
 
