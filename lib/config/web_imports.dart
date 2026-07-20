@@ -7,7 +7,7 @@ import 'package:cenou_mobile/providers/web/user_admin_provider.dart';
 import 'package:cenou_mobile/screens/web/auth/admin_login_screen.dart';
 import 'package:cenou_mobile/screens/web/dashboard/dashboard_screen.dart';
 import 'package:cenou_mobile/screens/web/paiements/paiement_admin_screen.dart';
-import 'package:cenou_mobile/screens/web/signalements/SignalementAdminScreen.dart';
+import 'package:cenou_mobile/screens/web/signalements/signalement_admin_screen.dart';
 import 'package:cenou_mobile/screens/web/utilisateurs/user_admin_screen.dart';
 import 'package:cenou_mobile/screens/web/paiements/export_preview_screen.dart';
 

@@ -44,7 +44,7 @@ import 'screens/web/annonces/annonce_admin_screen.dart' if (dart.library.html) '
 import 'screens/web/auth/admin_login_screen.dart' if (dart.library.html) 'screens/web/auth/admin_login_screen.dart';
 import 'screens/web/dashboard/dashboard_screen.dart' if (dart.library.html) 'screens/web/dashboard/dashboard_screen.dart';
 import 'screens/web/paiements/paiement_admin_screen.dart' if (dart.library.html) 'screens/web/paiements/paiement_admin_screen.dart';
-import 'screens/web/signalements/SignalementAdminScreen.dart' if (dart.library.html) 'screens/web/signalements/SignalementAdminScreen.dart';
+import 'screens/web/signalements/signalement_admin_screen.dart' if (dart.library.html) 'screens/web/signalements/signalement_admin_screen.dart';
 import 'screens/web/utilisateurs/user_admin_screen.dart' if (dart.library.html) 'screens/web/utilisateurs/user_admin_screen.dart';
 import 'screens/web/paiements/export_preview_screen.dart' if (dart.library.html) 'screens/web/paiements/export_preview_screen.dart';
 import 'screens/web/rapports/rapports_screen.dart' if (dart.library.html) 'screens/web/rapports/rapports_screen.dart';

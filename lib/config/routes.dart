@@ -3,7 +3,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/web/auth/admin_login_screen.dart';
 import '../screens/web/dashboard/dashboard_screen.dart';
-import '../screens/web/signalements/SignalementAdminScreen.dart';
+import '../screens/web/signalements/signalement_admin_screen.dart';
 import '../utils/platform_detector.dart';
 
 class AppRoutes {
