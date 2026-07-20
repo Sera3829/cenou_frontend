@@ -5,7 +5,7 @@ import '../../../l10n/app_localizations.dart';
 import '../../../widgets/skeleton/skeletons.dart';
 import '../../../models/admin/centre_admin.dart';
 import '../../../providers/web/centre_admin_provider.dart';
-import '../dashboard/dashboard_screen.dart';
+import '../dashboard/dashboard_layout.dart';
 import 'centre_form_dialog.dart';
 import 'pavillon_form_dialog.dart';
 import 'chambre_form_dialog.dart';

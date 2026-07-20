@@ -6,7 +6,7 @@ import 'package:cenou_mobile/config/theme.dart';
 import 'package:cenou_mobile/widgets/skeleton/skeletons.dart';
 import 'package:cenou_mobile/widgets/admin/admin_states.dart';
 import 'package:cenou_mobile/widgets/admin/admin_confirm_dialog.dart';
-import '../dashboard/dashboard_screen.dart';
+import '../dashboard/dashboard_layout.dart';
 import '../../../l10n/app_localizations.dart';
 import 'dialogs/send_annonce_dialog.dart';
 import 'widgets/annonce_card.dart';

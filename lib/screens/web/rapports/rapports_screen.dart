@@ -5,7 +5,7 @@ import 'package:provider/provider.dart';
 import '../../../services/rapport_service.dart';
 import '../../../providers/web/rapport_provider.dart';
 import '../../../models/admin/centre.dart';
-import '../dashboard/dashboard_screen.dart';
+import '../dashboard/dashboard_layout.dart';
 import '../../../config/theme.dart';
 import '../../../l10n/app_localizations.dart';
 

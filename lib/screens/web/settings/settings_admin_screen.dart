@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../services/language_service.dart';
 import '../../../services/preference_service.dart';
-import '../dashboard/dashboard_screen.dart';
+import '../dashboard/dashboard_layout.dart';
 import '../../../config/theme.dart';
 import '../../../widgets/skeleton/skeletons.dart';
 import '../../../config/app_version.dart';

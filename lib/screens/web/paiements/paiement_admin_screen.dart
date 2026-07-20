@@ -5,7 +5,7 @@ import 'package:cenou_mobile/l10n/app_localizations.dart';
 import 'package:cenou_mobile/providers/web/paiement_admin_provider.dart';
 import 'package:cenou_mobile/widgets/skeleton/skeletons.dart';
 import 'package:cenou_mobile/widgets/admin/admin_states.dart';
-import '../dashboard/dashboard_screen.dart';
+import '../dashboard/dashboard_layout.dart';
 import 'utils/paiement_export.dart';
 import 'widgets/paiement_filters_bar.dart';
 import 'widgets/paiement_filters_card.dart';
