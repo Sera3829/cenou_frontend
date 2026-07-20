@@ -25,9 +25,10 @@ class _DashboardLayoutState extends State<DashboardLayout> {
   @override
   void initState() {
     super.initState();
-    // Charge le compteur de messages non lus pour la cloche.
+    // Démarre la messagerie une seule fois (le polling gère les rafraîchissements) ;
+    // évite une requête réseau à chaque navigation entre écrans.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) context.read<MessagerieProvider>().loadInbox();
+      if (mounted) context.read<MessagerieProvider>().ensureStarted();
     });
   }
 

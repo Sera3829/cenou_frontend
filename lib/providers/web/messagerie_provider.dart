@@ -25,6 +25,7 @@ class MessagerieProvider with ChangeNotifier {
   String? _error;
 
   Timer? _poll;
+  bool _started = false; // évite de recharger la cloche à chaque navigation
   final Set<int> _pendingRead = {}; // lectures faites hors ligne, à resynchroniser
 
   // Référentiels pour la composition (chargés à la demande).
@@ -43,6 +44,15 @@ class MessagerieProvider with ChangeNotifier {
   String _clean(Object e) => e.toString().replaceFirst('Exception: ', '');
   static int _asInt(dynamic v) =>
       v == null ? 0 : (v is int ? v : int.tryParse(v.toString()) ?? 0);
+
+  /// Démarre la messagerie une seule fois (au 1er montage du dashboard) : charge
+  /// la cloche puis laisse le polling rafraîchir. Évite une requête réseau à
+  /// CHAQUE navigation (DashboardLayout est recréé sur chaque écran).
+  void ensureStarted() {
+    if (_started) return;
+    _started = true;
+    loadInbox();
+  }
 
   /// Charge la boîte de réception + le compteur non lus.
   /// [silent] : rafraîchissement d'arrière-plan (pas d'indicateur de chargement).
@@ -206,6 +216,7 @@ class MessagerieProvider with ChangeNotifier {
   void reset() {
     _poll?.cancel();
     _poll = null;
+    _started = false;
     _messages = [];
     _unreadCount = 0;
     _isLoading = false;
