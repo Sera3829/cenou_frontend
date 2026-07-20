@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:cenou_mobile/providers/web/signalement_admin_provider.dart';
 import 'package:cenou_mobile/models/signalement.dart';
 import 'package:cenou_mobile/config/theme.dart';
+import 'package:cenou_mobile/widgets/skeleton/skeletons.dart';
 import '../../../config/app_config.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../../../l10n/app_localizations.dart';
@@ -662,11 +663,9 @@ class _SignalementAdminScreenState extends State<SignalementAdminScreen> {
     return Consumer<SignalementAdminProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading && provider.signalements.isEmpty) {
-          return const Center(
-            child: Padding(
-              padding: EdgeInsets.all(48),
-              child: CircularProgressIndicator(),
-            ),
+          return const Padding(
+            padding: EdgeInsets.all(24),
+            child: SkeletonDataTable(),
           );
         }
         if (provider.error != null && provider.signalements.isEmpty) {

@@ -7,6 +7,7 @@ import '../../../providers/auth_provider.dart';
 import '../../../providers/web/UserAdminProvider.dart';
 import '../../../models/admin/admin_user.dart';
 import 'package:cenou_mobile/config/theme.dart';
+import 'package:cenou_mobile/widgets/skeleton/skeletons.dart';
 import 'package:cenou_mobile/services/api_service.dart';
 import '../../../config/app_config.dart';
 import '../dashboard/dashboard_screen.dart';
@@ -66,9 +67,9 @@ class _UserAdminScreenState extends State<UserAdminScreen> {
             child: Consumer<UserAdminProvider>(
               builder: (context, provider, _) {
                 if (provider.isLoading && provider.users.isEmpty) {
-                  return Center(
-                    child: CircularProgressIndicator(
-                        color: Theme.of(context).colorScheme.primary),
+                  return const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: SkeletonDataTable(),
                   );
                 }
                 if (provider.error != null && provider.users.isEmpty) {

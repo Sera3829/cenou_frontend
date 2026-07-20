@@ -18,6 +18,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import '../../../providers/web/paiement_admin_provider.dart';
 import 'package:cenou_mobile/models/paiement.dart';
 import 'package:cenou_mobile/config/theme.dart';
+import 'package:cenou_mobile/widgets/skeleton/skeletons.dart';
 import 'package:cenou_mobile/services/api_service.dart';
 import 'export_preview_screen.dart';
 import '../../../utils/html_utils.dart';
@@ -594,10 +595,10 @@ class _PaiementAdminScreenState extends State<PaiementAdminScreen> {
     return Consumer<PaiementAdminProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading && provider.paiements.isEmpty) {
-          return const Center(
-              child: Padding(
-                  padding: EdgeInsets.all(48.0),
-                  child: CircularProgressIndicator()));
+          return const Padding(
+            padding: EdgeInsets.all(24),
+            child: SkeletonDataTable(),
+          );
         }
         if (provider.error != null && provider.paiements.isEmpty) {
           return _buildErrorWidget(provider.error!, isDark, l10n);

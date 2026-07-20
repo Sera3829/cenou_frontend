@@ -5,6 +5,7 @@ import '../../../services/language_service.dart';
 import '../../../services/preference_service.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../../../config/theme.dart';
+import '../../../widgets/skeleton/skeletons.dart';
 import '../../../config/app_version.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -57,7 +58,7 @@ class _SettingsAdminScreenState extends State<SettingsAdminScreen> {
     return DashboardLayout(
       selectedIndex: 6,
       child: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const SkeletonSettings()
           : SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(

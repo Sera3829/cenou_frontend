@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../config/theme.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../widgets/skeleton/skeletons.dart';
 import '../../../models/admin/centre_admin.dart';
 import '../../../providers/web/centre_admin_provider.dart';
 import '../dashboard/dashboard_screen.dart';
@@ -92,7 +93,7 @@ class _CentresGrid extends StatelessWidget {
 
   Widget _content(BuildContext context) {
     if (provider.isLoading && provider.centres.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const SkeletonCentreGrid();
     }
     if (provider.error != null && provider.centres.isEmpty) {
       return _errorState(context, provider.error!, () => provider.loadCentres());
@@ -240,7 +241,7 @@ class _PavillonsView extends StatelessWidget {
 
   Widget _content(BuildContext context) {
     if (provider.isLoadingPavillons && provider.pavillons.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const SkeletonCentreGrid(count: 4);
     }
     if (provider.pavillons.isEmpty) {
       return _emptyState(context, Icons.dashboard_customize_rounded, l10n.noPavillonsYet,
@@ -385,7 +386,7 @@ class _PavillonDetail extends StatelessWidget {
 
   Widget _table(BuildContext context) {
     if (provider.isLoadingChambres && provider.chambres.isEmpty) {
-      return const Center(child: CircularProgressIndicator());
+      return const SkeletonDataTable(columns: 4);
     }
     if (provider.chambres.isEmpty) {
       return _emptyState(context, Icons.meeting_room_outlined, l10n.noRoomsYet,

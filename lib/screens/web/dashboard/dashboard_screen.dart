@@ -9,6 +9,7 @@ import 'package:intl/intl.dart';
 import '../../../models/admin/activity.dart';
 import '../../../config/theme.dart';
 import '../../../l10n/app_localizations.dart';
+import '../../../widgets/skeleton/skeletons.dart';
 import '../messagerie/messagerie_panel.dart';
 
 /// Disposition principale du tableau de bord avec une barre latérale et une barre supérieure.
@@ -848,7 +849,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               future: _dashboardStatsFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const SkeletonStatsGrid();
                 }
                 if (snapshot.hasError) {
                   return _buildErrorWidget(snapshot.error.toString(), l10n);
@@ -873,7 +874,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           future: _dashboardChartsFuture,
                           builder: (context, snapshot) {
                             if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const Center(child: CircularProgressIndicator());
+                              return const SkeletonChartCard();
                             }
                             if (snapshot.hasData) {
                               _processChartData(snapshot.data!, l10n);
@@ -898,7 +899,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         future: _dashboardChartsFuture,
                         builder: (context, snapshot) {
                           if (snapshot.connectionState == ConnectionState.waiting) {
-                            return const Center(child: CircularProgressIndicator());
+                            return const SkeletonChartCard();
                           }
                           if (snapshot.hasData) {
                             _processChartData(snapshot.data!, l10n);

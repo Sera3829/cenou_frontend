@@ -5,6 +5,7 @@ import 'package:cenou_mobile/providers/web/annonce_admin_provider.dart';
 import 'package:cenou_mobile/models/admin/annonce.dart';
 import 'package:intl/intl.dart';
 import 'package:cenou_mobile/config/theme.dart';
+import 'package:cenou_mobile/widgets/skeleton/skeletons.dart';
 import '../dashboard/dashboard_screen.dart';
 import '../../../l10n/app_localizations.dart';
 
@@ -52,9 +53,7 @@ class _AnnonceAdminScreenState extends State<AnnonceAdminScreen> {
     return Consumer<AnnonceAdminProvider>(
       builder: (context, provider, child) {
         if (provider.isLoading && provider.annonces.isEmpty) {
-          return Center(
-            child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary),
-          );
+          return const SkeletonAnnonceList();
         }
 
         if (provider.error != null && provider.annonces.isEmpty) {
