@@ -17,6 +17,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
   final _formKey = GlobalKey<FormState>();
   final _identifiantController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _passwordFocus = FocusNode();
   bool _obscurePassword = true;
   bool _rememberMe = false;
 
@@ -50,8 +51,27 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
   void dispose() {
     _identifiantController.dispose();
     _passwordController.dispose();
+    _passwordFocus.dispose();
     _animationController.dispose();
     super.dispose();
+  }
+
+  /// Soumet le formulaire de connexion (bouton ou touche Entrée).
+  Future<void> _submitLogin() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.isLoading) return;
+    if (!_formKey.currentState!.validate()) return;
+
+    final success = await authProvider.loginAdmin(
+      identifiant: _identifiantController.text.trim(),
+      motDePasse: _passwordController.text,
+    );
+
+    if (success && mounted) {
+      // Garde-fou : repart d'un état propre (aucune fuite de la session précédente).
+      resetUserSession(context);
+      Navigator.pushReplacementNamed(context, '/admin/dashboard');
+    }
   }
 
   @override
@@ -291,6 +311,8 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
               /// Champ identifiant.
               TextFormField(
                 controller: _identifiantController,
+                textInputAction: TextInputAction.next,
+                onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
                 style: TextStyle(
                   fontSize: 15,
                   color: isDark ? Colors.white : Colors.black87,
@@ -352,7 +374,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
               /// Champ mot de passe.
               TextFormField(
                 controller: _passwordController,
+                focusNode: _passwordFocus,
                 obscureText: _obscurePassword,
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _submitLogin(),
                 style: TextStyle(
                   fontSize: 15,
                   color: isDark ? Colors.white : Colors.black87,
@@ -476,23 +501,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen>
               SizedBox(
                 height: 50,
                 child: ElevatedButton(
-                  onPressed: authProvider.isLoading
-                      ? null
-                      : () async {
-                    if (_formKey.currentState!.validate()) {
-                      final success = await authProvider.loginAdmin(
-                        identifiant: _identifiantController.text.trim(),
-                        motDePasse: _passwordController.text,
-                      );
-
-                      if (success && context.mounted) {
-                        // Garde-fou : repart d'un état propre (aucune fuite de la session précédente).
-                        resetUserSession(context);
-                        Navigator.pushReplacementNamed(
-                            context, '/admin/dashboard');
-                      }
-                    }
-                  },
+                  onPressed: authProvider.isLoading ? null : _submitLogin,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isDark
                         ? Colors.blue.shade700

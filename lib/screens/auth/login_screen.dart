@@ -20,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen>
     with SingleTickerProviderStateMixin {
   final _identifiantController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _passwordFocus = FocusNode();
 
   bool _isPasswordVisible = false;
   bool _isLoading = false;
@@ -48,6 +49,7 @@ class _LoginScreenState extends State<LoginScreen>
   void dispose() {
     _identifiantController.dispose();
     _passwordController.dispose();
+    _passwordFocus.dispose();
     _animCtrl.dispose();
     super.dispose();
   }
@@ -435,6 +437,8 @@ class _LoginScreenState extends State<LoginScreen>
           hint: hintIdentifiant,
           prefixIcon: Icons.person_outline,
           enabled: !_isLoading,
+          textInputAction: TextInputAction.next,
+          onFieldSubmitted: (_) => _passwordFocus.requestFocus(),
           onChanged: (_) {
             if (_errorMessage != null) setState(() => _errorMessage = null);
           },
@@ -447,6 +451,9 @@ class _LoginScreenState extends State<LoginScreen>
           prefixIcon: Icons.lock_outline,
           obscureText: !_isPasswordVisible,
           enabled: !_isLoading,
+          focusNode: _passwordFocus,
+          textInputAction: TextInputAction.done,
+          onFieldSubmitted: (_) => _isLoading ? null : _handleLogin(),
           onChanged: (_) {
             if (_errorMessage != null) setState(() => _errorMessage = null);
           },
