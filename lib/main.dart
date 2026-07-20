@@ -37,7 +37,7 @@ import 'providers/notification_provider.dart';
 /// Imports conditionnels pour la plateforme web.
 import 'providers/web/paiement_admin_provider.dart' if (dart.library.html) 'providers/web/paiement_admin_provider.dart';
 import 'providers/web/signalement_admin_provider.dart' if (dart.library.html) 'providers/web/signalement_admin_provider.dart';
-import 'providers/web/UserAdminProvider.dart' if (dart.library.html) 'providers/web/UserAdminProvider.dart';
+import 'providers/web/user_admin_provider.dart' if (dart.library.html) 'providers/web/user_admin_provider.dart';
 import 'providers/web/centre_admin_provider.dart' if (dart.library.html) 'providers/web/centre_admin_provider.dart';
 import 'screens/web/centres/centre_admin_screen.dart' if (dart.library.html) 'screens/web/centres/centre_admin_screen.dart';
 import 'screens/web/annonces/annonce_admin_screen.dart' if (dart.library.html) 'screens/web/annonces/annonce_admin_screen.dart';
@@ -45,7 +45,7 @@ import 'screens/web/auth/admin_login_screen.dart' if (dart.library.html) 'screen
 import 'screens/web/dashboard/dashboard_screen.dart' if (dart.library.html) 'screens/web/dashboard/dashboard_screen.dart';
 import 'screens/web/paiements/paiement_admin_screen.dart' if (dart.library.html) 'screens/web/paiements/paiement_admin_screen.dart';
 import 'screens/web/signalements/SignalementAdminScreen.dart' if (dart.library.html) 'screens/web/signalements/SignalementAdminScreen.dart';
-import 'screens/web/utilisateurs/User_Admin_Screen.dart' if (dart.library.html) 'screens/web/utilisateurs/User_Admin_Screen.dart';
+import 'screens/web/utilisateurs/user_admin_screen.dart' if (dart.library.html) 'screens/web/utilisateurs/user_admin_screen.dart';
 import 'screens/web/paiements/export_preview_screen.dart' if (dart.library.html) 'screens/web/paiements/export_preview_screen.dart';
 import 'screens/web/rapports/rapports_screen.dart' if (dart.library.html) 'screens/web/rapports/rapports_screen.dart';
 

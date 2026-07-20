@@ -6,7 +6,7 @@ import '../providers/signalement_provider.dart';
 import '../providers/web/messagerie_provider.dart';
 import '../providers/web/paiement_admin_provider.dart';
 import '../providers/web/signalement_admin_provider.dart';
-import '../providers/web/UserAdminProvider.dart';
+import '../providers/web/user_admin_provider.dart';
 import '../providers/web/centre_admin_provider.dart';
 import '../providers/web/annonce_admin_provider.dart';
 import '../providers/web/rapport_provider.dart';
