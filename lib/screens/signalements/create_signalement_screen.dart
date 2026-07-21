@@ -6,12 +6,12 @@ import '../../config/theme.dart';
 import '../../providers/signalement_provider.dart';
 import '../../utils/mobile_responsive.dart';
 import '../../widgets/custom_button.dart';
-import '../../widgets/custom_text_field.dart';
 import '../../l10n/app_localizations.dart';
+import 'widgets/create_signalement_widgets.dart';
 
 /// Écran de création de signalement — responsive mobile/tablette.
 class CreateSignalementScreen extends StatefulWidget {
-  const CreateSignalementScreen({Key? key}) : super(key: key);
+  const CreateSignalementScreen({super.key});
 
   @override
   State<CreateSignalementScreen> createState() =>
@@ -24,17 +24,21 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
   final _picker = ImagePicker();
 
   String _typeProbleme = 'PLOMBERIE';
-  List<File> _photos = [];
+  final List<File> _photos = [];
   bool _isLoading = false;
 
   List<Map<String, dynamic>> _getTypesProblemes(AppLocalizations l10n) {
     return [
-      {'value': 'PLOMBERIE',   'label': l10n.plumbing,   'icon': Icons.plumbing},
-      {'value': 'ELECTRICITE', 'label': l10n.electricity, 'icon': Icons.electrical_services},
-      {'value': 'TOITURE',     'label': l10n.roofing,     'icon': Icons.roofing},
-      {'value': 'SERRURE',     'label': l10n.locks,       'icon': Icons.lock},
-      {'value': 'MOBILIER',    'label': l10n.furniture,   'icon': Icons.chair},
-      {'value': 'AUTRE',       'label': l10n.other,       'icon': Icons.more_horiz},
+      {'value': 'PLOMBERIE', 'label': l10n.plumbing, 'icon': Icons.plumbing},
+      {
+        'value': 'ELECTRICITE',
+        'label': l10n.electricity,
+        'icon': Icons.electrical_services
+      },
+      {'value': 'TOITURE', 'label': l10n.roofing, 'icon': Icons.roofing},
+      {'value': 'SERRURE', 'label': l10n.locks, 'icon': Icons.lock},
+      {'value': 'MOBILIER', 'label': l10n.furniture, 'icon': Icons.chair},
+      {'value': 'AUTRE', 'label': l10n.other, 'icon': Icons.more_horiz},
     ];
   }
 
@@ -56,7 +60,8 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
       if (image != null) setState(() => _photos.add(File(image.path)));
     } catch (e) {
       String msg = l10n.cameraError;
-      if (e.toString().contains('denied') || e.toString().contains('restricted')) {
+      if (e.toString().contains('denied') ||
+          e.toString().contains('restricted')) {
         msg = l10n.cameraPermissionDenied;
       }
       if (mounted) _snack(msg, bg: Colors.orange);
@@ -72,7 +77,8 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
       final images = await _picker.pickMultiImage(
           maxWidth: 1920, maxHeight: 1920, imageQuality: 85);
       final remaining = 5 - _photos.length;
-      setState(() => _photos.addAll(images.take(remaining).map((x) => File(x.path))));
+      setState(() =>
+          _photos.addAll(images.take(remaining).map((x) => File(x.path))));
       if (images.length > remaining) {
         _snack(l10n.photosAddedLimit(remaining), bg: AppTheme.warningColor);
       }
@@ -116,7 +122,8 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
     }
   }
 
-  Future<void> _showSuccessDialog(dynamic signalement, AppLocalizations l10n) async {
+  Future<void> _showSuccessDialog(
+      dynamic signalement, AppLocalizations l10n) async {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     await showDialog(
       context: context,
@@ -170,7 +177,7 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
 
     return Scaffold(
       backgroundColor:
-      isDark ? const Color(0xFF121212) : AppTheme.backgroundColor,
+          isDark ? const Color(0xFF121212) : AppTheme.backgroundColor,
       appBar: AppBar(
         title: Text(l10n.reportIssue,
             style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 18)),
@@ -196,15 +203,16 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
   }
 
   // ── Layout mobile : colonnes empilées ────────────────────────────────────
-  Widget _buildMobileLayout(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
+  Widget _buildMobileLayout(
+      bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     final types = _getTypesProblemes(l10n);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _InfoBanner(isDark: isDark, config: config, l10n: l10n),
+      CreateInfoBanner(isDark: isDark, config: config, l10n: l10n),
       SizedBox(height: config.isShortScreen ? 16 : 22),
-
-      _SectionLabel(text: l10n.problemType, isDark: isDark, config: config),
+      CreateSectionLabel(
+          text: l10n.problemType, isDark: isDark, config: config),
       const SizedBox(height: 10),
-      _TypeSelector(
+      TypeSelector(
         types: types,
         selected: _typeProbleme,
         isDark: isDark,
@@ -213,17 +221,21 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
         onSelect: (v) => setState(() => _typeProbleme = v),
       ),
       SizedBox(height: config.isShortScreen ? 16 : 22),
-
-      _SectionLabel(text: l10n.description, isDark: isDark, config: config),
+      CreateSectionLabel(
+          text: l10n.description, isDark: isDark, config: config),
       const SizedBox(height: 10),
-      _DescriptionField(
-          controller: _descriptionController, isDark: isDark, config: config, l10n: l10n),
+      DescriptionField(
+          controller: _descriptionController,
+          isDark: isDark,
+          config: config,
+          l10n: l10n),
       SizedBox(height: config.isShortScreen ? 16 : 22),
-
-      _SectionLabel(
-          text: l10n.photosCount(_photos.length), isDark: isDark, config: config),
+      CreateSectionLabel(
+          text: l10n.photosCount(_photos.length),
+          isDark: isDark,
+          config: config),
       const SizedBox(height: 10),
-      _PhotoSection(
+      PhotoSection(
         photos: _photos,
         isDark: isDark,
         config: config,
@@ -233,7 +245,6 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
         l10n: l10n,
       ),
       SizedBox(height: config.isShortScreen ? 22 : 30),
-
       CustomButton(
         text: l10n.createReportButton,
         onPressed: _isLoading ? null : () => _handleSubmit(l10n),
@@ -245,20 +256,21 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
   }
 
   // ── Layout tablette : type + description côte à côte ────────────────────
-  Widget _buildTabletLayout(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
+  Widget _buildTabletLayout(
+      bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     final types = _getTypesProblemes(l10n);
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      _InfoBanner(isDark: isDark, config: config, l10n: l10n),
+      CreateInfoBanner(isDark: isDark, config: config, l10n: l10n),
       const SizedBox(height: 24),
-
       Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // Colonne gauche : type de problème
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _SectionLabel(
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            CreateSectionLabel(
                 text: l10n.problemType, isDark: isDark, config: config),
             const SizedBox(height: 10),
-            _TypeSelector(
+            TypeSelector(
               types: types,
               selected: _typeProbleme,
               isDark: isDark,
@@ -271,10 +283,12 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
         const SizedBox(width: 24),
         // Colonne droite : description
         Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            _SectionLabel(text: l10n.description, isDark: isDark, config: config),
+          child:
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            CreateSectionLabel(
+                text: l10n.description, isDark: isDark, config: config),
             const SizedBox(height: 10),
-            _DescriptionField(
+            DescriptionField(
                 controller: _descriptionController,
                 isDark: isDark,
                 config: config,
@@ -283,11 +297,12 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
         ),
       ]),
       const SizedBox(height: 24),
-
-      _SectionLabel(
-          text: l10n.photosCount(_photos.length), isDark: isDark, config: config),
+      CreateSectionLabel(
+          text: l10n.photosCount(_photos.length),
+          isDark: isDark,
+          config: config),
       const SizedBox(height: 10),
-      _PhotoSection(
+      PhotoSection(
         photos: _photos,
         isDark: isDark,
         config: config,
@@ -297,7 +312,6 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
         l10n: l10n,
       ),
       const SizedBox(height: 32),
-
       CustomButton(
         text: l10n.createReportButton,
         onPressed: _isLoading ? null : () => _handleSubmit(l10n),
@@ -305,276 +319,6 @@ class _CreateSignalementScreenState extends State<CreateSignalementScreen> {
         icon: Icons.send,
       ),
       const SizedBox(height: 16),
-    ]);
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────
-// Widgets internes
-// ─────────────────────────────────────────────────────────────────
-
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  final bool isDark;
-  final ResponsiveConfig config;
-  const _SectionLabel(
-      {required this.text, required this.isDark, required this.config});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(text,
-        style: TextStyle(
-            fontSize: config.responsive(small: 14, medium: 15, large: 16),
-            fontWeight: FontWeight.bold,
-            color: isDark ? Colors.white : Colors.black87));
-  }
-}
-
-class _InfoBanner extends StatelessWidget {
-  final bool isDark;
-  final ResponsiveConfig config;
-  final AppLocalizations l10n;
-  const _InfoBanner({required this.isDark, required this.config, required this.l10n});
-
-  @override
-  Widget build(BuildContext context) {
-    final textSize = config.responsive(small: 12, medium: 13, large: 14);
-    return Card(
-      elevation: isDark ? 4 : 0,
-      color: AppTheme.infoColor.withOpacity(isDark ? 0.2 : 0.1),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: EdgeInsets.all(config.responsive(small: 12, medium: 14, large: 16)),
-        child: Row(children: [
-          Icon(Icons.info_outline,
-              color: AppTheme.infoColor,
-              size: config.responsive(small: 18, medium: 20, large: 22)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              l10n.reportInfoBanner,
-              style: TextStyle(
-                  fontSize: textSize,
-                  color: isDark ? Colors.grey.shade300 : Colors.black87),
-            ),
-          ),
-        ]),
-      ),
-    );
-  }
-}
-
-class _TypeSelector extends StatelessWidget {
-  final List<Map<String, dynamic>> types;
-  final String selected;
-  final bool isDark;
-  final ResponsiveConfig config;
-  final int crossAxisCount;
-  final ValueChanged<String> onSelect;
-
-  const _TypeSelector({
-    required this.types,
-    required this.selected,
-    required this.isDark,
-    required this.config,
-    required this.crossAxisCount,
-    required this.onSelect,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final iconSize = config.responsive(small: 24, medium: 29, large: 33);
-    final labelSize = config.responsive(small: 10, medium: 12, large: 13);
-    final ratio = config.responsive(small: 0.95, medium: 1.05, large: 1.15);
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        childAspectRatio: ratio,
-        crossAxisSpacing: config.isSmall ? 8 : 12,
-        mainAxisSpacing: config.isSmall ? 8 : 12,
-      ),
-      itemCount: types.length,
-      itemBuilder: (context, index) {
-        final type = types[index];
-        final isSel = selected == type['value'];
-
-        return InkWell(
-          onTap: () => onSelect(type['value']),
-          borderRadius: BorderRadius.circular(12),
-          child: Card(
-            elevation: isSel ? 4 : (isDark ? 2 : 1),
-            color: isDark ? const Color(0xFF1E1E1E) : null,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-              side: BorderSide(
-                  color: isSel ? AppTheme.errorColor : Colors.transparent,
-                  width: 2),
-            ),
-            child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(type['icon'],
-                      color: isSel
-                          ? AppTheme.errorColor
-                          : (isDark ? Colors.grey.shade400 : Colors.grey[600]),
-                      size: iconSize),
-                  SizedBox(height: config.isSmall ? 5 : 7),
-                  Text(type['label'],
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                          fontSize: labelSize,
-                          fontWeight: isSel
-                              ? FontWeight.bold
-                              : FontWeight.normal,
-                          color: isSel
-                              ? AppTheme.errorColor
-                              : (isDark ? Colors.white : Colors.black87))),
-                ]),
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _DescriptionField extends StatelessWidget {
-  final TextEditingController controller;
-  final bool isDark;
-  final ResponsiveConfig config;
-  final AppLocalizations l10n;
-  const _DescriptionField(
-      {required this.controller, required this.isDark, required this.config, required this.l10n});
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomTextField(
-      controller: controller,
-      label: l10n.detailedDescription,
-      hint: l10n.detailedDescriptionHint,
-      prefixIcon: Icons.description,
-      maxLines: config.isTablet ? 8 : 5,
-      maxLength: 1000,
-      validator: (v) {
-        if (v == null || v.isEmpty) return l10n.descriptionRequired;
-        if (v.length < 10) return l10n.descriptionMinLength;
-        return null;
-      },
-    );
-  }
-}
-
-class _PhotoSection extends StatelessWidget {
-  final List<File> photos;
-  final bool isDark;
-  final ResponsiveConfig config;
-  final VoidCallback onPickCamera;
-  final VoidCallback onPickGallery;
-  final ValueChanged<int> onRemove;
-  final AppLocalizations l10n;
-
-  const _PhotoSection({
-    required this.photos,
-    required this.isDark,
-    required this.config,
-    required this.onPickCamera,
-    required this.onPickGallery,
-    required this.onRemove,
-    required this.l10n,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final crossAxis = config.isTablet ? 5 : 3;
-    final btnPad = EdgeInsets.symmetric(
-        vertical: config.isSmall ? 10 : 12);
-
-    return Column(children: [
-      // Grille photos sélectionnées
-      if (photos.isNotEmpty) ...[
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxis,
-            childAspectRatio: 1,
-            crossAxisSpacing: config.isSmall ? 6 : 8,
-            mainAxisSpacing: config.isSmall ? 6 : 8,
-          ),
-          itemCount: photos.length,
-          itemBuilder: (_, i) => Stack(children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(config.isSmall ? 6 : 8),
-              child: Image.file(photos[i],
-                  width: double.infinity,
-                  height: double.infinity,
-                  fit: BoxFit.cover),
-            ),
-            Positioned(
-              top: 4, right: 4,
-              child: GestureDetector(
-                onTap: () => onRemove(i),
-                child: Container(
-                  padding: const EdgeInsets.all(3),
-                  decoration: const BoxDecoration(
-                      color: AppTheme.errorColor, shape: BoxShape.circle),
-                  child: const Icon(Icons.close, color: Colors.white, size: 14),
-                ),
-              ),
-            ),
-          ]),
-        ),
-        SizedBox(height: config.isSmall ? 8 : 12),
-      ],
-
-      // Boutons caméra / galerie
-      Row(children: [
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: photos.length < 5 ? onPickCamera : null,
-            icon: Icon(Icons.camera_alt,
-                color: isDark ? Colors.white : Colors.black87,
-                size: config.responsive(small: 18, medium: 20, large: 22)),
-            label: Text(l10n.camera,
-                style: TextStyle(
-                    color: isDark ? Colors.white : Colors.black87,
-                    fontSize: config.responsive(small: 12, medium: 14, large: 14))),
-            style: OutlinedButton.styleFrom(
-              padding: btnPad,
-              side: BorderSide(
-                  color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
-            ),
-          ),
-        ),
-        SizedBox(width: config.isSmall ? 8 : 12),
-        Expanded(
-          child: OutlinedButton.icon(
-            onPressed: photos.length < 5 ? onPickGallery : null,
-            icon: Icon(Icons.photo_library,
-                color: isDark ? Colors.white : Colors.black87,
-                size: config.responsive(small: 18, medium: 20, large: 22)),
-            label: Text(l10n.gallery,
-                style: TextStyle(
-                    color: isDark ? Colors.white : Colors.black87,
-                    fontSize: config.responsive(small: 12, medium: 14, large: 14))),
-            style: OutlinedButton.styleFrom(
-              padding: btnPad,
-              side: BorderSide(
-                  color: isDark ? Colors.grey.shade700 : Colors.grey.shade300),
-            ),
-          ),
-        ),
-      ]),
-
-      if (photos.isEmpty) ...[
-        SizedBox(height: config.isSmall ? 10 : 14),
-        Text(l10n.addAtLeastOnePhotoHint,
-            style: TextStyle(
-                fontSize: config.responsive(small: 11, medium: 12, large: 13),
-                color: isDark ? Colors.grey.shade400 : Colors.grey[600])),
-      ],
     ]);
   }
 }

@@ -8,9 +8,10 @@ import '../../utils/validators.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../l10n/app_localizations.dart';
+import 'widgets/register_widgets.dart';
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({Key? key}) : super(key: key);
+  const RegisterScreen({super.key});
 
   @override
   State<RegisterScreen> createState() => _RegisterScreenState();
@@ -194,7 +195,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       suffixIcon: suffix,
       validator: validator,
       enabled: !_isLoading,
-      textInputAction: nextFocus != null ? TextInputAction.next : TextInputAction.done,
+      textInputAction:
+          nextFocus != null ? TextInputAction.next : TextInputAction.done,
       onFieldSubmitted: (_) {
         if (nextFocus != null) {
           FocusScope.of(context).requestFocus(nextFocus);
@@ -214,61 +216,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   // Widget d'indicateur de règle (force mot de passe)
-  Widget _buildRule(String text, bool valid) {
-    return Row(
-      children: [
-        Icon(
-          valid ? Icons.check_circle : Icons.cancel,
-          size: 14,
-          color: valid ? Colors.green : Colors.red.shade400,
-        ),
-        const SizedBox(width: 6),
-        Text(
-          text,
-          style: TextStyle(
-            fontSize: 11,
-            color: valid ? Colors.green : Colors.grey.shade600,
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ==================== HEADER ====================
-
-  Widget _buildHeader(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
-    final titleSize = config.responsive(small: 24, medium: 28, large: 32);
-    final subtitleSize = config.responsive(small: 14, medium: 15, large: 16);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.createAccountTitle,
-          style: TextStyle(
-            fontSize: titleSize,
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.primary,
-          ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          l10n.fillInfoToRegister,
-          style: TextStyle(
-            fontSize: subtitleSize,
-            color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
-          ),
-        ),
-        const SizedBox(height: 24),
-      ],
-    );
-  }
-
-  // ==================== FORMULAIRE MOBILE ====================
-
-  Widget _buildMobileForm(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
+  Widget _buildMobileForm(
+      bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     final fieldSpacing = config.responsive(small: 12, medium: 14, large: 16);
     final sectionSpacing = config.responsive(small: 24, medium: 28, large: 32);
 
@@ -356,10 +305,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
               obscure: !_isPasswordVisible,
               suffix: IconButton(
                 icon: Icon(
-                  _isPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                  _isPasswordVisible
+                      ? Icons.visibility_outlined
+                      : Icons.visibility_off_outlined,
                   color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
                 ),
-                onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                onPressed: () =>
+                    setState(() => _isPasswordVisible = !_isPasswordVisible),
               ),
               validator: Validators.validatePassword,
               nextFocus: _confirmPasswordFocus,
@@ -370,10 +322,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               spacing: 12,
               runSpacing: 4,
               children: [
-                _buildRule(l10n.pwdMin6, _hasMinLength),
-                _buildRule(l10n.pwdUppercase, _hasUppercase),
-                _buildRule(l10n.pwdLowercase, _hasLowercase),
-                _buildRule(l10n.pwdDigit, _hasDigit),
+                buildPasswordRule(l10n.pwdMin6, _hasMinLength),
+                buildPasswordRule(l10n.pwdUppercase, _hasUppercase),
+                buildPasswordRule(l10n.pwdLowercase, _hasLowercase),
+                buildPasswordRule(l10n.pwdDigit, _hasDigit),
               ],
             ),
           ],
@@ -390,12 +342,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
           obscure: !_isConfirmPasswordVisible,
           suffix: IconButton(
             icon: Icon(
-              _isConfirmPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+              _isConfirmPasswordVisible
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
               color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
             ),
-            onPressed: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+            onPressed: () => setState(
+                () => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
           ),
-          validator: (value) => Validators.validateConfirmPassword(value, _passwordController.text),
+          validator: (value) => Validators.validateConfirmPassword(
+              value, _passwordController.text),
           nextFocus: null,
           autofillHints: const [AutofillHints.newPassword],
         ),
@@ -406,7 +362,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // ==================== FORMULAIRE TABLETTE (2 colonnes) ====================
 
-  Widget _buildTabletForm(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
+  Widget _buildTabletForm(
+      bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     final fieldSpacing = config.responsive(small: 12, medium: 14, large: 16);
     final sectionSpacing = config.responsive(small: 24, medium: 28, large: 32);
     final rowGap = config.responsive(small: 12, medium: 16, large: 20);
@@ -518,10 +475,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     obscure: !_isPasswordVisible,
                     suffix: IconButton(
                       icon: Icon(
-                        _isPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                        color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
+                        _isPasswordVisible
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined,
+                        color: isDark
+                            ? Colors.grey.shade400
+                            : Colors.grey.shade600,
                       ),
-                      onPressed: () => setState(() => _isPasswordVisible = !_isPasswordVisible),
+                      onPressed: () => setState(
+                          () => _isPasswordVisible = !_isPasswordVisible),
                     ),
                     validator: Validators.validatePassword,
                     nextFocus: _confirmPasswordFocus,
@@ -532,10 +494,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     spacing: 12,
                     runSpacing: 4,
                     children: [
-                      _buildRule(l10n.pwdMin6, _hasMinLength),
-                      _buildRule(l10n.pwdUppercase, _hasUppercase),
-                      _buildRule(l10n.pwdLowercase, _hasLowercase),
-                      _buildRule(l10n.pwdDigit, _hasDigit),
+                      buildPasswordRule(l10n.pwdMin6, _hasMinLength),
+                      buildPasswordRule(l10n.pwdUppercase, _hasUppercase),
+                      buildPasswordRule(l10n.pwdLowercase, _hasLowercase),
+                      buildPasswordRule(l10n.pwdDigit, _hasDigit),
                     ],
                   ),
                 ],
@@ -556,12 +518,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
           obscure: !_isConfirmPasswordVisible,
           suffix: IconButton(
             icon: Icon(
-              _isConfirmPasswordVisible ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+              _isConfirmPasswordVisible
+                  ? Icons.visibility_outlined
+                  : Icons.visibility_off_outlined,
               color: isDark ? Colors.grey.shade400 : Colors.grey.shade600,
             ),
-            onPressed: () => setState(() => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
+            onPressed: () => setState(
+                () => _isConfirmPasswordVisible = !_isConfirmPasswordVisible),
           ),
-          validator: (value) => Validators.validateConfirmPassword(value, _passwordController.text),
+          validator: (value) => Validators.validateConfirmPassword(
+              value, _passwordController.text),
           nextFocus: null,
           autofillHints: const [AutofillHints.newPassword],
         ),
@@ -572,7 +538,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // ==================== FOOTER ====================
 
-  Widget _buildFooter(bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
+  Widget _buildFooter(
+      bool isDark, ResponsiveConfig config, AppLocalizations l10n) {
     return Column(
       children: [
         CustomButton(
@@ -618,7 +585,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black87),
+          icon: Icon(Icons.arrow_back,
+              color: isDark ? Colors.white : Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -631,7 +599,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             padding: config.horizontalPadding.copyWith(
               top: config.verticalSpacing,
-              bottom: MediaQuery.of(context).viewInsets.bottom + config.verticalSpacing,
+              bottom: MediaQuery.of(context).viewInsets.bottom +
+                  config.verticalSpacing,
             ),
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxWidth),
@@ -640,25 +609,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 autovalidateMode: AutovalidateMode.onUserInteraction,
                 child: config.isTablet
                     ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(isDark, config, l10n),
-                    const SizedBox(height: 8),
-                    _buildTabletForm(isDark, config, l10n),
-                    const SizedBox(height: 24),
-                    _buildFooter(isDark, config, l10n),
-                  ],
-                )
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          buildRegisterHeader(context, isDark, config, l10n),
+                          const SizedBox(height: 8),
+                          _buildTabletForm(isDark, config, l10n),
+                          const SizedBox(height: 24),
+                          _buildFooter(isDark, config, l10n),
+                        ],
+                      )
                     : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildHeader(isDark, config, l10n),
-                    const SizedBox(height: 8),
-                    _buildMobileForm(isDark, config, l10n),
-                    const SizedBox(height: 24),
-                    _buildFooter(isDark, config, l10n),
-                  ],
-                ),
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          buildRegisterHeader(context, isDark, config, l10n),
+                          const SizedBox(height: 8),
+                          _buildMobileForm(isDark, config, l10n),
+                          const SizedBox(height: 24),
+                          _buildFooter(isDark, config, l10n),
+                        ],
+                      ),
               ),
             ),
           );
