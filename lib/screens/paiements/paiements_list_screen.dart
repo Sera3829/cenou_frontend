@@ -7,6 +7,7 @@ import '../../services/connectivity_service.dart';
 import '../../models/paiement.dart';
 import '../../utils/mobile_responsive.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/offline_banner.dart';
 import 'paiement_detail_screen.dart';
 import 'initier_paiement_screen.dart';
 
@@ -73,7 +74,26 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF121212) : AppTheme.backgroundColor,
       appBar: _buildAppBar(isDark, l10n),
-      body: LayoutBuilder(
+      body: Column(
+        children: [
+          Consumer2<PaiementProvider, ConnectivityService>(
+            builder: (_, provider, reseau, __) => OfflineBanner(
+              isFromCache: provider.isFromCache,
+              isOnline: reseau.isOnline,
+              cacheAgeMinutes: provider.cacheAgeMinutes,
+              onRefresh: provider.refresh,
+            ),
+          ),
+          Expanded(child: _buildContenu(isDark, l10n)),
+        ],
+      ),
+      floatingActionButton: _buildFab(context, l10n),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+    );
+  }
+
+  Widget _buildContenu(bool isDark, AppLocalizations l10n) {
+    return LayoutBuilder(
         builder: (context, constraints) {
           final config = ResponsiveConfig.fromConstraints(constraints);
           return Consumer<PaiementProvider>(
@@ -143,10 +163,7 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
             },
           );
         },
-      ),
-      floatingActionButton: _buildFab(context, l10n),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-    );
+      );
   }
 
   PreferredSizeWidget _buildAppBar(bool isDark, AppLocalizations l10n) {
@@ -157,31 +174,7 @@ class _PaiementsListScreenState extends State<PaiementsListScreen> {
       ),
       centerTitle: true,
       actions: [
-        Consumer<PaiementProvider>(
-          builder: (_, provider, __) {
-            if (!provider.isFromCache) return const SizedBox.shrink();
-            return Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: Colors.amber,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.history, size: 13, color: Colors.white),
-                  const SizedBox(width: 3),
-                  Text(
-                    l10n.cacheBadge,
-                    style: const TextStyle(
-                        fontSize: 10, fontWeight: FontWeight.w600, color: Colors.white),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
+        // L'état « données en cache » est porté par OfflineBanner sous l'AppBar.
         IconButton(
           icon: const Icon(Icons.history_rounded),
           onPressed: () {},

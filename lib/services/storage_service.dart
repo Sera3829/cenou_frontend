@@ -214,7 +214,9 @@ class StorageService {
   }
 
   /// Récupère la liste des paiements depuis le cache.
-  Future<List<Paiement>?> getPaiementsCache() async {
+  /// [allowStale] : hors ligne, on sert le cache quel que soit son âge
+  /// (mieux vaut des données datées qu'un écran vide).
+  Future<List<Paiement>?> getPaiementsCache({bool allowStale = false}) async {
     try {
       final prefs = await _prefs;
       final paiementsJson = prefs.getString(_paiementsCacheKey);
@@ -230,7 +232,7 @@ class StorageService {
         final cacheDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
         final now = DateTime.now();
 
-        if (now.difference(cacheDate) > _cacheDuration) {
+        if (!allowStale && now.difference(cacheDate) > _cacheDuration) {
           print('Cache paiements expire (${now.difference(cacheDate).inMinutes} minutes)');
           return null;
         }
@@ -278,7 +280,8 @@ class StorageService {
   }
 
   /// Récupère la liste des signalements depuis le cache.
-  Future<List<Signalement>?> getSignalementsCache() async {
+  /// [allowStale] : hors ligne, on sert le cache quel que soit son âge.
+  Future<List<Signalement>?> getSignalementsCache({bool allowStale = false}) async {
     try {
       final prefs = await _prefs;
       final signalementsJson = prefs.getString(_signalementsCacheKey);
@@ -294,7 +297,7 @@ class StorageService {
         final cacheDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
         final now = DateTime.now();
 
-        if (now.difference(cacheDate) > _cacheDuration) {
+        if (!allowStale && now.difference(cacheDate) > _cacheDuration) {
           print('Cache signalements expire (${now.difference(cacheDate).inMinutes} minutes)');
           return null;
         }
@@ -342,7 +345,8 @@ class StorageService {
   }
 
   /// Récupère la liste des notifications depuis le cache.
-  Future<List<Map<String, dynamic>>?> getNotificationsCache() async {
+  /// [allowStale] : hors ligne, on sert le cache quel que soit son âge.
+  Future<List<Map<String, dynamic>>?> getNotificationsCache({bool allowStale = false}) async {
     try {
       final prefs = await _prefs;
       final notificationsJson = prefs.getString(_notificationsCacheKey);
@@ -358,7 +362,7 @@ class StorageService {
         final cacheDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
         final now = DateTime.now();
 
-        if (now.difference(cacheDate) > _cacheDuration) {
+        if (!allowStale && now.difference(cacheDate) > _cacheDuration) {
           print('Cache notifications expire (${now.difference(cacheDate).inMinutes} minutes)');
           return null;
         }

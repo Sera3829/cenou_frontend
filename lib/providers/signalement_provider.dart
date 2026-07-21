@@ -19,12 +19,16 @@ class SignalementProvider with ChangeNotifier {
   /// Indique si les données actuellement affichées proviennent du cache local.
   bool _isFromCache = false;
 
+  /// Âge en minutes des données servies depuis le cache (null si données fraîches).
+  int? _cacheAgeMinutes;
+
   // ==================== ACCESSEURS (GETTERS) ====================
 
   List<Signalement> get signalements => _signalements;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isFromCache => _isFromCache;
+  int? get cacheAgeMinutes => _cacheAgeMinutes;
 
   SignalementProvider(this._connectivityService);
 
@@ -40,6 +44,7 @@ class SignalementProvider with ChangeNotifier {
     _isLoading = true;
     _error = null;
     _isFromCache = false;
+    _cacheAgeMinutes = null;
     notifyListeners();
 
     try {
@@ -61,14 +66,14 @@ class SignalementProvider with ChangeNotifier {
         print('Lors de la session hors ligne - Chargement depuis le cache');
 
         /// Récupération des données depuis le stockage local.
-        final cachedSignalements = await _storageService.getSignalementsCache();
+        final cachedSignalements = await _storageService.getSignalementsCache(allowStale: true);
 
         if (cachedSignalements != null && cachedSignalements.isNotEmpty) {
           _signalements = cachedSignalements;
           _isFromCache = true;
+          _cacheAgeMinutes = await _storageService.getSignalementsCacheAge();
 
-          final cacheAge = await _storageService.getSignalementsCacheAge();
-          print('Signalements chargés depuis le cache: ${_signalements.length} (âge: $cacheAge min)');
+          print('Signalements chargés depuis le cache: ${_signalements.length} (âge: $_cacheAgeMinutes min)');
         } else {
           _signalements = [];
           _error = 'Aucune donnée en cache. Une connexion internet est requise pour synchroniser vos signalements.';
@@ -83,11 +88,12 @@ class SignalementProvider with ChangeNotifier {
       /// Procédure de secours : tentative de récupération via le cache en cas d'erreur réseau.
       if (!_isFromCache) {
         print('Tentative de récupération via le cache local...');
-        final cachedSignalements = await _storageService.getSignalementsCache();
+        final cachedSignalements = await _storageService.getSignalementsCache(allowStale: true);
 
         if (cachedSignalements != null && cachedSignalements.isNotEmpty) {
           _signalements = cachedSignalements;
           _isFromCache = true;
+          _cacheAgeMinutes = await _storageService.getSignalementsCacheAge();
           _error = 'Erreur réseau. Affichage des données locales disponibles.';
           print('Bascule sur le cache effectuée : ${_signalements.length}');
         }
@@ -171,7 +177,7 @@ class SignalementProvider with ChangeNotifier {
         }
       } else {
         /// Mode hors ligne : consultation du stockage local.
-        final cachedSignalements = await _storageService.getSignalementsCache();
+        final cachedSignalements = await _storageService.getSignalementsCache(allowStale: true);
         if (cachedSignalements != null) {
           try {
             return cachedSignalements.firstWhere(
@@ -205,6 +211,7 @@ class SignalementProvider with ChangeNotifier {
       _signalements = await _signalementService.getSignalements();
       await _storageService.saveSignalementsCache(_signalements);
       _isFromCache = false;
+      _cacheAgeMinutes = null;
       print('Synchronisation forcée réussie depuis l\'API: ${_signalements.length}');
     } catch (e) {
       _error = e.toString();
@@ -238,6 +245,7 @@ class SignalementProvider with ChangeNotifier {
     _isLoading = false;
     _error = null;
     _isFromCache = false;
+    _cacheAgeMinutes = null;
     notifyListeners();
   }
 }

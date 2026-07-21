@@ -5,6 +5,7 @@ import '../../config/theme.dart';
 import '../../providers/notification_provider.dart';
 import '../../services/connectivity_service.dart';
 import '../../l10n/app_localizations.dart';
+import '../../widgets/offline_banner.dart';
 import 'annonce_details_screen.dart';
 
 /// Écran affichant la liste des notifications.
@@ -49,32 +50,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    // Badge indiquant que les données proviennent du cache
-                    if (provider.isFromCache) ...[
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.amber,
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.history, size: 12, color: Colors.white),
-                            const SizedBox(width: 4),
-                            Text(
-                              l10n.cacheBadge,
-                              style: const TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    // L'état « données en cache » est porté par OfflineBanner
+                    // sous l'AppBar.
                   ],
                 ),
                 if (provider.unreadCount > 0)
@@ -93,7 +70,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         actions: [
           Consumer<NotificationProvider>(
             builder: (context, provider, _) {
-              if (provider.unreadCount > 0 && provider.canPerformOnlineAction()) {
+              // Plus conditionné au réseau : hors ligne, le marquage est
+              // appliqué localement puis rejoué à la reconnexion.
+              if (provider.unreadCount > 0) {
                 return TextButton(
                   onPressed: () async {
                     final success = await provider.markAllAsRead();
@@ -128,7 +107,19 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           ),
         ],
       ),
-      body: _buildBody(isDark, l10n),
+      body: Column(
+        children: [
+          Consumer2<NotificationProvider, ConnectivityService>(
+            builder: (_, provider, reseau, __) => OfflineBanner(
+              isFromCache: provider.isFromCache,
+              isOnline: reseau.isOnline,
+              cacheAgeMinutes: provider.cacheAgeMinutes,
+              onRefresh: provider.refresh,
+            ),
+          ),
+          Expanded(child: _buildBody(isDark, l10n)),
+        ],
+      ),
     );
   }
 
@@ -305,17 +296,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           child: InkWell(
           borderRadius: BorderRadius.circular(12),
           onTap: () async {
-            // Marquer comme lue selon le mode (en ligne ou hors ligne)
-            if (provider.canPerformOnlineAction()) {
-              final success = await provider.markAsRead(notification['id']);
-              if (success && context.mounted) {
-                _navigateToNotification(notification, l10n);
-              }
-            } else {
-              await provider.markAsReadLocally(notification['id']);
-              if (context.mounted) {
-                _navigateToNotification(notification, l10n);
-              }
+            // Le provider gère lui-même le repli hors ligne (marquage local
+            // + rejeu au retour du réseau) : rien à distinguer ici.
+            await provider.markAsRead(notification['id']);
+            if (context.mounted) {
+              _navigateToNotification(notification, l10n);
             }
           },
           child: Padding(

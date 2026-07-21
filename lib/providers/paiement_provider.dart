@@ -18,6 +18,9 @@ class PaiementProvider with ChangeNotifier {
   /// Indique si les données actuelles proviennent du cache local (mode hors ligne).
   bool _isFromCache = false;
 
+  /// Âge en minutes des données servies depuis le cache (null si données fraîches).
+  int? _cacheAgeMinutes;
+
   // ==================== ACCESSEURS (GETTERS) ====================
 
   List<Paiement> get paiements => _paiements;
@@ -25,6 +28,7 @@ class PaiementProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isFromCache => _isFromCache;
+  int? get cacheAgeMinutes => _cacheAgeMinutes;
   Map<String, dynamic>? _loyerInfo;
   Map<String, dynamic>? get loyerInfo => _loyerInfo;
 
@@ -64,6 +68,7 @@ class PaiementProvider with ChangeNotifier {
     _isLoading = true;
     _error = null;
     _isFromCache = false;
+    _cacheAgeMinutes = null;
     notifyListeners();
 
     try {
@@ -78,11 +83,12 @@ class PaiementProvider with ChangeNotifier {
         _isFromCache = false;
       } else {
         // Récupération des données depuis le stockage local (Mode hors ligne).
-        final cachedPaiements = await _storageService.getPaiementsCache();
+        final cachedPaiements = await _storageService.getPaiementsCache(allowStale: true);
 
         if (cachedPaiements != null && cachedPaiements.isNotEmpty) {
           _paiements = cachedPaiements;
           _isFromCache = true;
+          _cacheAgeMinutes = await _storageService.getPaiementsCacheAge();
         } else {
           _paiements = [];
           _error = 'Aucune donnée en cache. Une connexion internet est requise pour synchroniser vos paiements.';
@@ -93,10 +99,11 @@ class PaiementProvider with ChangeNotifier {
 
       // Fallback sur le cache en cas d'exception réseau imprévue.
       if (!_isFromCache) {
-        final cachedPaiements = await _storageService.getPaiementsCache();
+        final cachedPaiements = await _storageService.getPaiementsCache(allowStale: true);
         if (cachedPaiements != null && cachedPaiements.isNotEmpty) {
           _paiements = cachedPaiements;
           _isFromCache = true;
+          _cacheAgeMinutes = await _storageService.getPaiementsCacheAge();
           _error = 'Erreur réseau. Affichage des données locales disponibles.';
         }
       }
@@ -157,7 +164,7 @@ class PaiementProvider with ChangeNotifier {
         }
         return paiement;
       } else {
-        final cachedPaiements = await _storageService.getPaiementsCache();
+        final cachedPaiements = await _storageService.getPaiementsCache(allowStale: true);
         if (cachedPaiements != null) {
           for (var paiement in cachedPaiements) {
             if (paiement.id == paiementId) {
@@ -212,6 +219,7 @@ class PaiementProvider with ChangeNotifier {
     _isLoading = false;
     _error = null;
     _isFromCache = false;
+    _cacheAgeMinutes = null;
     notifyListeners();
   }
 
@@ -231,6 +239,7 @@ class PaiementProvider with ChangeNotifier {
       _paiements = await _paiementService.getPaiements();
       await _storageService.savePaiementsCache(_paiements);
       _isFromCache = false;
+      _cacheAgeMinutes = null;
     } catch (e) {
       _error = e.toString();
     } finally {

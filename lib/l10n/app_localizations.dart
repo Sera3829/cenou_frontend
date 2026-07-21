@@ -50,6 +50,26 @@ class AppLocalizations {
   String get delete           => _t('Supprimer', 'Delete');
   String get comingSoon       => _t('Bientôt disponible', 'Coming soon');
 
+  // ── Bandeau hors ligne / fraîcheur des données ─────────────────────────────
+  String get offlineBannerTitle => _t('Mode hors ligne', 'Offline mode');
+  String get staleBannerTitle   => _t('Données en cache', 'Cached data');
+  String get syncing            => _t('Synchronisation…', 'Syncing…');
+
+  /// Ex. « Mis à jour il y a 5 min ».
+  String lastUpdated(String when) => _t('Mis à jour $when', 'Updated $when');
+
+  /// Traduit un âge en minutes en formule relative lisible.
+  String relativeAge(int minutes) {
+    if (minutes < 1) return _t('à l\'instant', 'just now');
+    if (minutes < 60) return _t('il y a $minutes min', '$minutes min ago');
+
+    final hours = minutes ~/ 60;
+    if (hours < 24) return _t('il y a $hours h', '${hours}h ago');
+
+    final days = hours ~/ 24;
+    return _t('il y a $days j', '${days}d ago');
+  }
+
   // ── Auth ───────────────────────────────────────────────────────────────────
   String get login            => _t('Connexion', 'Login');
   String get logout           => _t('Déconnexion', 'Logout');

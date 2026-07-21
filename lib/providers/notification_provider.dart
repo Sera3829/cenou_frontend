@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import '../services/notification_api_service.dart';
 import '../services/storage_service.dart';
 import '../services/connectivity_service.dart';
+import '../services/offline_queue_service.dart';
 
 /// Gestionnaire d'état des notifications incluant la persistence locale et la synchronisation réseau.
 class NotificationProvider with ChangeNotifier {
   final NotificationApiService _notificationApiService = NotificationApiService();
   final StorageService _storageService = StorageService();
+  final OfflineQueueService _fileHorsLigne = OfflineQueueService();
   final ConnectivityService _connectivityService;
 
   List<Map<String, dynamic>> _notifications = [];
@@ -14,12 +16,16 @@ class NotificationProvider with ChangeNotifier {
   String? _error;
   bool _isFromCache = false;
 
+  /// Âge en minutes des données servies depuis le cache (null si données fraîches).
+  int? _cacheAgeMinutes;
+
   // ==================== ACCESSEURS (GETTERS) ====================
 
   List<Map<String, dynamic>> get notifications => _notifications;
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isFromCache => _isFromCache;
+  int? get cacheAgeMinutes => _cacheAgeMinutes;
 
   /// Nombre de notifications dont l'état de lecture est faux.
   int get unreadCount => _notifications.where((n) => !n['read']).length;
@@ -27,7 +33,29 @@ class NotificationProvider with ChangeNotifier {
   /// Nombre total de notifications chargées en mémoire.
   int get totalCount => _notifications.length;
 
-  NotificationProvider(this._connectivityService);
+  /// Dernier état réseau observé, pour ne déclencher la synchronisation qu'au
+  /// franchissement hors ligne → en ligne (et non à chaque notification).
+  bool _etaitEnLigne;
+
+  NotificationProvider(this._connectivityService)
+      : _etaitEnLigne = _connectivityService.isOnline {
+    _connectivityService.addListener(_surChangementReseau);
+  }
+
+  @override
+  void dispose() {
+    _connectivityService.removeListener(_surChangementReseau);
+    super.dispose();
+  }
+
+  /// Rejoue la file d'actions différées dès que la connexion revient.
+  void _surChangementReseau() {
+    final enLigne = _connectivityService.isOnline;
+    if (enLigne && !_etaitEnLigne) {
+      synchroniserActionsDifferees();
+    }
+    _etaitEnLigne = enLigne;
+  }
 
   // ==================== LOGIQUE MÉTIER ====================
 
@@ -37,17 +65,24 @@ class NotificationProvider with ChangeNotifier {
     _isLoading = true;
     _error = null;
     _isFromCache = false;
+    _cacheAgeMinutes = null;
     notifyListeners();
 
     try {
       final isOnline = _connectivityService.isOnline;
 
       if (isOnline) {
+        // Filet de sécurité : si l'application a été relancée hors ligne, le
+        // passage en ligne n'a pas été observé par l'écouteur de connectivité.
+        // On vide la file avant de relire, sinon le serveur renverrait des
+        // notifications encore non lues et écraserait le marquage local.
+        await synchroniserActionsDifferees();
+
         // Récupération des données distantes
         final rawNotifications = await _notificationApiService.getNotifications(limit: limit);
 
         // Synchronisation avec l'état de lecture local
-        final cachedNotifications = await _storageService.getNotificationsCache();
+        final cachedNotifications = await _storageService.getNotificationsCache(allowStale: true);
 
         if (cachedNotifications != null && cachedNotifications.isNotEmpty) {
           final restoredCache = _restoreNotificationsFromCache(cachedNotifications);
@@ -78,11 +113,12 @@ class NotificationProvider with ChangeNotifier {
         _isFromCache = false;
       } else {
         // Traitement du mode hors ligne via le cache persistant
-        final cachedNotifications = await _storageService.getNotificationsCache();
+        final cachedNotifications = await _storageService.getNotificationsCache(allowStale: true);
 
         if (cachedNotifications != null && cachedNotifications.isNotEmpty) {
           _notifications = _restoreNotificationsFromCache(cachedNotifications);
           _isFromCache = true;
+          _cacheAgeMinutes = await _storageService.getNotificationsCacheAge();
         } else {
           _notifications = [];
           _error = 'Données locales indisponibles. Une connexion internet est requise.';
@@ -93,10 +129,11 @@ class NotificationProvider with ChangeNotifier {
 
       // Tentative de récupération sur erreur réseau (Fallback)
       if (!_isFromCache) {
-        final cachedNotifications = await _storageService.getNotificationsCache();
+        final cachedNotifications = await _storageService.getNotificationsCache(allowStale: true);
         if (cachedNotifications != null && cachedNotifications.isNotEmpty) {
           _notifications = _restoreNotificationsFromCache(cachedNotifications);
           _isFromCache = true;
+          _cacheAgeMinutes = await _storageService.getNotificationsCacheAge();
           _error = 'Erreur réseau. Affichage des données en cache.';
         }
       }
@@ -240,12 +277,19 @@ class NotificationProvider with ChangeNotifier {
     }).toList();
   }
 
-  /// Envoie une requête réseau pour marquer une notification comme lue.
+  /// Marque une notification comme lue.
+  ///
+  /// Hors ligne, l'action est appliquée localement et empilée : le compteur se
+  /// met à jour immédiatement, et le serveur est mis d'accord au retour du
+  /// réseau. L'appelant n'a donc pas à distinguer les deux cas.
   Future<bool> markAsRead(dynamic notificationId) async {
     if (!_connectivityService.isOnline) {
-      _error = 'Une connexion internet est requise pour cette action.';
-      notifyListeners();
-      return false;
+      await markAsReadLocally(notificationId);
+      await _fileHorsLigne.empiler(OfflineAction(
+        type: OfflineActionType.notificationRead,
+        targetId: notificationId.toString(),
+      ));
+      return true;
     }
 
     try {
@@ -259,18 +303,24 @@ class NotificationProvider with ChangeNotifier {
       }
       return true;
     } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-      return false;
+      // Réseau annoncé disponible mais requête échouée : on applique quand même
+      // localement et on empile, plutôt que de perdre le geste de l'utilisateur.
+      await markAsReadLocally(notificationId);
+      await _fileHorsLigne.empiler(OfflineAction(
+        type: OfflineActionType.notificationRead,
+        targetId: notificationId.toString(),
+      ));
+      return true;
     }
   }
 
-  /// Envoie une requête réseau pour marquer l'intégralité des notifications comme lues.
+  /// Marque l'intégralité des notifications comme lues (même repli hors ligne).
   Future<bool> markAllAsRead() async {
     if (!_connectivityService.isOnline) {
-      _error = 'Une connexion internet est requise pour cette action.';
-      notifyListeners();
-      return false;
+      await markAllAsReadLocally();
+      await _fileHorsLigne.empiler(
+          OfflineAction(type: OfflineActionType.notificationReadAll));
+      return true;
     }
 
     try {
@@ -283,9 +333,47 @@ class NotificationProvider with ChangeNotifier {
       notifyListeners();
       return true;
     } catch (e) {
-      _error = e.toString();
-      notifyListeners();
-      return false;
+      await markAllAsReadLocally();
+      await _fileHorsLigne.empiler(
+          OfflineAction(type: OfflineActionType.notificationReadAll));
+      return true;
+    }
+  }
+
+  /// Rejoue les marquages « lu » effectués hors ligne.
+  ///
+  /// Les actions dont le rejeu échoue restent en file et seront retentées à la
+  /// prochaine reconnexion. Marquer comme lu étant idempotent, un rejeu en
+  /// double est sans conséquence.
+  Future<void> synchroniserActionsDifferees() async {
+    if (!_connectivityService.isOnline) return;
+
+    final actions = await _fileHorsLigne.enAttente();
+    if (actions.isEmpty) return;
+
+    final reussies = <String>[];
+
+    for (final action in actions) {
+      try {
+        switch (action.type) {
+          case OfflineActionType.notificationRead:
+            final id = action.targetId;
+            // Action malformée : inutile de la retenter indéfiniment.
+            if (id == null) break;
+            await _notificationApiService.markAsRead(id);
+            break;
+          case OfflineActionType.notificationReadAll:
+            await _notificationApiService.markAllAsRead();
+            break;
+        }
+        reussies.add(action.cle);
+      } catch (e) {
+        // Conservée en file pour la prochaine tentative.
+      }
+    }
+
+    if (reussies.isNotEmpty) {
+      await _fileHorsLigne.retirer(reussies);
     }
   }
 
@@ -316,7 +404,7 @@ class NotificationProvider with ChangeNotifier {
     try {
       if (_notifications.isNotEmpty) return unreadCount;
 
-      final cachedNotifications = await _storageService.getNotificationsCache();
+      final cachedNotifications = await _storageService.getNotificationsCache(allowStale: true);
       if (cachedNotifications != null && cachedNotifications.isNotEmpty) {
         final restored = _restoreNotificationsFromCache(cachedNotifications);
         return restored.where((n) => !n['read']).length;
@@ -361,6 +449,7 @@ class NotificationProvider with ChangeNotifier {
       await _storageService.saveNotificationsCache(cacheReady);
 
       _isFromCache = false;
+      _cacheAgeMinutes = null;
     } catch (e) {
       _error = e.toString();
     } finally {
@@ -388,6 +477,12 @@ class NotificationProvider with ChangeNotifier {
     _error = null;
     _isLoading = false;
     _isFromCache = false;
+    _cacheAgeMinutes = null;
+
+    // Une action empilée par l'utilisateur sortant ne doit jamais être rejouée
+    // avec le jeton du suivant. Sans await : reset() est appelé depuis l'UI.
+    _fileHorsLigne.vider();
+
     notifyListeners();
   }
 }
