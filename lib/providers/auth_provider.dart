@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import '../services/api_service.dart';
 import '../services/storage_service.dart';
 import '../models/user.dart';
+import '../utils/jwt_helper.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 
@@ -16,6 +17,10 @@ class AuthProvider with ChangeNotifier {
   Map<String, dynamic>? _currentUser;
   String? _errorMessage;
   bool _isNotifying = false;
+
+  /// Session ouverte sur la seule foi du jeton local, faute d'avoir pu joindre
+  /// le serveur. Elle sera confirmée (ou révoquée par un 401) au retour du réseau.
+  bool _sessionNonVerifiee = false;
 
   /// Paramètres de configuration utilisateur.
   bool _notificationsEnabled = true;
@@ -40,6 +45,7 @@ class AuthProvider with ChangeNotifier {
 
     _currentUser = null;
     _isAuthenticated = false;
+    _sessionNonVerifiee = false;
     _errorMessage = null;
     _notificationsEnabled = true;
     _preferredLanguage = 'fr';
@@ -55,6 +61,9 @@ class AuthProvider with ChangeNotifier {
 
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _isAuthenticated;
+
+  /// Vrai quand la session n'a pas pu être confirmée auprès du serveur.
+  bool get sessionNonVerifiee => _sessionNonVerifiee;
   Map<String, dynamic>? get currentUser => _currentUser;
   String? get errorMessage => _errorMessage;
 
@@ -124,24 +133,42 @@ class AuthProvider with ChangeNotifier {
         final response = await _apiService.get('/api/auth/me');
         _currentUser = response['user'];
         _isAuthenticated = true;
+        _sessionNonVerifiee = false;
         await _storageService.saveUser(User.fromJson(_currentUser!));
       } catch (e) {
-        // Si 401 ou session invalide → déconnexion forcée
-        if (e.toString().contains('401') ||
+        // Le serveur a explicitement refusé la session → déconnexion forcée.
+        // On se fie d'abord au code HTTP : reconnaître un refus au libellé du
+        // message est fragile, et une erreur de classement effacerait ici la
+        // session d'un utilisateur simplement privé de réseau.
+        final refusParLeServeur = (e is ApiException && e.statusCode == 401) ||
+            e.toString().contains('401') ||
             e.toString().contains('expiré') ||
-            e.toString().contains('Session invalide')) {
+            e.toString().contains('Session invalide');
+
+        if (refusParLeServeur) {
           await _storageService.clearAll();
           _currentUser = null;
           _isAuthenticated = false;
+          _sessionNonVerifiee = false;
         } else {
-          // Erreur réseau → fallback cache, mais on ne marque pas authentifié
+          // Erreur réseau : le serveur n'a rien dit. On ne peut pas en conclure
+          // que la session est morte — sinon couper sa connexion suffirait à se
+          // faire déconnecter. On garde donc la session ouverte tant que le
+          // jeton n'a pas atteint sa propre date d'expiration, avec le profil
+          // mis en cache. Si le jeton a réellement été révoqué côté serveur, le
+          // premier appel au retour du réseau renverra 401 et déconnectera.
           final cachedUser = await _storageService.getUser();
-          if (cachedUser != null) {
+          final jetonEncoreValide = !JwtHelper.estPerime(token);
+
+          if (cachedUser != null && jetonEncoreValide) {
             _currentUser = cachedUser.toJson();
-            _isAuthenticated = false; // ← important : on a un cache mais pas de validité réseau
+            _isAuthenticated = true;
+            _sessionNonVerifiee = true;
           } else {
+            // Jeton périmé, ou aucun profil en cache à afficher : reconnexion.
             _currentUser = null;
             _isAuthenticated = false;
+            _sessionNonVerifiee = false;
           }
         }
       }
@@ -336,6 +363,7 @@ class AuthProvider with ChangeNotifier {
 
       _currentUser = null;
       _isAuthenticated = false;
+      _sessionNonVerifiee = false;
       _isLoading = false;
       _errorMessage = null;
       _notificationsEnabled = true;

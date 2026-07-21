@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/notification_provider.dart';
 import '../../services/connectivity_service.dart';
 import '../paiements/paiements_list_screen.dart';
@@ -56,6 +57,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (conn.isOnline) {
       Provider.of<NotificationProvider>(context, listen: false).loadNotifications();
       _loadUnreadCount();
+
+      // La session a pu être ouverte hors ligne sur la seule foi du jeton
+      // local : le retour du réseau est le moment de la faire confirmer.
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.sessionNonVerifiee) auth.refreshUser();
     }
   }
 
